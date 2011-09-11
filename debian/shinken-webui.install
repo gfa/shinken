@@ -8,3 +8,6 @@ debian/tmp/usr/lib/python2.6/dist-packages/shinken/daemons/webuidaemon.py       
 
 
 debian/tmp/usr/bin/shinken-webui                                                               /usr/bin
+
+
+debian/config-files/etc/shinken/webui.cfg                                                      /etc/shinken/
