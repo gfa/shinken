@@ -1,3 +1,9 @@
+shinken (0.6.5.201109101555+528f078-2) unstable; urgency=low
+
+  * Forgotten webui config file
+
+ -- Arthur Gautier <superbaloo+debian@superbaloo.net>  Sun, 11 Sep 2011 23:30:28 +0200
+
 shinken (0.6.5.201109101555+528f078-1) unstable; urgency=low
 
   * Auto commit
