@@ -1,3 +1,9 @@
+shinken (0.6.5.201109101555+528f078-1) unstable; urgency=low
+
+  * Auto commit
+
+ -- Superbaloo Jenkins CI <superbaloo+debian.jenkins@superbaloo.net>  Sun, 11 Sep 2011 21:05:46 +0200
+
 shinken (0.6.5-3) unstable; urgency=low
 
   * Suggests nagios-plugins-basic
