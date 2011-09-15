@@ -7,21 +7,27 @@
 # This has to be exported to make some magic below work.
 export DH_OPTIONS
 
-
 %:
-	dh $@
+	dh $@ --with python2
 
 build:
 	dh_testdir
 	dh_auto_configure
-	dh_auto_build
+	python setup.py build \
+	  --build-base debian/tmp/ \
+	  --build-purelib debian/tmp/usr/lib/python2.6/dist-packages/ 
 	dh_auto_test
 
 binary: 
 	dh_testroot
 	dh_prep
 	dh_installdirs
-	dh_auto_install
+	
+	python setup.py install \
+	  --no-compile \
+	  --install-layout=deb \
+	  --install-purelib /usr/lib/python2.6/dist-packages/ \
+	  --root $(CURDIR)/debian/tmp
 	
 	# Fix debian paths
 	sed -i -r "s#$(CURDIR)/debian/tmp##" \
@@ -54,11 +60,20 @@ binary:
 	     debian/tmp/etc/init.d/shinken-reactionner \
 	     debian/tmp/etc/init.d/shinken-scheduler
 	
-	
+	# Split in subpackages
 	dh_install
 	
 	# creates empty var directory
 	mkdir -p --mode=750 debian/shinken-core/var/log/shinken
+	
+	dh_python2 -p shinken-core
+	dh_python2 -p shinken-arbiter
+	dh_python2 -p shinken-broker
+	dh_python2 -p shinken-reactionner
+	dh_python2 -p shinken-poller
+	dh_python2 -p shinken-discovery
+	dh_python2 -p shinken-receiver
+	dh_python2 -p shinken-scheduler
 	
 	dh_installdocs
 	dh_installchangelogs
