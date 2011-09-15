@@ -1,37 +1,6 @@
-shinken (0.6.5-4) unstable; urgency=low
-
-  * Change pyro version dep to allow ubuntu lucid version
-
- -- Arthur Gautier <superbaloo+debian@superbaloo.net>  Mon, 12 Sep 2011 17:10:27 +0200
-
-shinken (0.6.5-3) unstable; urgency=low
-
-  * Suggests nagios-plugins-basic
-
- -- Arthur Gautier <superbaloo+debian@superbaloo.net>  Sun, 11 Sep 2011 15:43:51 +0200
-
-shinken (0.6.5-2) unstable; urgency=low
-
-  * Fix for pid and log handling by sduchesneau
-  * Bugfix: include objects/*.py in distribtion by sduchesneau
-
- -- Arthur Gautier <superbaloo@desktop.vm.superbaloo.net>  Sat, 10 Sep 2011 18:48:03 +0200
-
 shinken (0.6.5-1) unstable; urgency=low
-
-  * Version bump to 0.6.5
-
- -- Arthur Gautier <superbaloo+debian@superbaloo.net>  Tue, 16 Aug 2011 22:45:12 +0200
-
-shinken (0.6.4-2) unstable; urgency=low
-
-  * Adds sample configuration files
-  * Multiple packaging improvements
-
- -- Arthur Gautier <superbaloo+debian@superbaloo.net>  Wed, 25 May 2011 21:59:05 +0200
-
-shinken (0.6.4-1) unstable; urgency=low
 
   * Initial release (Closes: #599073) 
 
- -- Arthur Gautier <superbaloo+debian@superbaloo.net>  Sat, 21 May 2011 09:56:49 +0200
+ -- Arthur Gautier <superbaloo+debian@superbaloo.net>  Thu, 15 Sep 2011 14:00:09 +0200
+
