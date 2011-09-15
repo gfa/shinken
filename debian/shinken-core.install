@@ -8,6 +8,7 @@ debian/tmp/usr/lib/python2.6/dist-packages/shinken/modules/__init__.py          
 debian/tmp/usr/lib/python2.6/dist-packages/shinken/modules/named_pipe.py                       /usr/lib/python2.6/dist-packages/shinken/modules/
 debian/tmp/usr/lib/python2.6/dist-packages/shinken/modules/nsca.py                             /usr/lib/python2.6/dist-packages/shinken/modules/
 debian/tmp/usr/lib/python2.6/dist-packages/shinken/modules/pickle_retention_file_generic.py    /usr/lib/python2.6/dist-packages/shinken/modules/
+debian/tmp/usr/lib/python2.6/dist-packages/shinken/misc                                        /usr/lib/python2.6/dist-packages/shinken
 
 
 
@@ -17,7 +18,9 @@ debian/tmp/usr/lib/shinken                                                      
 
 debian/tmp/etc/default                                                                         /etc/
 
-debian/config-files/etc/shinken/                                                               /etc/
+debian/config-files/etc/shinken/*.ini                                                          /etc/shinken/
+debian/config-files/etc/shinken/objects/*                                                      /etc/shinken/objects/
+debian/config-files/etc/shinken/*.cfg                                                          /etc/shinken/
 
 debian/tmp/etc/init.d/shinken                                                                  /etc/init.d
 
