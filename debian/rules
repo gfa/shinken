@@ -10,6 +10,11 @@ export DH_OPTIONS
 %:
 	dh $@ --with python2,quilt
 
+clean:
+	dh clean --with python2,quilt
+	# dh_clean does not support removing dirs
+	rm -rf build Shinken.egg-info
+
 build:
 	dh_testdir
 	dh_auto_configure
