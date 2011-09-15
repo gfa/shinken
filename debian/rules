@@ -117,3 +117,5 @@ binary:
 	dh_md5sums
 	dh_builddeb
 
+get-orig-source:
+	uscan --force-download --rename
