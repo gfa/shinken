@@ -118,5 +118,4 @@ binary:
 	dh_builddeb
 
 get-orig-source:
-	uscan --force-download --rename
-	sh debian/x-exclude.sh 0.6.5
+	uscan --force-download --rename --verbose
