@@ -79,7 +79,7 @@ License: MIT
  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-Files: debian/x-exclude.sh
+Files: debian/orig-tar.sh
 Copyright: 2008 Florian Fainelli <florian@openwrt.org>
            2011 Arthur Gautier <superbaloo+debian@superbaloo.net>
 License: GPL-2
@@ -108,9 +108,9 @@ License: GPL-2
  NON-INFRINGEMENT.  See the GNU General Public License for more details.
  .
  You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston,
- MA 02111-1307, USA.
+ along with this program; if not, write to the 
+ Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
+ MA 02110-1301, USA.
  .
  In addition, as a special exception, the copyright holders give
  permission to link the code of portions of this program with the
