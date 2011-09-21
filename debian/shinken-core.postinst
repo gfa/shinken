@@ -25,6 +25,10 @@ case "$1" in
     chgrp shinken $TMP 2>/dev/null ||
       addgroup --system shinken
 
+    ## Adds nagios group
+    chgrp nagios $TMP 2>/dev/null ||
+      addgroup --system nagios
+
     ## Ensure /var/lib/shinken is ready
     mkdir -p /var/lib/shinken
 
@@ -32,10 +36,15 @@ case "$1" in
     chown shinken $TMP 2>/dev/null ||
       adduser --ingroup shinken --no-create-home --system --home /var/lib/shinken shinken
 
-    ## need to have postfix in the right group, but old revs do it wrong..$
+    ## need to have shinken in the right group, but old revs do it wrong..$
     if [ "$(id -gn shinken)" != "shinken" ]; then
         usermod -g shinken shinken
     fi
+
+    ## Add shinken to nagios group
+    id -Gn shinken |grep -E '(^|[[:blank:]])nagios($|[[:blank:]])' >/dev/null ||
+      usermod -a -G nagios shinken
+
 
     ## No need anymore temporary vars
     rm -rf $TMP
