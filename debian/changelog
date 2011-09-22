@@ -1,3 +1,10 @@
+shinken (0.6.5-2) unstable; urgency=low
+
+  * Closes: #642254: Fixing long description
+  * Closes: #642297: Fix init scripts
+
+ -- Arthur Gautier <superbaloo+debian@superbaloo.net>  Thu, 22 Sep 2011 22:42:39 +0200
+
 shinken (0.6.5-1) unstable; urgency=low
 
   * Initial release (Closes: #599073) 
