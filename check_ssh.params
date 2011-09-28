@@ -1,0 +1,39 @@
+{
+  'hostname': {
+    'name': '--hostname',
+    'type': 'parameter',
+    'gluesign': 'equal',
+    'default': 'localhost'
+    },
+
+  'port': {
+    'name': '--port',
+    'type': 'parameter',
+    'gluesign': 'equal',
+    'default': 22
+    },
+
+  'ipv4': {
+    'name': '--ipv4',
+    'type': 'switch',
+    'default': false
+    },
+
+  'ipv6': {
+    'name': '--ipv6',
+    'type': 'switch',
+    'default': false
+    },
+
+  'timeout': {
+    'name': '--timeout',
+    'type': 'argument',
+    'gluesign': 'equal'
+    },
+
+  'remote_version': {
+    'name': '--remote-version',
+    'type': 'argument',
+    'gluesign': 'equal'
+    }
+}

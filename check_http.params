@@ -1,0 +1,105 @@
+{
+  'vhost': {
+    'name': '--hostname',
+    'type': 'parameter',
+    'gluesign': 'equal',
+    'default': 'localhost'
+    },
+
+  'ip': {
+    'name': '--IP-address',
+    'type': 'parameter',
+    'gluesign': 'equal'
+    },
+
+  'port': {
+    'name': '--port',
+    'type': 'parameter',
+    'gluesign': 'equal',
+    'default': 80
+    },
+
+  'ipv4': {
+    'name': '--ipv4',
+    'type': 'switch',
+    'default': false
+    },
+
+  'ipv6': {
+    'name': '--ipv6',
+    'type': 'switch',
+    'default': false
+    },
+
+  'ssl': {
+    'name': '--ssl',
+    'type': 'switch',
+    'default': false
+    },
+
+  'sni': {
+    'name': '--sni',
+    'type': 'switch',
+    'default': false
+    },
+
+  'certification_expiration': {
+    'name': '--certificate',
+    'type': 'argument',
+    'gluesign': 'equal'
+    },
+
+  'expect': {
+    'name': '--expect',
+    'type': 'argument',
+    'gluesign': 'equal'
+    },
+
+  'string': {
+    'name': '--string',
+    'type': 'argument',
+    'gluesign': 'equal'
+    },
+
+  'url': {
+    'name': '--url',
+    'type': 'argument',
+    'gluesign': 'equal'
+    },
+
+  'post': {
+    'name': '--post',
+    'type': 'argument',
+    'gluesign': 'equal'
+    },
+
+  'method': {
+    'name': '--method',
+    'type': 'argument',
+    'gluesign': 'equal'
+    },
+
+  'no_body': {
+    'name': '--no-body',
+    'type': 'switch',
+    'default': false
+    },
+
+  'max_age': {
+    'name': '--max-age',
+    'type': 'argument',
+    'gluesign': 'equal'
+    },
+
+  'content_type': {
+    'name': '--content-type',
+    'type': 'argument',
+    'gluesign': 'equal'
+    },
+
+  'lang': {
+    'name': 'LANG',
+    'type': 'environment',
+    'default': 'C'
+    }
+}
