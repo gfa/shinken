@@ -24,7 +24,7 @@ case "$1" in
               invoke-rc.d shinken-broker stop) ||
               return 0
         else
-            (invoke-rc.d shinken-broker status && 
+            (/etc/init.d/shinken-broker status && 
               /etc/init.d/shinken-broker stop) ||
               return 0
         fi

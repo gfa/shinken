@@ -24,7 +24,7 @@ case "$1" in
               invoke-rc.d shinken-scheduler stop) ||
               return 0
         else
-            (invoke-rc.d shinken-scheduler status && 
+            (/etc/init.d/shinken-scheduler status && 
               /etc/init.d/shinken-scheduler stop) ||
               return 0
         fi

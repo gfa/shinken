@@ -24,7 +24,7 @@ case "$1" in
               invoke-rc.d shinken-reactionner stop) ||
               return 0
         else
-            (invoke-rc.d shinken-reactionner status && 
+            (/etc/init.d/shinken-reactionner status && 
               /etc/init.d/shinken-reactionner stop) ||
               return 0
         fi

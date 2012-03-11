@@ -24,7 +24,7 @@ case "$1" in
               invoke-rc.d shinken-poller stop) ||
               return 0
         else
-            (invoke-rc.d shinken-poller status && 
+            (/etc/init.d/shinken-poller status && 
               /etc/init.d/shinken-poller stop) ||
               return 0
         fi
