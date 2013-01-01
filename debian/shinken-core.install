@@ -43,6 +43,7 @@ etc/objects                                                                     
 
 debian/tmp/etc/init.d/shinken                                                                  /etc/init.d
 
+debian/tmp/usr/bin/shinken-skonf                                                               /usr/bin
 debian/tmp/usr/bin/shinken-admin                                                               /usr/bin
 
 libexec/*.sh                                                                                   /usr/lib/shinken/plugins
