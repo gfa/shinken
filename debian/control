@@ -127,7 +127,7 @@ Description: Flexible monitoring - Scheduler module
 #  {{{ WebUI module
 Package: shinken-webui
 Architecture: all
-Depends: python (>= 2.6.6-3~), libjs-mootools, shinken-core (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Depends: python (>= 2.6.6-3~), libjs-mootools, libjs-jquery, shinken-core (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Description: Flexible monitoring - WebUI module
  WebUI module for shinken monitoring
  Shinken is a new, Nagios compatible monitoring tool, written in Python. The
