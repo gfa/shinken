@@ -15,9 +15,10 @@ case "$1" in
     :
 
     ## Removes directory stat
-    dpkg-statoverride --remove /var/run/nagios
-    dpkg-statoverride --remove /var/log/nagios
-    dpkg-statoverride --remove /var/lib/nagios
+    # Or (|| echo) is here in case package mis-installed, then we'll have nothing to remove at all
+    dpkg-statoverride --remove /var/run/nagios || echo "/var/run/nagios seems not existant"
+    dpkg-statoverride --remove /var/log/nagios || echo "/var/log/nagios seems not existant"
+    dpkg-statoverride --remove /var/lib/nagios || echo "/var/lib/nagios seems not existant"
 
     ;;
   purge)
