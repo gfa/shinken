@@ -16,16 +16,18 @@ debian/tmp/usr/lib/python2.6/dist-packages/shinken/modules/named_pipe.py        
 debian/tmp/usr/lib/python2.6/dist-packages/shinken/modules/nsca.py                             /usr/lib/python2.6/dist-packages/shinken/modules/
 debian/tmp/usr/lib/python2.6/dist-packages/shinken/modules/pickle_retention_file_generic.py    /usr/lib/python2.6/dist-packages/shinken/modules/
 debian/tmp/usr/lib/python2.6/dist-packages/shinken/modules/cfg_password_ui_.py                 /usr/lib/python2.6/dist-packages/shinken/modules/
-debian/tmp/usr/lib/python2.6/dist-packages/shinken/modules/tsca.py                             /usr/lib/python2.6/dist-packages/shinken/modules/
+debian/tmp/usr/lib/python2.6/dist-packages/shinken/modules/tsca                                /usr/lib/python2.6/dist-packages/shinken/modules/
 
 debian/tmp/usr/lib/python2.6/dist-packages/shinken/modules/logstore_mongodb.py                 /usr/lib/python2.6/dist-packages/shinken/modules/
 debian/tmp/usr/lib/python2.6/dist-packages/shinken/modules/logstore_sqlite.py                  /usr/lib/python2.6/dist-packages/shinken/modules/
+
+debian/tmp/usr/lib/python2.6/dist-packages/shinken/modules/mongodb_generic.py                  /usr/lib/python2.6/dist-packages/shinken/modules/
 
 debian/tmp/usr/lib/python2.6/dist-packages/shinken/misc                                        /usr/lib/python2.6/dist-packages/shinken
 
 
 
-debian/tmp/usr/lib/python2.6/dist-packages/Shinken-0.8.egg-info                                /usr/lib/python2.6/dist-packages/
+debian/tmp/usr/lib/python2.6/dist-packages/Shinken-1.2.2.egg-info                              /usr/lib/python2.6/dist-packages/
 
 debian/tmp/usr/lib/shinken                                                                     /usr/lib/
 
