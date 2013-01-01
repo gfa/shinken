@@ -2,3 +2,4 @@
 0002-nagios-path-setup.patch
 0003-Use-nagios-user.patch
 0004-Fix-user-and-group.patch
+0005-wmi-Corrects-shebang-and-perms.patch

@@ -171,6 +171,9 @@ binary:
 	# creates empty var directory
 	mkdir -p --mode=750 debian/shinken-core/var/log/shinken
 	
+	# Fix libexec permissions
+	chmod 755 debian/shinken-core/usr/lib/shinken/plugins/getwmic.sh
+	
 	dh_python2 -p shinken-core
 	dh_python2 -p shinken-arbiter
 	dh_python2 -p shinken-broker
