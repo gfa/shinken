@@ -14,6 +14,8 @@ debian/tmp/usr/lib/python2.6/dist-packages/shinken/modules/npcdmod_broker.py    
 debian/tmp/usr/lib/python2.6/dist-packages/shinken/modules/graphite_broker.py                  /usr/lib/python2.6/dist-packages/shinken/modules/
 debian/tmp/usr/lib/python2.6/dist-packages/shinken/modules/simplelog_broker.py                 /usr/lib/python2.6/dist-packages/shinken/modules/
 debian/tmp/usr/lib/python2.6/dist-packages/shinken/modules/syslog_broker.py                    /usr/lib/python2.6/dist-packages/shinken/modules/
+debian/tmp/usr/lib/python2.6/dist-packages/shinken/modules/canopsis_broker.py                  /usr/lib/python2.6/dist-packages/shinken/modules/
+debian/tmp/usr/lib/python2.6/dist-packages/shinken/modules/dummy_broker.py                     /usr/lib/python2.6/dist-packages/shinken/modules/
 
 
 debian/tmp/usr/bin/shinken-broker                                                              /usr/bin

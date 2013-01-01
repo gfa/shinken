@@ -1,5 +1,8 @@
 debian/tmp/usr/lib/python2.6/dist-packages/shinken/daemons/reactionnerdaemon.py                /usr/lib/python2.6/dist-packages/shinken/daemons/
 
+debian/tmp/usr/lib/python2.6/dist-packages/shinken/modules/android_sms.py                      /usr/lib/python2.6/dist-packages/shinken/modules/
+
+
 debian/tmp/usr/bin/shinken-reactionner                                                         /usr/bin
 
 debian/tmp/etc/init.d/shinken-reactionner                                                      /etc/init.d/
