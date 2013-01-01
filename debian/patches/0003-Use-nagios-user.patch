@@ -1,16 +1,16 @@
 From: Arthur Gautier <aga@zenexity.com>
 Date: Tue, 28 Feb 2012 21:56:02 +0100
-Subject: [PATCH] Use nagios user
+Subject: Use nagios user
 
 ---
  bin/default/shinken.in |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/bin/default/shinken.in b/bin/default/shinken.in
-index 2441740..5254aa9 100644
+index f73ec13..6122f4e 100644
 --- a/bin/default/shinken.in
 +++ b/bin/default/shinken.in
-@@ -128,5 +128,5 @@ RECEIVERDEBUGFILE="$LOG/receiver-debug.log"
+@@ -143,5 +143,5 @@ SKONFDEBUGFILE="$LOG/skonf-debug.log"
  NICENESS=5
  
  # user/group for the var/run rights
@@ -18,4 +18,3 @@ index 2441740..5254aa9 100644
 -SHINKENGROUP=shinken
 +SHINKENUSER=nagios
 +SHINKENGROUP=nagios
--- 
