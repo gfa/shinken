@@ -62,6 +62,7 @@ case "$1" in
 
     ## Need init.d autostart 
     update-rc.d shinken defaults >/dev/null
+    update-rc.d shinken-skonf defaults >/dev/null
 
 ;;
   abort-upgrade)

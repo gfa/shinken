@@ -28,6 +28,7 @@ case "$1" in
 
     ## No need init.d autostart anymore
     update-rc.d shinken remove >/dev/null
+    update-rc.d shinken-skonf remove >/dev/null
 
     ## No need shinken user anymore
     userdel shinken >/dev/null 2>&1 || true
