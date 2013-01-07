@@ -42,6 +42,7 @@ debian/tmp/etc/shinken                                                          
 etc/objects                                                                                    /etc/shinken
 
 debian/tmp/etc/init.d/shinken                                                                  /etc/init.d
+debian/tmp/etc/init.d/shinken-skonf                                                            /etc/init.d
 
 debian/tmp/usr/bin/shinken-skonf                                                               /usr/bin
 debian/tmp/usr/bin/shinken-admin                                                               /usr/bin
