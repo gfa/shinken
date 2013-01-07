@@ -22,7 +22,7 @@ build:
 	dh_auto_configure
 	python setup.py build \
 	  --build-base debian/tmp/ \
-	  --build-purelib debian/tmp/usr/lib/python2.6/dist-packages/ 
+	  --build-purelib debian/tmp/usr/lib/python2.6/dist-packages/
 	dh_auto_test
 	# Build manpages
 	make -C doc/manpages/markdown
@@ -40,6 +40,8 @@ binary:
 	  --no-compile \
 	  --install-layout=deb \
 	  --install-purelib /usr/lib/python2.6/dist-packages/ \
+	  --owner nagios \
+	  --group nagios \
 	  --root $(CURDIR)/debian/tmp
 	
 	# Fix perms
