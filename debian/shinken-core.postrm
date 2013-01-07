@@ -18,6 +18,7 @@ case "$1" in
     # Or (|| echo) is here in case package mis-installed, then we'll have nothing to remove at all
     dpkg-statoverride --remove /var/run/nagios || echo "/var/run/nagios seems not existant"
     dpkg-statoverride --remove /var/log/nagios || echo "/var/log/nagios seems not existant"
+    dpkg-statoverride --remove /var/lib/nagios/skonf || echo "/var/lib/nagios/skonf seems not existant"
     dpkg-statoverride --remove /var/lib/nagios || echo "/var/lib/nagios seems not existant"
 
     ;;
@@ -30,11 +31,11 @@ case "$1" in
     update-rc.d shinken remove >/dev/null
     update-rc.d shinken-skonf remove >/dev/null
 
-    ## No need shinken user anymore
-    userdel shinken >/dev/null 2>&1 || true
+    ## No need nagios user anymore
+    userdel nagios >/dev/null 2>&1 || true
 
-    ## No need shinken group anymore
-    groupdel shinken >/dev/null 2>&1 || true
+    ## No need nagios group anymore
+    groupdel nagios >/dev/null 2>&1 || true
 
     ;;
   disappear)

@@ -27,12 +27,13 @@ case "$1" in
 
     ## Ensure /var/lib/nagios is ready
     mkdir -p /var/lib/nagios
+    mkdir -p /var/lib/nagios/skonf
 
-    ## Adds shinken user
+    ## Adds nagios user
     chown nagios $TMP 2>/dev/null ||
       adduser --ingroup nagios --no-create-home --system --home /var/lib/nagios nagios
 
-    ## need to have shinken in the right group, but old revs do it wrong..$
+    ## need to have nagios in the right group, but old revs do it wrong..$
     if [ "$(id -gn nagios)" != "nagios" ]; then
         usermod -g nagios nagios
     fi
@@ -59,6 +60,8 @@ case "$1" in
     dpkg-statoverride --update --add nagios nagios 02750 /var/log/nagios/ >/dev/null 2>&1 || true
     dpkg-statoverride --remove /var/lib/nagios/ >/dev/null 2>&1 || true
     dpkg-statoverride --update --add nagios nagios 02750 /var/lib/nagios/ >/dev/null 2>&1 || true
+    dpkg-statoverride --remove /var/lib/nagios/skonf >/dev/null 2>&1 || true
+    dpkg-statoverride --update --add nagios nagios 02750 /var/lib/nagios/skonf >/dev/null 2>&1 || true
 
     ## Need init.d autostart 
     update-rc.d shinken defaults >/dev/null
