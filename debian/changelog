@@ -1,3 +1,9 @@
+shinken (1.2.2-1~0prerelease4) unstable; urgency=low
+
+  * Fix skonf config
+
+ -- Arthur Gautier <superbaloo+debian@superbaloo.net>  Mon, 07 Jan 2013 23:23:52 +0100
+
 shinken (1.2.2-1~0prerelease3) unstable; urgency=low
 
   * Adds skonf init.d
