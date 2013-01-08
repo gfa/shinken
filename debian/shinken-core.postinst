@@ -66,6 +66,8 @@ case "$1" in
     ## Need init.d autostart 
     update-rc.d shinken defaults >/dev/null
     update-rc.d shinken-skonf defaults >/dev/null
+    # no start for shinken itself, it's a dummy starter
+    invoke-rc.d shinken-skonf start || echo "skonf failed to stard, maybe disabled"
 
 ;;
   abort-upgrade)

@@ -19,6 +19,7 @@ case "$1" in
 
     ## Ensure shinken starts automatically
     update-rc.d shinken-poller defaults >/dev/null
+    invoke-rc.d shinken-poller start || echo "poller failed to stard, maybe disabled"
 
     ;;
   abort-upgrade)

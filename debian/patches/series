@@ -6,3 +6,4 @@
 0006-Remove-broken-code-from-webui.patch
 0007-Fix-log-directories.patch
 0008-Fix-skonf-default-conf.patch
+0009-Do-not-start-shinken-by-default.patch

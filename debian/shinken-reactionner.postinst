@@ -19,6 +19,7 @@ case "$1" in
 
     ## Ensure shinken starts automatically
     update-rc.d shinken-reactionner defaults >/dev/null
+    invoke-rc.d shinken-reactionner start || echo "reactionner failed to stard, maybe disabled"
 
     ;;
   abort-upgrade)

@@ -20,6 +20,8 @@ case "$1" in
     ## Ensure shinken starts automatically
     update-rc.d shinken-arbiter defaults >/dev/null
 
+    invoke-rc.d shinken-arbiter start || echo "arbiter failed to stard, maybe disabled"
+
     ;;
   abort-upgrade)
     # Back out of an attempt to upgrade this package FROM THIS VERSION
