@@ -7,3 +7,4 @@
 0007-Fix-log-directories.patch
 0008-Fix-skonf-default-conf.patch
 0009-Do-not-start-shinken-by-default.patch
+0010-No-need-for-arbiter-to-log-into-workdir.patch
