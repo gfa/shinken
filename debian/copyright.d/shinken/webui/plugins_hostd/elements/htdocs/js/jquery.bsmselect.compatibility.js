@@ -1,0 +1,1 @@
+../../../../plugins_skonf/elements/htdocs/js/jquery.bsmselect.compatibility.js
