@@ -1,3 +1,9 @@
+shinken (1.2.2-1~0prerelease5)  unstable; urgency=low
+
+  * Make shinken start automatically
+
+ -- Arthur Gautier <superbaloo+debian@superbaloo.net>  Tue, 08 Jan 2013 14:09:57 +0100
+
 shinken (1.2.2-1~0prerelease4) unstable; urgency=low
 
   * Fix skonf config
