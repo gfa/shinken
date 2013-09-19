@@ -1,0 +1,51 @@
+From: Arthur Gautier <superbaloo@superbaloo.net>
+Date: Tue, 1 Jan 2013 20:34:02 +0100
+Subject: Remove broken code from webui
+
+---
+ shinken/webui/plugins/eue/test.py |   35 -----------------------------------
+ 1 file changed, 35 deletions(-)
+ delete mode 100644 shinken/webui/plugins/eue/test.py
+
+diff --git a/shinken/webui/plugins/eue/test.py b/shinken/webui/plugins/eue/test.py
+deleted file mode 100644
+index 98b3520..0000000
+--- a/shinken/webui/plugins/eue/test.py
++++ /dev/null
+@@ -1,35 +0,0 @@
+-from pymongo.connection import Connection
+-
+-id="GLPI"
+-records = []
+-con = Connection('localhost')
+-db = con.shinken
+-if not db:
+-    message = "Error : Unable to connect to mongo database"
+-    return {'app': app, 'eue_data': {}, 'message': message }
+-
+-parts = eueid.split(".")
+-parts.pop(0)
+-id =  ".".join(parts)
+-
+-records=[]
+-for feature in db.eue.find({'key': { '$regex': id } }).sort("start_time",1).limit(100):
+-    date = feature["start_time"]
+-    failed = 0
+-    succeed = 0
+-    total = 0
+-    for scenario,scenario_data in feature["scenarios"].items():
+-        if scenario_data["status"] == 0:
+-            succeed += 1
+-        else
+-            failed += 1
+-
+-    total = succeed + failed
+-    records.append({
+-        "date" : int(date),
+-        "succeed" : succeed,
+-        "failed" : failed,
+-        "total" : total
+-    })
+-
+-print records
+\ No newline at end of file

@@ -19,6 +19,7 @@ case "$1" in
 
     ## Ensure shinken starts automatically
     update-rc.d shinken-receiver defaults >/dev/null
+    invoke-rc.d shinken-receiver start || echo "receiver failed to stard, maybe disabled"
 
     ;;
   abort-upgrade)

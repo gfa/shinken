@@ -19,6 +19,7 @@ case "$1" in
 
     ## Ensure shinken starts automatically
     update-rc.d shinken-scheduler defaults >/dev/null
+    invoke-rc.d shinken-scheduler start || echo "scheduler failed to stard, maybe disabled"
 
     ;;
   abort-upgrade)

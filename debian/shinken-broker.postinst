@@ -19,6 +19,7 @@ case "$1" in
 
     ## Ensure shinken starts automatically
     update-rc.d shinken-broker defaults >/dev/null
+    invoke-rc.d shinken-broker start || echo "broker failed to stard, maybe disabled"
 
     ;;
   abort-upgrade)

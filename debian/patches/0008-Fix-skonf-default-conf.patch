@@ -1,0 +1,29 @@
+From: Arthur Gautier <superbaloo@superbaloo.net>
+Date: Mon, 7 Jan 2013 22:20:43 +0100
+Subject: Fix skonf default conf
+
+---
+ etc/skonf.cfg |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/etc/skonf.cfg b/etc/skonf.cfg
+index 6afb1ac..4ad6bee 100644
+--- a/etc/skonf.cfg
++++ b/etc/skonf.cfg
+@@ -1,6 +1,6 @@
+ 
+ # Log file of the discovery command
+-log_file=/tmp/skonf.log
++log_file=/var/log/shinken/skonf.log
+ 
+ 
+ # Configuration files with common discovery objects
+@@ -45,7 +45,7 @@ strip_idname_fqdn=1
+ runners_timeout=3600
+ 
+ # Where we will dump all templates, pictures, from packs
+-share_dir=/var/lib/shinken/share
++share_dir=/var/lib/nagios/skonf
+ 
+ # Where in your configuration you have your "packs". By default in etc/packs
+ packs_home=/etc/shinken/packs

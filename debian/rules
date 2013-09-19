@@ -2,13 +2,117 @@
 # -*- makefile -*-
 
 # Uncomment this to turn on verbose mode.
-#export DH_VERBOSE=1
+export DH_VERBOSE=1
 
 # This has to be exported to make some magic below work.
 export DH_OPTIONS
 
 %:
 	dh $@ --with python2
+
+copyright:
+	@echo "Format: http://dep.debian.net/deps/dep5\nUpstream-Name: shinken\nSource: http://www.shinken-monitoring.org/\n"
+	
+	@(cd debian/copyright.d; find -L -type f -name authors -printf '%h\n' | sed 's#^./##' | while read path; do \
+		echo "Files: $$path"; \
+		echo "Copyright: $$(head -1 $$path/authors)"; \
+		sed -e '1d' -e 's/^/           /' $$path/authors; \
+		license=$$(cat < $$path/license) ;\
+		echo "License: $$license" ;\
+		case $$license in \
+			Apache | Apache-2.0) \
+				tail -n 5 /usr/share/common-licenses/Apache-2.0 | sed 's/^   / /'; \
+				echo " ."; \
+				echo " On Debian systems, the full text of the Apache 2.0 License can be found"; \
+				echo " in the file \`/usr/share/common-licenses/Apache-2.0'."; \
+				;; \
+			MPL-2.0) \
+				echo ' This Source Code Form is subject to the terms of the Mozilla Public'; \
+				echo ' License, v. 2.0. If a copy of the MPL was not distributed with this'; \
+				echo ' file, You can obtain one at http://mozilla.org/MPL/2.0/.'; \
+				;; \
+			LGPL-3) \
+				echo " On Debian systems, the full text of the LGPL-3 License can be found"; \
+				echo " in the file \`/usr/share/common-licenses/LGPL-3'."; \
+				;; \
+			"CCAttribution-ShareAlike http://creativecommons.org/licenses/by-sa/2.5/br/deed.en_US") \
+				echo ' This Source Code Form is subject to the terms of the Creative Commons'; \
+				echo ' License, v. 2.0. If a copy of the CC was not distributed with this'; \
+				echo ' file, You can obtain one at http://creativecommons.org/licenses/by-sa/2.5/br/deed.en_US'; \
+				;; \
+			MIT) \
+				echo ' Permission is hereby granted, free of charge, to any person obtaining'; \
+				echo ' a copy of this software and associated documentation files (the'; \
+				echo ' "Software"), to deal in the Software without restriction, including'; \
+				echo ' without limitation the rights to use, copy, modify, merge, publish,'; \
+				echo ' distribute, sublicense, and/or sell copies of the Software, and to'; \
+				echo ' permit persons to whom the Software is furnished to do so, subject to'; \
+				echo ' the following conditions:'; \
+				echo ' .'; \
+				echo ' The above copyright notice and this permission notice shall be'; \
+				echo ' included in all copies or substantial portions of the Software.'; \
+				echo ' .'; \
+				echo ' THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,'; \
+				echo ' EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF'; \
+				echo ' MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND'; \
+				echo ' NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE'; \
+				echo ' LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION'; \
+				echo ' OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION'; \
+				echo ' WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.'; \
+				;; \
+			BSD-3-clause) \
+				echo ' Copyright (c) The Regents of the University of California.'; \
+				echo ' All rights reserved.'; \
+				echo ' .'; \
+				echo ' Redistribution and use in source and binary forms, with or without'; \
+				echo ' modification, are permitted provided that the following conditions'; \
+				echo ' are met:'; \
+				echo ' 1. Redistributions of source code must retain the above copyright'; \
+				echo '    notice, this list of conditions and the following disclaimer.'; \
+				echo ' 2. Redistributions in binary form must reproduce the above copyright'; \
+				echo '    notice, this list of conditions and the following disclaimer in the'; \
+				echo '    documentation and/or other materials provided with the distribution.'; \
+				echo ' 3. Neither the name of the University nor the names of its contributors'; \
+				echo '    may be used to endorse or promote products derived from this software'; \
+				echo '    without specific prior written permission.'; \
+				echo ' .'; \
+				echo ' THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND'; \
+				echo ' ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE'; \
+				echo ' IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE'; \
+				echo ' ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE'; \
+				echo ' FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL'; \
+				echo ' DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS'; \
+				echo ' OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)'; \
+				echo ' HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT'; \
+				echo ' LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY'; \
+				echo ' OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF'; \
+				echo ' SUCH DAMAGE.'; \
+				;; \
+			GNU-AGPL) \
+				echo ' Shinken is free software: you can redistribute it and/or modify'; \
+				echo ' it under the terms of the GNU Affero General Public License as published by'; \
+				echo ' the Free Software Foundation, either version 3 of the License, or'; \
+				echo ' (at your option) any later version.'; \
+				echo ' .'; \
+				echo ' Shinken is distributed in the hope that it will be useful,'; \
+				echo ' but WITHOUT ANY WARRANTY; without even the implied warranty of'; \
+				echo ' MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the'; \
+				echo ' GNU Affero General Public License for more details.'; \
+				echo ' .'; \
+				echo ' You should have received a copy of the GNU Affero General Public License'; \
+				echo ' along with Shinken.  If not, see <http://www.gnu.org/licenses/>.'; \
+				echo ' .'; \
+				echo ' Please see the complete text of the GNU Affero General Public License'; \
+				echo ' along with this program. If not, see "http://www.gnu.org/licenses/agpl.html".'; \
+				;; \
+			*) \
+				echo UNSUPPORTED; \
+				echo $$license; \
+				;; \
+		esac; \
+		echo ""; \
+		echo ""; \
+	done)
 
 clean:
 	dh clean --with python2,quilt
@@ -22,7 +126,7 @@ build:
 	dh_auto_configure
 	python setup.py build \
 	  --build-base debian/tmp/ \
-	  --build-purelib debian/tmp/usr/lib/python2.6/dist-packages/ 
+	  --build-purelib debian/tmp/usr/lib/python2.7/dist-packages/
 	dh_auto_test
 	# Build manpages
 	make -C doc/manpages/markdown
@@ -30,16 +134,6 @@ build:
 	# remove useless files
 	rm -f shinken/webui/htdocs/images/icons/.DS_Store
 	
-	# Fix perms
-	chmod 644 shinken/webui/htdocs/images/icons/alert.png \
-	  shinken/webui/htdocs/images/icons/checkmark.png \
-	  shinken/webui/htdocs/images/icons/warning.png \
-	  shinken/webui/plugins/eltdetail/htdocs/css/eltdetail2.css \
-	  shinken/webui/plugins/eltdetail/htdocs/js/domtab.js \
-	  shinken/webui/plugins/system/htdocs/css/system.css \
-	  shinken/webui/htdocs/images/slider.png \
-	  shinken/webui/plugins/system/htdocs/css/log.css \
-	  shinken/webui/htdocs/images/icons/gear_pointer_down.png
 
 binary: 
 	dh_testroot
@@ -49,8 +143,100 @@ binary:
 	python setup.py install \
 	  --no-compile \
 	  --install-layout=deb \
-	  --install-purelib /usr/lib/python2.6/dist-packages/ \
+	  --install-purelib /usr/lib/python2.7/dist-packages/ \
+	  --owner nagios \
+	  --group nagios \
 	  --root $(CURDIR)/debian/tmp
+	
+	# Fix perms
+	chmod 644 \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/css/bootstrap.css \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/css/bootstrap.min.css \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/css/custom/badger.css \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/css/custom/layout.css \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/css/docs.css \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/css/elements/jquery.meow.css \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/css/font-awesome-ie7.css \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/css/font-awesome.css \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/font/fontawesome-webfont.eot \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/font/fontawesome-webfont.svg \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/font/fontawesome-webfont.ttf \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/font/fontawesome-webfont.woff \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/ico/bootstrap-apple-114x114.png \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/ico/bootstrap-apple-57x57.png \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/ico/bootstrap-apple-72x72.png \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/ico/favicon.ico \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/images/icons/alert.png \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/images/icons/checkmark.png \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/images/icons/gear_pointer_down.png \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/images/icons/warning.png \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/images/slider.png \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/img/icons/atwork.png \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/img/icons/icon-home.png \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/img/icons/icon-impact.png \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/img/icons/icon-logout.png \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/img/icons/icon-plus-dash.png \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/img/icons/icon-settings.png \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/img/icons/star.png \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/img/icons/state_ack.png \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/img/icons/state_critical.png \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/img/icons/state_down.png \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/img/icons/state_flapping.png \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/img/icons/state_ok.png \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/img/icons/state_unknown.png \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/img/icons/state_unreachable.png \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/img/icons/state_up.png \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/img/icons/state_warning.png \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/img/logo.png \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/img/nyan-cat.gif \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/js/README.md \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/js/application.js \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/js/bootstrap-alert.js \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/js/bootstrap-carousel.js \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/js/bootstrap-scrollspy.js \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/js/bootstrap-typeahead.js \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/js/bootstrap.js \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/js/bootstrap.min.js \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/js/google-code-prettify/prettify.css \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/js/google-code-prettify/prettify.js \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/js/jquery.js \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/js/jquery.meow.js \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/js/shinken-greeting.js \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/htdocs/js/shinkenui.js \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/plugins/dashboard/htdocs/css/dashboard.css \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/plugins/dashboard/htdocs/css/fullscreen-widget.css \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/plugins/dashboard/htdocs/css/fullscreen.css \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/plugins/dashboard/htdocs/css/shinken-currently.css \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/plugins/dashboard/htdocs/css/widget.css \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/plugins/dashboard/htdocs/js/jquery.jclock.js \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/plugins/dashboard/views/currently.tpl \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/plugins/dashboard/views/dashboard.tpl \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/plugins/dashboard/views/fullscreen.tpl \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/plugins/eltdetail/htdocs/css/eltdetail.css \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/plugins/eltdetail/htdocs/js/domtab.js \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/plugins/eltdetail/views/eltdetail.tpl \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/plugins/impacts/htdocs/css/impacts.css \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/plugins/impacts/views/impacts.tpl \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/plugins/login/htdocs/css/login.css \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/plugins/login/views/login.tpl \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/plugins/problems/views/problems.tpl \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/plugins/problems/views/widget_last_problems.tpl \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/plugins/problems/views/widget_problems.tpl \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/plugins/system/htdocs/css/log.css \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/plugins/system/htdocs/css/system.css \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/plugins/system/views/log.tpl \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/plugins/system/views/system.tpl \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/plugins/system/views/system_widget.tpl \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/plugins_hostd/login/htdocs/css/login.css \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/plugins_hostd/login/htdocs/js/jQuery.dPassword.js \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/plugins_skonf/login/htdocs/css/login.css \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/views/footer_element.tpl \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/views/header_element.tpl \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/views/layout.tpl \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/views/navigation_element.tpl \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/views/pagination_element.tpl \
+	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/views/widget.tpl
+	
 	
 	# Fix debian paths
 	sed -i -r "s#$(CURDIR)/debian/tmp##" \
@@ -69,7 +255,8 @@ binary:
 	  debian/tmp/etc/init.d/shinken-poller \
 	  debian/tmp/etc/init.d/shinken-receiver \
 	  debian/tmp/etc/init.d/shinken-reactionner \
-	  debian/tmp/etc/init.d/shinken-scheduler
+	  debian/tmp/etc/init.d/shinken-scheduler \
+	  debian/tmp/etc/init.d/shinken-skonf
 	
 	# Fix init.d-script-does-not-implement-required-option
 	sed -i -r 's/^(.*)\|restart\|(.*)\)([:blank:]*)/\1|restart|force-reload|\2)\3/' \
@@ -81,18 +268,18 @@ binary:
 	     debian/tmp/etc/init.d/shinken-poller \
 	     debian/tmp/etc/init.d/shinken-receiver \
 	     debian/tmp/etc/init.d/shinken-reactionner \
-	     debian/tmp/etc/init.d/shinken-scheduler
+	     debian/tmp/etc/init.d/shinken-scheduler \
+	     debian/tmp/etc/init.d/shinken-skonf
 	
 	# Split in subpackages
 	dh_install
 	
 	# creates empty var directory
 	mkdir -p --mode=750 debian/shinken-core/var/log/shinken
+	mkdir -p --mode=750 debian/shinken-core/var/log/shinken/archives
 	
-		# Avoid extra-license-file
-	rm debian/shinken-webui/usr/lib/python2.6/dist-packages/shinken/webui/htdocs/fonts/LICENSE
-	# Avoid executable-not-elf-or-script
-	chmod a-x debian/shinken-webui/usr/lib/python2.6/dist-packages/shinken/webui/plugins/eltdetail/htdocs/js/domtab.js
+	# Fix libexec permissions
+	#chmod 755 debian/shinken-core/usr/lib/shinken/plugins/getwmic.sh
 	
 	dh_python2 -p shinken-core
 	dh_python2 -p shinken-arbiter

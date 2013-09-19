@@ -1,4 +1,4 @@
-#! /bin/sh
+#!/bin/sh
 # prerm script for shinken-arbiter
 #
 # see: dh_installdeb(1)
