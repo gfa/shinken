@@ -1,9 +1,10 @@
-#!/bin/bash 
-#set -x 
-#Copyright (C) 2009-2012 :
+#!/bin/bash
+#set -x
+#Copyright (C) 2009-2012:
 #    Gabes Jean, naparuba@gmail.com
 #    Gerhard Lausser, Gerhard.Lausser@consol.de
 #    David GUENAULT, dguenault@monitoring-fr.org
+#    Romain FORLOT, rforlot@yahoo.com
 #
 #This file is part of Shinken.
 #
@@ -21,73 +22,72 @@
 #along with Shinken.  If not, see <http://www.gnu.org/licenses/>.
 
 
-#####################
-### ENVIRONNEMENT ###
-#####################
+#set -x
+
+
+
+# ENVIRONNEMENT
+
 
 export myscripts=$(readlink -f $(dirname $0))
 src=$myscripts
 . $myscripts/install.d/shinken.conf
-if [ -f $TMP/shinken.install.log ]
-then
-    rm -f $TMP/shinken.install.log    
-fi 
+
 
 function remove(){
     cadre "Removing shinken" green
     skill
-    
+
+    manageparameters "quiet"
+
     if [ -d "$TARGET" ]
-    then 
+    then
         cecho " > Removing $TARGET" green
         rm -Rf $TARGET
     fi
-    if [ -h "/etc/default/shinken" ]
-    then 
-        cecho " > Removing defaults" green
-        rm -Rf /etc/default/shinken 
+
+
+    if [ -d "$ETC" ]
+    then
+        cecho " > Removing $ETC" green
+        rm -Rf $ETC
     fi
-    if [ -f "/etc/init.d/shinken" ]
+
+    if [ -h "/etc/default/shinken" ]
+    then
+        cecho " > Removing defaults" green
+        rm -Rf /etc/default/shinken
+    fi
+    if [ -f "/etc/init.d/shinken" ] || [ -f ${SYSTEMDPATH}lib/systemd/system/shinken-arbiter.service ]
     then
         cecho " > Removing startup scripts" green
-        case $CODE in
-            REDHAT)
-                chkconfig shinken off
-                chkconfig --del shinken
+        case $INIT in
+            init)
+                disable_service shinken
+                rm -f /etc/init.d/shinken* >> ${LOGFILE} 2>&1
                 ;;
-            DEBIAN)
-                update-rc.d -f shinken remove >> $TMP/shinken.install.log 2>&1 
+            systemd)
+                systemctl disable $SYSTEMDSERVICES >> ${LOGFILE} 2>&1
+                rm -f ${SYSTEMDPATH}lib/systemd/system/shinken* >> ${LOGFILE} 2>&1
+                systemctl --system daemon-reload
                 ;;
-            esac    
+        esac
     fi
-    rm -f /etc/init.d/shinken*
 
     if [ -d "$PNPPREFIX" ]
     then
         doremove="n"
-        cread " > found a pnp4nagios installation : do you want to remove it ? (y|N) =>  " yellow "n" "y n" 
+        cread " > found a pnp4nagios installation: do you want to remove it? (y|N) =>  " yellow "n" "y n"
         if [ "$readvalue" == "y" ]
         then
             cecho " > Removing pnp4nagios" green
             rm -Rf $PNPPREFIX
-            case $CODE in
-                    REDHAT)
-                            /etc/init.d/npcd stop >> $TMP/shinken.install.log 2>&1
-                            chkconfig npcd off >> $TMP/shinken.install.log 2>&1
-                            chkconfig --del npcd  >> $TMP/shinken.install.log 2>&1
-                            rm -f /etc/init.d/npcd >> $TMP/shinken.install.log 2>&1
-                            rm -f /etc/httpd/conf.d/pnp4nagios.conf >> $TMP/shinken.install.log 2>&1
-                            /etc/init.d/httpd restart >> $TMP/shinken.install.log 2>&1
-                            ;;
-                    DEBIAN)
-                            /etc/init.d/npcd stop >> $TMP/shinken.install.log 2>&1
-                            update-rc.d -f npcd remove >> $TMP/shinken.install.log 2>&1 
-                            rm -f /etc/init.d/npcd >> $TMP/shinken.install.log 2>&1
-                            rm -f /etc/apache2/conf.d/pnp4nagios.conf >> $TMP/shinken.install.log 2>&1
-                            /etc/init.d/apache2 restart >> $TMP/shinken.install.log 2>&1
-                            ;;
-            esac   
-        else 
+            manage_service npcd stop >> ${LOGFILE} 2>&1
+            disable_service npcd
+            rm -f /etc/init.d/npcd >> ${LOGFILE} 2>&1
+            rm -f /etc/${WEBSERVER}/conf.d/pnp4nagios.conf >> ${LOGFILE} 2>&1
+            manage_service ${WEBSERVER} restart >> ${LOGFILE} 2>&1
+        else
             cecho " > Aborting uninstallation of pnp4nagios" yellow
         fi
     fi
@@ -95,7 +95,7 @@ function remove(){
     if [ -d "$MKPREFIX" ]
     then
         doremove="n"
-        cread " > found a check_mk multisite installation : do you want to remove it ? (y|N) =>  " yellow "n" "y n" 
+        cread " > found a check_mk multisite installation: do you want to remove it? (y|N) =>  " yellow "n" "y n"
         if [ "$readvalue" == "y" ]
         then
             cecho " > Removing check_mk multisite" green
@@ -106,18 +106,10 @@ function remove(){
             fi
             cecho " > Remove sudoers configuration" green
             sed -i "/^# Needed for  WATO/,+2d" /etc/sudoers
-            cecho " > Remove apache configuration" green
-            case $CODE in
-                    REDHAT)
-                            rm -f /etc/httpd/conf.d/zzz_check_mk.conf >> $TMP/shinken.install.log 2>&1
-                            /etc/init.d/httpd restart >> $TMP/shinken.install.log 2>&1
-                            ;;
-                    DEBIAN)
-                            rm -f /etc/apache2/conf.d/zzz_check_mk.conf >> $TMP/shinken.install.log 2>&1
-                            /etc/init.d/apache2 restart >> $TMP/shinken.install.log 2>&1
-                            ;;
-            esac   
-        else 
+            cecho " > Remove webserver configuration" green
+            rm -f /etc/${WEBSERVER}/conf.d/zzz_check_mk.conf >> ${LOGFILE} 2>&1
+            manage_service ${WEBSERVER} restart
+        else
             cecho " > Aborting uninstallation of check_mk multisite" yellow
         fi
     fi
@@ -125,27 +117,70 @@ function remove(){
     if [ -d "$NAGVISPREFIX" ]
     then
         doremove="n"
-        cread " > found a nagvis installation : do you want to remove it ? (y|N) =>  " yellow "n" "y n" 
+        cread " > found a nagvis installation: do you want to remove it? (y|N) =>  " yellow "n" "y n"
         if [ "$readvalue" == "y" ]
         then
             cecho " > Removing nagvis" green
             rm -Rf $NAGVISPREFIX
-            case $CODE in
-                    REDHAT)
-                            rm -f /etc/httpd/conf.d/nagvis.conf >> $TMP/shinken.install.log 2>&1
-                            /etc/init.d/httpd restart >> $TMP/shinken.install.log 2>&1
-                            ;;
-                    DEBIAN)
-                            rm -f /etc/apache2/conf.d/nagvis.conf >> $TMP/shinken.install.log 2>&1
-                            /etc/init.d/apache2 restart >> $TMP/shinken.install.log 2>&1
-                            ;;
-            esac   
-        else 
+            rm -f /etc/${WEBSERVER}/conf.d/nagvis.conf >> ${LOGFILE} 2>&1
+            manage_service ${WEBSERVER} restart
+        else
             cecho " > Aborting uninstallation of nagvis" yellow
         fi
     fi
 
     return 0
+}
+
+function disable_service(){
+    service=$1
+    case $CODE in
+    REDHAT)
+        chkconfig $service off >> ${LOGFILE} 2>&1
+        chkconfig --del $service >> ${LOGFILE} 2>&1
+        ;;
+    Fedora)
+        systemctl disable ${service}.service >> ${LOGFILE} 2>&1
+        systemctl --system daemon-reload >> ${LOGFILE} 2>&1
+        ;;
+    DEBIAN)
+        update-rc.d -f $service remove >> ${LOGFILE} 2>&1
+        ;;
+    esac
+}
+
+function enable_service(){
+    service=$1
+    case $CODE in
+    REDHAT)
+        chkconfig --add $service >> ${LOGFILE} 2>&1
+        chkconfig $service on >> ${LOGFILE} 2>&1
+        ;;
+    Fedora)
+        systemctl --system daemon-reload >> ${LOGFILE} 2>&1
+        systemctl enable ${service}.service >> ${LOGFILE} 2>&1
+        ;;
+    DEBIAN)
+        update-rc.d $service defaults >> ${LOGFILE} 2>&1
+        ;;
+    esac
+}
+
+function manage_service() {
+    service=$1
+    operation=$2
+
+    case $CODE in
+    REDHAT)
+        service $service $operation >> ${LOGFILE} 2>&1
+        ;;
+    Fedora)
+        systemctl $operation ${service}.service >> ${LOGFILE} 2>&1
+        ;;
+    DEBIAN)
+        /etc/init.d/${service} $operation >> ${LOGFILE} 2>&1
+        ;;
+    esac
 }
 
 function purgeSQLITE(){
@@ -155,7 +190,7 @@ function purgeSQLITE(){
         cecho " > Livestatus db not found " yellow
         exit 1
     fi
-    skill >> $TMP/shinken.install.log 2>&1 
+    skill >> ${LOGFILE} 2>&1
     cecho " > We keep $KEEPDAYSLOG days of logs" green
     sqlite3 $TARGET/var/livestatus.db "delete from logs where time < strftime('%s', 'now') - 3600*24*$KEEPDAYSLOG"
     cecho " > Vaccum the sqlite DB" green
@@ -163,10 +198,19 @@ function purgeSQLITE(){
 }
 
 function skill(){
-    /etc/init.d/shinken stop >> $TMP/shinken.install.log 2>&1 
+    cecho " > Stopping Shinken" green
+    case $INIT in
+        init)
+            /etc/init.d/shinken stop >> ${LOGFILE} 2>&1
+            ;;
+        systemd)
+            systemctl stop $SYSTEMDSERVICES >> ${LOGFILE} 2>&1
+            systemctl status $SYSTEMDSERVICES >> ${LOGFILE} 2>&1
+            ;;
+    esac
     pc=$(ps -aef | grep "$TARGET" | grep -v "grep" | wc -l )
     if [ $pc -ne 0 ]
-    then    
+    then
         OLDIFS=$IFS
         IFS=$'\n'
         for p in $(ps -aef | grep "$TARGET" | grep -v "grep" | awk '{print $2}')
@@ -181,12 +225,30 @@ function skill(){
     rm -Rf $TARGET/var/*.pid
 }
 
+function sstart() {
+    cecho " > Starting shinken" green
+    case $INIT in
+        init)
+            /etc/init.d/shinken start >> ${LOGFILE} 2>&1
+            ;;
+        systemd)
+            systemctl --system daemon-reload
+            systemctl start $SYSTEMDSERVICES >> ${LOGFILE} 2>&1
+            systemctl status $SYSTEMDSERVICES >> ${LOGFILE} 2>&1
+            ;;
+        *)
+            cecho " > Your init system aren't supported in shinken for now." red
+            exit 2
+            ;;
+    esac
+}
+
 
 function setdirectives(){
     directives=$1
     fic=$2
     mpath=$3
-    
+
     cecho "    > Going to $mpath" green
     cd $mpath
 
@@ -195,7 +257,7 @@ function setdirectives(){
         directive=$(echo $pair | awk -F= '{print $1}')
         value=$(echo $pair | awk -F= '{print $2}')
         cecho "       > Setting $directive to $value in $fic" green
-        sed -i 's#^\# \?'$directive'=\(.*\)$#'$directive'='$value'#g' $mpath/etc/$(basename $fic)
+        sed -i 's#^\# \?'$directive'=\(.*\)$#'$directive'='$value'#g' $ETC/$(basename $fic)
     done
 }
 
@@ -205,13 +267,13 @@ function setdirectives(){
 
 function create_user(){
     cadre "Creating user" green
-    if [ ! -z "$(cat /etc/passwd | grep $SKUSER)" ] 
+    if [ ! -z "$(cat /etc/passwd | grep $SKUSER)" ]
     then
-        cecho " > User $SKUSER already exists" yellow 
+        cecho " > User $SKUSER already exists" yellow
     else
-            useradd -s /bin/bash $SKUSER -m -d /home/$SKUSER 
+            useradd -r -s /bin/bash $SKUSER -m
     fi
-        usermod -G $SKGROUP $SKUSER 
+        usermod -G $SKGROUP $SKUSER
 }
 
 function check_exist(){
@@ -247,30 +309,39 @@ function shinken_exist(){
 
 function installpkg(){
     type=$1
-    package=$2
+    shift
+    package="$*"
 
     if [ "$type" == "python" ]
     then
-        easy_install $package >> $TMP/shinken.install.log 2>&1 
+        if [ "$CODE" = "REDHAT" -a $VERS -eq 5 ]
+        then
+            PYEI="easy_install-2.6"
+        else
+            PYEI="easy_install"
+        fi
+        $PYEI $package >> ${LOGFILE} 2>&1
         return $?
+    elif [ "$type" = "pkg" ]
+    then
+        case $CODE in
+            REDHAT|Fedora)
+                yum install -y $package >> ${LOGFILE} 2>&1
+                if [ $? -ne 0 ]
+                then
+                    return 2
+                fi
+                ;;
+            DEBIAN)
+                apt-get update >> ${LOGFILE} 2>&1
+                apt-get --allow-unauthenticated --force-yes install -y $package  >> ${LOGFILE} 2>&1
+                if [ $? -ne 0 ]
+                then
+                    return 2
+                fi
+                ;;
+        esac
     fi
-
-    case $CODE in 
-        REDHAT)
-            yum install -yq $package >> $TMP/shinken.install.log 2>&1 
-            if [ $? -ne 0 ]
-            then
-                return 2
-            fi
-            ;;
-        DEBIAN)
-            apt-get install -y $package  >> $TMP/shinken.install.log 2>&1 
-            if [ $? -ne 0 ]
-            then
-                return 2
-            fi
-            ;;
-    esac    
     return 0
 }
 
@@ -287,18 +358,18 @@ function debinstalled(){
 function prerequisites(){
     cadre "Checking prerequisites" green
     # common prereq
-    bins="wget sed awk grep python bash"
+    bins="wget sed gawk grep python bash sudo"
 
     for b in $bins
     do
-        rb=$(which $b >> $TMP/shinken.install.log 2>&1)
+        rb=$(which $b >> ${LOGFILE} 2>&1)
         if [ $? -eq 0 ]
         then
-            cecho " > Checking for $b : OK" green 
+            cecho " > Checking for $b: OK" green
         else
-            cecho " > Checking for $b : NOT FOUND" red
-            exit 2 
-        fi    
+            cecho " > Checking for $b: NOT FOUND. Installing it!" red
+            installpkg pkg $b
+        fi
     done
 
     # distro prereq
@@ -309,32 +380,41 @@ function prerequisites(){
                     PACKAGES=$YUMPKGS
                     QUERY="rpm -q "
                     cd $TMP
-                    $QUERY $EPELNAME >> $TMP/shinken.install.log 2>&1 
+                    $QUERY $EPELNAME >> ${LOGFILE} 2>&1
                     if [ $? -ne 0 ]
                     then
                         if [ $SKIPPREREQUISITES -eq 1 ]
                         then
-                            cecho " SKIPPREREQUISITES enabled : won't install $EPEL" red
+                            cecho " SKIPPREREQUISITES enabled: won't install $EPEL" red
                         else
                             cecho " > Installing $EPELPKG" yellow
-                            wget $WGETPROXY $EPEL  >> $TMP/shinken.install.log 2>&1  
+                            wget $WGETPROXY $EPEL  >> ${LOGFILE} 2>&1
                             if [ $? -ne 0 ]
                             then
-                                cecho " > Error while trying to download EPEL repositories" red 
+                                cecho " > Error while trying to download EPEL repositories" red
                                 exit 2
                             fi
-                            rpm -Uvh ./$EPELPKG >> $TMP/shinken.install.log 2>&1 
+                            rpm -Uvh ./$EPELPKG >> ${LOGFILE} 2>&1
+                            find /etc/pki/rpm-gpg -name "RPM-GPG-KEY-EPEl*" -exec rpm --import {} \;
                         fi
                     else
-                        cecho " > $EPELPKG already installed" green 
+                        cecho " > $EPELPKG already installed" green
                     fi
                     ;;
-#                6)
-#                    PACKAGES=$YUMPKGS
-#                    QUERY="rpm -q "
-#                    ;;
-                *)
+                *)                    
                     cecho " > Unsupported RedHat/CentOs version" red
+                    exit 2
+                    ;;
+            esac
+            ;;
+        Fedora)
+            case $VERS in
+                16|17)
+                    PACKAGES=$YUMPKGS
+                    QUERY="rpm -q "
+                    ;;
+                *)
+                    cecho " > Unsupported Fedora version" red
                     exit 2
                     ;;
             esac
@@ -342,39 +422,35 @@ function prerequisites(){
 
         DEBIAN)
             PACKAGES=$APTPKGS
-            apt-get update >> $TMP/shinken.install.log 2>&1
+            if [ $SKIPPREREQUISITES -ne 1 ]
+            then
+                apt-get update >> ${LOGFILE} 2>&1
+            fi
             QUERY="debinstalled "
             ;;
     esac
-    for p in $PACKAGES
-    do
-        $QUERY $p >> $TMP/shinken.install.log 2>&1 
+    if [ $SKIPPREREQUISITES -eq 1 ]
+    then
+        cecho " > SKIPPREQUISITES enabled: won't install $PACKAGES" red
+    else
+        cecho " > Installing $PACKAGES " yellow
+        installpkg pkg $PACKAGES
         if [ $? -ne 0 ]
         then
-            if [ $SKIPPREREQUISITES -eq 1 ]
-            then
-                cecho " > SKIPPREQUISITES enabled : won't install $p" red
-            else
-                cecho " > Installing $p " yellow
-                installpkg pkg $p 
-                if [ $? -ne 0 ]
-                then 
-                    cecho " > Error while trying to install $p" red 
-                    exit 2     
-                fi
-            fi
-        else
-            cecho " > Package $p already installed " green 
+            cecho " > Error while trying to install $PACKAGES" red
+            exit 2
         fi
-    done
+    fi
     # python prereq
+    export PY="python"
+    export PYEI="easy_install"
     if [ "$CODE" = "REDHAT" ]
     then
         case $VERS in
             5)
                 if [ $SKIPPREREQUISITES -eq 1 ]
                 then
-                    cecho " > SKIPPREQUISITES enabled : won't install $RHELSETUPTOOLS " red
+                    cecho " > SKIPPREQUISITES enabled: won't install $RHELSETUPTOOLS " red
                 else
                     # install setup tools for python 26
                     export PY="python26"
@@ -382,75 +458,76 @@ function prerequisites(){
                     if [ ! -d "setuptools-$SETUPTOOLSVERS" ]
                     then
                         cecho " > Downloading setuptools for python 2.6" green
-                        wget $WGETPROXY $RHELSETUPTOOLS >> $TMP/shinken.install.log 2>&1 
-                        tar zxvf setuptools-$SETUPTOOLSVERS.tar.gz >> $TMP/shinken.install.log 2>&1 
+                        wget $WGETPROXY $RHELSETUPTOOLS >> ${LOGFILE} 2>&1
+                        tar zxvf setuptools-$SETUPTOOLSVERS.tar.gz >> ${LOGFILE} 2>&1
                     fi
                     cecho " > Installing setuptools for python 2.6" green
-                    cd setuptools-$SETUPTOOLSVERS >> $TMP/shinken.install.log 2>&1 
-                    python26 setup.py install >> $TMP/shinken.install.log 2>&1 
+                    cd setuptools-$SETUPTOOLSVERS >> ${LOGFILE} 2>&1
+                    python26 setup.py install >> ${LOGFILE} 2>&1
                 fi
                 PYLIBS=$PYLIBSRHEL
                 ;;
             6)
-                export PY="python"
-                export PYEI="easy_install"
                 PYLIBS=$PYLIBSRHEL6
                 ;;
         esac
-        for p in $PYLIBS
-        do
-            module=$(echo $p | awk -F: '{print $1'})
-            import=$(echo $p | awk -F: '{print $2'})
-
-            $PY $myscripts/install.d/tools/checkmodule.py -m $import  >> $TMP/shinken.install.log 2>&1 
-            if [ $? -eq 2 ]
-            then
-                if [ $SKIPPREREQUISITES -eq 1 ]
-                then
-                    cecho " > SKIPPREQUISITES enabled : won't install $p " red
-                else
-                    cecho " > Module $module ($import) not found. Installing..." yellow
-                    $PYEI $module >> $TMP/shinken.install.log 2>&1
-                fi 
-            else
-                cecho " > Module $module found." green 
-            fi
-
-            
-        done
+    elif [ "$CODE" = "Fedora" ]
+    then
+        case $VERS in
+            16|17)
+                PYLIBS=$PYLIBS
+                ;;
+        esac
     elif [ "$CODE" == "DEBIAN" ]
-    then    
-        export PY="python"
-        export PYEI="easy_install"
+    then
         PYLIBS=$PYLIBSDEB
-        for p in $PYLIBS
-        do
-            module=$(echo $p | awk -F: '{print $1'})
-            import=$(echo $p | awk -F: '{print $2'})
-
-            $PY $myscripts/install.d/tools/checkmodule.py -m $import  >> $TMP/shinken.install.log 2>&1 
-            if [ $? -eq 2 ]
-            then
-                if [ $SKIPPREREQUISITES -eq 1 ]
-                then
-                    cecho " > SKIPPREQUISITES enabled : won't install $p " red
-                else
-                    cecho " > Module $module ($import) not found. Installing..." yellow
-                    $PYEI $module >> $TMP/shinken.install.log 2>&1 
-                fi
-            else
-                cecho " > Module $module found." green 
-            fi
-        done
     fi
-    
+
+    # this is a fix for MySQL-python complainig about outdated version of distribute
+    cecho " > Installing distribute" green
+    easy_install -U distribute >> ${LOGFILE} 2>&1
+
+    for p in $PYLIBS
+    do
+        module=$(echo $p | awk -F: '{print $1'})
+        import=$(echo $p | awk -F: '{print $2'})
+
+        $PY $myscripts/install.d/tools/checkmodule.py -m $import  >> ${LOGFILE} 2>&1
+        if [ $? -eq 2 ]
+        then
+            if [ $SKIPPREREQUISITES -eq 1 ]
+            then
+                cecho " > SKIPPREQUISITES enabled: won't install $p " red
+            else
+                cecho " > Module $module ($import) not found. Installing..." yellow
+                installpkg python $module >> ${LOGFILE} 2>&1
+                if [ $? -ne 0 ]
+                then
+                    cecho " > $type package $package doesn't installed properly. Run 'easy_install $package' manually" red
+                    cecho " > and try to figure out what's is going on."
+                fi
+            fi
+        else
+            cecho " > Module $module found." green
+        fi
+    done
+
+    if [ $MANAGEPYRO == 1 ]
+    then
+        cecho " > Installing managed python (experimental) " green
+        easy_install pip
+        yes | pip uninstall Pyro
+        yes | pip uninstall Pyro4
+        pyroset
+        $PYEI "$PYRO"
+    fi
 }
 
 function check_distro(){
     cadre "Verifying compatible distros" green
 
     if [ ! -e /usr/bin/lsb_release ]
-    then    
+    then
         cecho " > No compatible distribution found" red
         cecho " > maybe the lsb_release utility is not found" red
         cecho " > on redhat like distro you should try yum install redhat-lsb"
@@ -484,13 +561,13 @@ function check_distro(){
                     cecho " > Found $CODE ($DIST $VERS $ARCH)" green
                     versionok=1
                     return
-                fi        
+                fi
             fi
         fi
     done
 
     if [ $versionok -ne 1 ]
-    then    
+    then
         cecho " > $DIST $VERS is not supported" red
         exit 2
     fi
@@ -503,38 +580,149 @@ function get_from_git(){
     then
         rm -Rf shinken
     fi
-    env GIT_SSL_NO_VERIFY=true git clone $GIT >> $TMP/shinken.install.log 2>&1 
+    env GIT_SSL_NO_VERIFY=true git clone $GIT >> ${LOGFILE} 2>&1
     cd shinken
     cecho " > Switching to version $VERSION" green
-    git checkout $VERSION >> $TMP/shinken.install.log 2>&1 
+    git checkout $VERSION >> ${LOGFILE} 2>&1
     export src=$TMP/shinken
     # clean up .git folder
     rm -Rf .git
+}
+
+function register(){
+    cadre "API key registration" green
+
+    if [ -f $ETC/apikey ]
+    then
+        exist=$(cat $ETC/apikey)
+        if [ $? -ne 0 ]
+        then
+            exist=""
+        fi
+    else
+        exist=""
+    fi
+
+    if [ -z "$exist" ]
+    then
+        cecho " > Api key not found" yellow
+        cread " > Do you already have an api key? [y|n] " green "y" "y n"
+        if [ "$readvalue" == "Y" ] || [ "$readvalue" == "y" ]
+        then
+            creads " --> Please Provide your apikey" yellow
+            if [ ! -z "$readvalue" ]
+            then
+                cecho " --> apikey saved " green
+                echo "$readvalue" > $ETC/apikey
+            else
+                cecho "  --> api key must not be empty" red
+                register
+            fi
+            return 0
+        fi
+    else
+        cecho " > Found api key" green
+        exit 0
+    fi
+
+    cecho " > You must register on community.shinken-monitoring.org in order to use online pack management" yellow
+    cread " --> Do you want to register? [Y|n] " yellow "Y" "y n"
+    if [ "$readvalue" == "N" ] || [ "$readvalue" == "n" ]
+    then
+        cecho "  --> api key not configured. You will have to do it manualy. See: http://www.shinken-monitoring.org/wiki/packs/start" red
+        return 0
+    fi
+
+    creads " -->login: " yellow
+    login=$readvalue
+    creads " --> password: " yellow
+    pass1=$readvalue
+    creads " --> confirm password: " yellow
+    pass2=$readvalue
+    if [ "$pass1" != "$pass2" ]
+    then
+        cecho " ----> Password confirmation does not match!" red
+        register
+    else
+        pass=$pass1
+        if [ -z "$pass" ]
+        then
+            cecho " ----> Password must not be empty" red
+            register
+        fi
+    fi
+    creads " --> Email" yellow
+    email=$readvalue
+
+    cecho " > trying to register " yellow
+
+    result=$($TARGET/bin/shinken-packs -r -l $login -P $pass -e $email | grep "^OK")
+    if [ ! -z "$result" ]
+    then
+        creads " --> Registration success. Please look at your email and click in the link in it to validate your account (Hit ENTER when done)" green
+        cecho " ----> Getting key" green
+        apikey=$($TARGET/bin/shinken-packs -g -l $login -P $pass | grep "api key is" | awk '{print $5}')
+        if [ -z "$apikey" ]
+        then
+            cecho " ------> There was a problem getting your api key!" red
+            cecho " ------> Yous should register manualy at http://community.shinken-monitoring.org" red
+            return 1
+        else
+            cecho " ------> Registration success" green
+            echo $apikey > $ETC/apikey
+            apikey=$(cat $ETC/apikey)
+            cd $ETC
+            sed -i "s#api_key=.*#api_key="$apikey"#g" skonf.cfg
+            return 0
+        fi
+    else
+        cecho " --> Registration failed!" red
+        register
+    fi
+    return 0
 }
 
 function relocate(){
     cadre "Relocate source tree to $TARGET" green
     # relocate source tree
     cd $TARGET
-    
+
     # relocate macros
     for f in $(find $TARGET/install.d/tools/macros | grep "\.macro$")
     do
         cecho " > relocating macro $f" green
         sed -i "s#__PREFIX__#$TARGET#g" $f
+        sed -i "s#__ETC__#$ETC#g" $f
     done
 
     # relocate nagios plugin path
-    sed -i "s#/usr/lib/nagios/plugins#$TARGET/libexec#g" ./etc/resource.cfg
-    sed -i "s#/usr/local/shinken/libexec#$TARGET/libexec#g" ./etc/resource.cfg
+    cecho " > relocate nagios plugin path" green
+    sed -i "s#/usr/lib/nagios/plugins#$LIBEXEC#g" $ETC/resource.cfg
+    sed -i "s#/usr/local/shinken/libexec#$LIBEXEC#g" $ETC/resource.cfg
+
     # relocate default /usr/local/shinken path
-    for fic in $(find . | grep -v "shinken-install" | grep -v "\.pyc$" | xargs grep -snH "/usr/local/shinken" --color | cut -f1 -d' ' | awk -F : '{print $1}' | sort | uniq)
-    do 
-        cecho " > Processing $fic" green
-        cp "$fic" "$fic.orig" 
-        #sed -i 's#/opt/shinken#'$TARGET'#g' $fic 
-        sed -i 's#/usr/local/shinken#'$TARGET'#g' "$fic"
-    done
+    if [ "$TARGET" != "/usr/local/shinken" ]
+    then
+	    for fic in $(find . | grep -v "shinken-install" | grep -v "\.pyc$" | xargs grep -snH "/usr/local/shinken" --color | cut -f1 -d' ' | awk -F : '{print $1}' | sort | uniq)
+	    do
+	        cecho " > Processing $fic" green
+	        cp "$fic" "$fic.orig"
+	        sed -i 's#/usr/local/shinken#'$TARGET'#g' "$fic"
+	    done
+    fi
+
+    # do the same for etc dir if etc dir does not reside beside target
+    if [ "$TARGET/etc" != "$ETC" ]
+    then
+        cd $ETC
+        for fic in $(find . | grep -v "shinken-install" | grep -v "\.pyc$" | xargs grep -snH "/usr/local/shinken" --color | cut -f1 -d' ' | awk -F : '{print $1}' | sort | uniq)
+        do
+            cecho " > Processing $fic" green
+            cp "$fic" "$fic.orig"
+            sed -i 's#/usr/local/shinken#'$TARGET'#g' "$fic"
+        done
+        cd $TARGET
+    fi
 
     # when read hat 5 try to use python26
     if [ "$CODE" = "REDHAT" ]
@@ -542,7 +730,7 @@ function relocate(){
         if [ "$VERS" = "5" ]
         then
             cecho " > Translating python version to python26" green
-            for fic in $(find $TARGET | grep "\.py$") 
+            for fic in $(find $TARGET | grep "\.py$")
             do
                 sed -i "s#/usr/bin/env python#/usr/bin/python26#g" $fic
             done
@@ -557,75 +745,269 @@ function relocate(){
         fi
     fi
 
-    # set some directives 
+    # set some directives
     cadre "Set some configuration directives" green
-    directives="workdir=$TARGET/var user=$SKUSER group=$SKGROUP"
-    for fic in $(ls -1 etc/*.ini)
-    do 
+    directives="workdir=$TARGET/var user=$SKUSER shinken_user=$SKUSER group=$SKGROUP shinken_group=$SKGROUP"
+    for fic in $(ls -1 $ETC/*.ini $ETC/skonf.cfg)
+    do
         cecho " > Processing $fic" green;
         setdirectives "$directives" $fic $TARGET
-        #cp -f $fic $TARGET/etc/; 
+    done
+    directives="workdir=$TARGET/var shinken_user=$SKUSER shinken_group=$SKGROUP local_log=$TARGET/var/arbiter.log lock_file=$TARGET/var/arbiter.pid"
+    for fic in $(ls -1 $ETC/nagios*cfg)
+    do
+        cecho " > Processing $fic" green;
+        setdirectives "$directives" $fic $TARGET
     done
     # relocate default file
     cd $TARGET/bin/default
-    cat $TARGET/bin/default/shinken.in | sed  -e 's#LOG\=\(.*\)$#LOG='$TARGET'/var#g' -e 's#RUN\=\(.*\)$#RUN='$TARGET'/var#g' -e  's#ETC\=\(.*\)$#ETC='$TARGET'/etc#g' -e  's#VAR\=\(.*\)$#VAR='$TARGET'/var#g' -e  's#BIN\=\(.*\)$#BIN='$TARGET'/bin#g' > $TARGET/bin/default/shinken
+    cat $TARGET/bin/default/shinken.in | sed  -e 's#LOG\=\(.*\)$#LOG='$TARGET'/var#g' -e 's#RUN\=\(.*\)$#RUN='$TARGET'/var#g' -e  's#ETC\=\(.*\)$#ETC='$ETC'#g' -e  's#VAR\=\(.*\)$#VAR='$TARGET'/var#g' -e  's#BIN\=\(.*\)$#BIN='$TARGET'/bin#g' > $TARGET/bin/default/shinken
+    rm $TARGET/bin/default/shinken.in 
     # relocate init file
-    cd $TARGET/bin/init.d
-    mv shinken shinken.in
-    cat shinken.in | sed -e "s#\#export PYTHONPATH=.*#export PYTHONPATH="$TARGET"#g" > $TARGET/bin/init.d/shinken
+    sed -i -e "s#\#export PYTHONPATH=.*#export PYTHONPATH="$TARGET"#g" $TARGET/bin/init.d/shinken
+    # relocate skonf.cfg
+    cd $ETC
+    if [ $USEPROXY -eq 1 ]
+    then
+        sed -i "s#http_proxy=.*$#htt_proxy="$http_proxy"#g" skonf.cfg
+    fi
+    sed -i "s#/etc/shinken#"$ETC"#g" skonf.cfg
+    sed -i "s#/tmp#"$TMP"#g" skonf.cfg
+    sed -i "s#/var/lib/shinken/share#"$TARGET"/share#g" skonf.cfg
 }
 
 function fix(){
     cadre "Applying various fixes" green
-    chmod +x /etc/init.d/shinken
-    chmod +x /etc/default/shinken
+
+    # fix the htpasswd.users file path for WEBUI authentication
+    export PYTHONPATH=$TARGET
+    export PY="$(pythonver)"
+    result=$($PY $TARGET/install.d/tools/skonf.py -f $ETC/shinken-specific.cfg -a setparam -o module -r "module_name=Apache_passwd" -d "passwd" -v "$ETC/htpasswd.users")
+    cecho " > $result" green
+
+    cecho " > Make files permissions and owners good" green
+    [ -f /etc/init.d/shinken ] && chmod +x /etc/init.d/shinken
     chmod +x $TARGET/bin/init.d/shinken
     chown -R $SKUSER:$SKGROUP $TARGET
+    chown -R $SKUSER:$SKGROUP $ETC
     chmod -R g+w $TARGET
-    # remove tests directory
-    rm -Rf $TARGET/test
+    chmod -R g+w $ETC
+
+    cecho " > Add Shinken entry for skonf in sudoers" green
+    cp /etc/sudoers /tmp/sudoers.shinken
+    echo "$SKUSER ALL=(ALL) NOPASSWD: /usr/bin/nmap" >> /tmp/sudoers.shinken
+    visudo -c -f /tmp/sudoers.shinken >> ${LOGFILE} 2>&1
+    if [ $? -eq 0 ]
+    then
+        mv /tmp/sudoers.shinken /etc/sudoers
+        chmod 0440 /etc/sudoers
+    else
+        cecho " -> Fix sudoers skonf integration failed!" red
+        cecho " -> Look at /tmp/sudoers.shinken file to see where is the issue" red
+    fi
 }
 
-function enable(){
-    cadre "Enabling startup scripts" green
-    cp $TARGET/bin/init.d/shinken* /etc/init.d/
-    case $DISTRO in
-        REDHAT)
+function enable_initd(){
+    cecho " > Installing startup scripts" green
+    case $INIT in
+        init)
+            cp $TARGET/bin/init.d/shinken* /etc/init.d/
             cecho " > Enabling $DIST startup script" green
-            chkconfig --add shinken
-            chkconfig shinken on
+            enable_service shinken
             ;;
-        DEBIAN)
+        systemd)
+            cp -f $src/for_fedora/systemd/* ${SYSTEMDPATH}lib/systemd/system
+            # Fix path to daemon in service file for systemd
+            sed -i -e 's/sbin/local\/shinken\/bin/' -e 's/etc\/shinken/usr\/local\/shinken\/etc/g' ${SYSTEMDPATH}lib/systemd/system/shinken*
             cecho " > Enabling $DIST startup script" green
-            update-rc.d shinken defaults >> $TMP/shinken.install.log 2>&1 
+            enable_service shinken-arbiter
+            enable_service shinken-broker
+            enable_service shinken-poller
+            enable_service shinken-reactionner
+            enable_service shinken-receiver
+            enable_service shinken-scheduler
             ;;
-    esac    
+        *)
+            cecho " > Error! your init system isn't support by shinken for now." red
+            ;;
+    esac
 }
+
+function cleanuptarget(){
+    # clean up unnecessary files and folders
+    if [ "$TARGET" == "/" ]
+    then
+        cecho " > Invalid target folder" red
+        exit 2
+    fi
+    if [ -z "$TARGET" ]
+    then
+        cecho " > Invalid target folder" red
+        exit 2
+    fi
+
+    cd $TARGET
+    rm -Rf test
+    rm -Rf windows
+    rm -Rf clean.sh
+    rm -Rf for_fedora
+    rm -Rf for_packages
+#    rm -Rf install install.d
+    rm -Rf MANIFEST.in setup.py
+    rm -Rf $ETC/*windows*
+
+    cp $ETC/shinken-specific.cfg $ETC/shinken-specific.cfg.orig
+}
+
+function manageparameters(){
+
+    if [ ! -f "$HOME/.shinken" ]
+    then
+        touch $HOME/.shinken
+        chmod +x $HOME/.shinken
+
+        if [ "$1" != "quiet" ]
+        then
+            echo "ETC=$ETC" >> $HOME/.shinken
+            echo "VAR=$VAR" >> $HOME/.shinken
+            echo "LIBEXEC=$LIBEXEC" >> $HOME/.shinken
+            echo "TARGET=$TARGET" >> $HOME/.shinken
+        fi
+    else
+        OLDIFS=$IFS
+        IFS=$'\n'
+        cecho " > Found installation parameters" yellow
+        for l in $(cat $HOME/.shinken)
+        do
+            cecho " --> $l" yellow
+        done
+        IFS=$OLDIFS
+        if [ "$1" != "quiet" ]
+        then
+            cread " > Do you want to reuse those parameters? " "yellow" "y" "y n"
+        else
+            readvalue="y"
+        fi
+        if [ "$readvalue" == "y" ]
+        then
+            for l in $(cat $HOME/.shinken)
+            do
+                export $l
+            done
+        else
+            rm -f $HOME/.shinken
+            touch $HOME/.shinken
+            chmod +x $HOME/.shinken
+            echo "ETC=$ETC" >> $HOME/.shinken
+            echo "VAR=$VAR" >> $HOME/.shinken
+            echo "LIBEXEC=$LIBEXEC" >> $HOME/.shinken
+            echo "TARGET=$TARGET" >> $HOME/.shinken
+        fi
+    fi
+}
+
+
 
 function sinstall(){
     #cecho "Installing shinken" green
+
+    manageparameters
+
     check_distro
     check_exist
     prerequisites
     create_user
-    cp -Rf $src $TARGET
+
+    # control if target parent folder exist
+    parent=$(echo $TARGET | sed -e "s#"$(echo $TARGET | awk -F/ '{print $NF}')"##g")
+
+    if [ ! -d $parent ]
+    then
+        mkdir -p $parent
+    fi
+
+    if [ ! -d $ETC ]
+    then
+        mkdir -p $ETC
+    fi
+
+    if [ ! -d $TARGET ]
+    then
+        mkdir -p $TARGET
+    fi
+
+    cp -Rf $src/* $TARGET/
+
+    if [ "$TARGET" == "/" ] || [ -z "$TARGET" ]
+    then
+        cecho " ALERT! TARGET should not be empty or /" red
+        exit 2
+    fi
+
+    if [ "$TARGET/etc" != "$ETC" ]
+    then
+        rm -Rf $TARGET/etc
+        cp -Rf $src/etc/* $ETC/
+    fi
+
+    # We want to copy the src/share into the var
+    if [ ! -d $TARGET/var/share ]
+    then
+	mkdir -p $TARGET/var/share
+	cp -Rf $src/share/* $TARGET/var/share
+    fi
+
+    cleanuptarget
     relocate
     ln -s $TARGET/bin/default/shinken /etc/default/shinken
-    cp $TARGET/bin/init.d/shinken* /etc/init.d/
     mkdir -p $TARGET/var/archives
     enableretention
+    enable_initd
+
+    if [[ $NOMONGO -eq 1 ]]
+    then
+        cecho " > Skip mongo installation" green
+    else
+        install_mongodb
+    fi
+
     if [ "$LOGSTORE" == "mongo" ]
     then
-        enablemongologs 
+        enablemongologs
     fi
+
     fix
-    cecho " > Starting shinken" green
-    /etc/init.d/shinken start 
+
+    sstart
     cecho "+------------------------------------------------------------------------------" green
     cecho "| Shinken is now installed on your server " green
-    cecho "| You can start it with /etc/init.d/shinken start " green
-    cecho "| The Web Interface is available at : http://localhost:7767" green
+    cecho "| The install location is: $TARGET" green
+    cecho "| The configuration folder is: $ETC" green
+    cecho "| " green
+    cecho "| The Web Interface is available at: http://localhost:7767" green
+    cecho "| The default credentials for the webui are admin/admin" green
+    cecho "| " green
+    cecho "| You can now learn how to configure shinken at: http://www.shinken-monitoring.org/wiki" green
     cecho "+------------------------------------------------------------------------------" green
+    echo ""
+    cecho "Do not forget to allow localhost to browse the entire snmp tree. Sample configuration" yellow
+    cecho "use snmp checks and the plugins should be able to access local snmp tree." yellow
+    cecho "For testing purpose you could modify your snmpd configuration this way :" yellow
+    echo ""
+    cecho "Debian :" yellow
+    cecho " edit /etc/snmp/snmpd.conf and replace the following lines :" yellow
+    cecho " view   systemonly  included   .1.3.6.1.2.1.1" yellow
+    cecho " view   systemonly  included   .1.3.6.1.2.1.25.1" yellow
+    cecho " by this one : " yellow
+    cecho " view   systemonly  included   .1" yellow
+    echo ""
+    cecho "RedHat/CentOS :" yellow
+    cecho " edit /etc/snmp/snmpd.conf and replace the following lines :" yellow
+    cecho " view   systemview  included   .1.3.6.1.2.1.1" yellow
+    cecho " view   systemview  included   .1.3.6.1.2.1.25.1" yellow
+    cecho " by this one : " yellow
+    cecho " view   systemview  included   .1" yellow
+
 }
 
 
@@ -634,23 +1016,92 @@ function sinstall(){
 ########################
 
 function backup(){
-    cadre "Backup shinken configuration, plugins and data" green
+    cadre "Backup shinken platform" green
+
+    manageparameters "quiet" > /dev/null 2>&1
+
+    cecho " > Stop shinken" green
     skill
+    if [ -f /etc/init.d/npcd ]
+    then
+        cecho " > Stop npcd" green
+        manage_service npcd stop > /dev/null 2>&1
+    fi
+
     if [ ! -e $BACKUPDIR ]
     then
         mkdir $BACKUPDIR
     fi
-    mkdir -p $BACKUPDIR/bck-shinken.$DATE
-    # Sugg :
-    # Add : cp -Rfp $TARGET/bin $BACKUPDIR/bck-shinken.$DATE/ line to backup bin
-    cp -Rfp $TARGET/etc $BACKUPDIR/bck-shinken.$DATE/
-    cp -Rfp $TARGET/libexec $BACKUPDIR/bck-shinken.$DATE/
-    cp -Rfp $TARGET/var $BACKUPDIR/bck-shinken.$DATE/
-    cecho " > Backup done. Id is $DATE"
+    mkdir -p $BACKUPDIR/bck-shinken.$DATE/etc
+    mkdir -p $BACKUPDIR/bck-shinken.$DATE/libexec
+    mkdir -p $BACKUPDIR/bck-shinken.$DATE/var
+    # Sugg:
+    # Add: cp -Rfp $TARGET/bin $BACKUPDIR/bck-shinken.$DATE/ line to backup bin
+    cecho " > Backup shinken" green
+    cecho " --> Backup shinken/etc" green
+    cp -Rfp $ETC/* $BACKUPDIR/bck-shinken.$DATE/etc
+    cecho " --> Backup shinken/libexec" green
+    cp -Rfp $LIBEXEC/* $BACKUPDIR/bck-shinken.$DATE/libexec
+    cecho " --> Backup shinken/var" green
+    cp -Rfp $TARGET/var/* $BACKUPDIR/bck-shinken.$DATE/var
+
+    if [ -d $NAGVISPREFIX ]
+    then
+        cecho " > Backup nagvis" green
+        mkdir -p $BACKUPDIR/bck-shinken.$DATE/nagvis
+        cecho " --> Backup nagvis/share/userfiles" green
+        cp -Rfp $NAGVISPREFIX/share/userfiles $BACKUPDIR/bck-shinken.$DATE/nagvis/
+        cecho " --> Backup nagvis/etc" green
+        cp -Rfp $NAGVISPREFIX/etc $BACKUPDIR/bck-shinken.$DATE/nagvis/
+    fi
+
+    if [ -d $MKPREFIX ]
+    then
+        mkdir -p $BACKUPDIR/bck-shinken.$DATE/check_mk
+        cecho " > Backup check_mk" green
+        cecho " --> Backup check_mk/etc" green
+        cp -Rfp $MKPREFIX/etc $BACKUPDIR/bck-shinken.$DATE/check_mk/
+        cecho " --> Backup check_mk/share" green
+        cp -Rfp $MKPREFIX/share/web/plugins/dashboard $BACKUPDIR/bck-shinken.$DATE/check_mk/
+        cp -Rfp $MKPREFIX/share/web/plugins/perfometer $BACKUPDIR/bck-shinken.$DATE/check_mk/
+        cp -Rfp $MKPREFIX/share/web/htdocs/images/icons $BACKUPDIR/bck-shinken.$DATE/check_mk/
+        cecho " --> Backup check_mk/var" green
+        cp -Rfp $MKPREFIX/var/lib/web $BACKUPDIR/bck-shinken.$DATE/check_mk/
+
+    fi
+
+    if [ -d $PNPPREFIX ]
+    then
+        mkdir -p $BACKUPDIR/bck-shinken.$DATE/pnp4nagios
+        cecho " > Backup pnp4nagios" green
+        cecho " --> Backup pnp4nagios/etc" green
+        cp -Rfp $PNPPREFIX/etc $BACKUPDIR/bck-shinken.$DATE/pnp4nagios/
+        cecho " --> Backup pnp4nagios/var" green
+        cp -Rfp $PNPPREFIX/var $BACKUPDIR/bck-shinken.$DATE/pnp4nagios/
+        cecho " --> Backup pnp4nagios/share/templates" green
+        cp -Rfp $PNPPREFIX/share/templates $BACKUPDIR/bck-shinken.$DATE/pnp4nagios/
+    fi
+    
+    cecho " > Compressing backup file" green    
+    tar czPf $BACKUPDIR/bck-shinken.$DATE.tar.gz $BACKUPDIR/bck-shinken.$DATE
+    cecho " > Removing backup folder. Backup is now at " green
+    echo $BACKUPDIR/bck-shinken.$DATE.tar.gz
+    rm -rf $BACKUPDIR/bck-shinken.$DATE
+
+    cecho " > Start shinken" green
+    sstart
+    if [ -f /etc/init.d/npcd ]
+    then
+        cecho " > Start npcd" green
+        manage_service npcd start
+    fi
+
+    cadre " > Backup done. Id is $DATE" green
 }
 
 function backuplist(){
     cadre "List of available backups in $BACKUPDIR" green
+    manageparameters "quiet"
     for d in $(ls -1 $BACKUPDIR | grep "bck-shinken" | awk -F. '{print $2}')
     do
         cecho " > $d" green
@@ -660,6 +1111,9 @@ function backuplist(){
 
 function restore(){
     cadre "Restore shinken configuration, plugins and data" green
+
+    manageparameters "quiet"
+
     skill
     if [ ! -e $BACKUPDIR ]
     then
@@ -672,17 +1126,59 @@ function restore(){
         backuplist
         exit 2
     fi
-    if [ ! -e $BACKUPDIR/bck-shinken.$1 ]
+    if [ ! -e $BACKUPDIR/bck-shinken.$1.tar.gz ]
     then
-        cecho " > Backup not found : $BACKUPDIR/bck-shinken.$1 " red
+        cecho " > Backup not found: $BACKUPDIR/bck-shinken.$1 " red
         backuplist
         exit 2
     fi
-    rm -Rf $TARGET/etc
-    rm -Rf $TARGET/libexec 
-    rm -Rf $TARGET/var 
-    cp -Rfp $BACKUPDIR/bck-shinken.$1/* $TARGET/
-    cecho " > Restoration done" green
+
+    cecho " > Unpacking backup files" green
+    mkdir $BACKUPDIR/bck-shinken.$1
+    tar xzPf $BACKUPDIR/bck-shinken.$1.tar.gz -C $BACKUPDIR/bck-shinken.$1
+
+    # Keep Shinken original files as samples conf files and restore.
+    cp -Rfp -b -S ".example" $BACKUPDIR/bck-shinken.$1/etc/* $ETC/
+    cp -Rfp $BACKUPDIR/bck-shinken.$1/var/* $VAR/
+    cp -Rfp $BACKUPDIR/bck-shinken.$1/libexec/* $LIBEXEC/
+
+    if [ -d $NAGVISPREFIX ]
+    then
+        cecho " --> Restoring Restore Nagvis" green
+	 cp -Rfp $BACKUPDIR/bck-shinken.$1/nagvis/etc $NAGVISPREFIX/etc
+	 cp -Rfp $BACKUPDIR/bck-shinken.$1/nagvis/userfiles $NAGVISPREFIX/share/userfiles
+    fi
+
+    if [ -d $MKPREFIX ]
+    then
+        cecho " --> Restoring Restore Check_mk" green
+	 cp -Rfp $BACKUPDIR/bck-shinken.$1/check_mk/etc $MKPREFIX/etc
+	 cp -Rfp $BACKUPDIR/bck-shinken.$1/check_mk/dashboard $MKPREFIX/share/web/plugins/dashboard
+	 cp -Rfp $BACKUPDIR/bck-shinken.$1/check_mk/perfometer $MKPREFIX/share/web/plugins/perfometer
+	 cp -Rfp $BACKUPDIR/bck-shinken.$1/check_mk/icons $MKPREFIX/share/web/htdocs/images/icons
+	 cp -Rfp $BACKUPDIR/bck-shinken.$1/check_mk/web $MKPREFIX/var/lib/web
+    fi
+
+    if [ -d $PNPPREFIX ]
+    then
+        cecho " --> Restoring Restore PNP4Nagios" green
+	 cp -Rfp $BACKUPDIR/bck-shinken.$1/pnp4nagios/etc $PNPPREFIX/etc
+	 cp -Rfp $BACKUPDIR/bck-shinken.$1/pnp4nagios/var $PNPPREFIX/var
+	 cp -Rfp $BACKUPDIR/bck-shinken.$1/pnp4nagios/templates $PNPPREFIX/share/templates
+    fi
+
+    rm -rf $BACKUPDIR/bck-shinken.$1
+
+    # Start Shinken after restore	
+    sstart
+    if [ -f /etc/init.d/npcd ]
+    then
+        cecho " > Start npcd" green
+        /etc/init.d/npcd start > /dev/null 2>&1
+    fi
+
+
+    cecho " > Restoration done. Original files was kept with '.example' suffix, use 'diff' to check differences between your files and original." green
 }
 
 ########################
@@ -694,12 +1190,12 @@ function supdate(){
     curpath=$(pwd)
     if [ "$src" == "$TARGET" ]
     then
-        cecho "You should use the source tree to update and not use the target folder !!!!!" red
+        cecho "You should use the source tree to update and not use the target folder!!!!!" red
         exit 2
     fi
 
     cadre "Updating shinken" green
-    
+
     skill
     backup
     remove
@@ -740,10 +1236,6 @@ function compresslogs(){
     fi
 }
 
-function shelp(){
-    cat $myscripts/install.d/README
-}
-
 ########################
 ### CONFIG FUNCTIONS ###
 ########################
@@ -756,8 +1248,8 @@ function cleanconf(){
     else
         for f in $(cat $myscripts/install.d/config.files)
         do
-            cecho " > Removing $TARGET/etc/$f" green
-            rm -Rf $TARGET/etc/$f
+            cecho " > Removing $ETC/$f" green
+            rm -Rf $ETC/$f
         done
     fi
 }
@@ -792,8 +1284,8 @@ function fixcentreondb(){
 function fixforfan(){
     if [ ! -z "cat /etc/issue | grep FAN" ]
     then
-        chown -R apache:nagios $TARGET/etc
-        chmod -R g+rw $TARGET/etc/*
+        chown -R apache:nagios $ETC
+        chmod -R g+rw $ETC/*
     fi
 }
 
@@ -802,7 +1294,7 @@ function enablemongologs(){
     cecho " > Enable mongodb log storage" green
     export PYTHONPATH=$TARGET
     export PY="$(pythonver)"
-    result=$($PY $TARGET/install.d/tools/skonf.py -a macros -f $TARGET/install.d/tools/macros/enable_log_mongo.macro -d $MONGOSERVER)    
+    result=$($PY $TARGET/install.d/tools/skonf.py -a macros -f $TARGET/install.d/tools/macros/enable_log_mongo.macro -d $MONGOSERVER)
     if [ $? -ne 0 ]
     then
         cecho " > There was an error while trying to enable mongo log storage ($result)" red
@@ -838,7 +1330,7 @@ function enableretention(){
         export PYTHONPATH=$TARGET
         export PY="$(pythonver)"
 
-        result=$($PY $TARGET/install.d/tools/skonf.py -a macros -f $TARGET/install.d/tools/macros/enable_retention_mongo.macro)    
+        result=$($PY $TARGET/install.d/tools/skonf.py -a macros -f $TARGET/install.d/tools/macros/enable_retention_mongo.macro)
         if [ $? -ne 0 ]
         then
             cecho $result red
@@ -847,7 +1339,7 @@ function enableretention(){
     else
         export PYTHONPATH=$TARGET
         export PY="$(pythonver)"
-        result=$($PY $TARGET/install.d/tools/skonf.py -a macros -f $TARGET/install.d/tools/macros/enable_retention.macro)    
+        result=$($PY $TARGET/install.d/tools/skonf.py -a macros -f $TARGET/install.d/tools/macros/enable_retention.macro)
         if [ $? -ne 0 ]
         then
             cecho $result red
@@ -863,69 +1355,61 @@ function enableperfdata(){
     export PYTHONPATH=$TARGET
     export PY="$(pythonver)"
     cecho " > Getting existing broker modules list" green
-    modules=$($PY $TARGET/install.d/tools/skonf.py -a getdirective -f $TARGET/etc/shinken-specific.cfg -o broker -d modules)    
+    modules=$($PY $TARGET/install.d/tools/skonf.py -a getdirective -f $ETC/shinken-specific.cfg -o broker -d modules)
     if [ -z "$modules" ]
-    then    
+    then
         modules="Service-Perfdata, Host-Perfdata"
     else
         modules=$modules", Service-Perfdata, Host-Perfdata"
     fi
-    result=$($PY $TARGET/install.d/tools/skonf.py -q -a setparam -f $TARGET/etc/shinken-specific.cfg -o broker -d modules -v "$modules")
+    result=$($PY $TARGET/install.d/tools/skonf.py -q -a setparam -f $ETC/shinken-specific.cfg -o broker -d modules -v "$modules")
     cecho " > $result" green
 }
 
 function setdaemonsaddresses(){
     export PYTHONPATH=$TARGET
     export PY="$(pythonver)"
-    localip=$(ifconfig $IF | grep "^ *inet adr:" | awk -F : '{print $2}' | awk '{print $1}')
-    result=$($PY $TARGET/install.d/tools/skonf.py -q -a setparam -f $TARGET/etc/shinken-specific.cfg -o arbiter -d address -v "$localip")
-    cecho " > $result" green    
-    result=$($PY $TARGET/install.d/tools/skonf.py -q -a setparam -f $TARGET/etc/shinken-specific.cfg -o scheduler -d address -v "$localip")
-    cecho " > $result" green    
-    result=$($PY $TARGET/install.d/tools/skonf.py -q -a setparam -f $TARGET/etc/shinken-specific.cfg -o reactionner -d address -v "$localip")
-    cecho " > $result" green    
-    result=$($PY $TARGET/install.d/tools/skonf.py -q -a setparam -f $TARGET/etc/shinken-specific.cfg -o receiver -d address -v "$localip")
-    cecho " > $result" green    
-    result=$($PY $TARGET/install.d/tools/skonf.py -q -a setparam -f $TARGET/etc/shinken-specific.cfg -o poller -d address -v "$localip" -r "poller_name=poller-1")
-    cecho " > $result" green    
+    localip=$(ifconfig $IF | grep "^ *inet ad:" | awk -F : '{print $2}' | awk '{print $1}')
+    result=$($PY $TARGET/install.d/tools/skonf.py -q -a setparam -f $ETC/shinken-specific.cfg -o arbiter -d address -v "$localip")
+    cecho " > $result" green
+    result=$($PY $TARGET/install.d/tools/skonf.py -q -a setparam -f $ETC/shinken-specific.cfg -o scheduler -d address -v "$localip")
+    cecho " > $result" green
+    result=$($PY $TARGET/install.d/tools/skonf.py -q -a setparam -f $ETC/shinken-specific.cfg -o reactionner -d address -v "$localip")
+    cecho " > $result" green
+    result=$($PY $TARGET/install.d/tools/skonf.py -q -a setparam -f $ETC/shinken-specific.cfg -o receiver -d address -v "$localip")
+    cecho " > $result" green
+    result=$($PY $TARGET/install.d/tools/skonf.py -q -a setparam -f $ETC/shinken-specific.cfg -o poller -d address -v "$localip" -r "poller_name=poller-1")
+    cecho " > $result" green
 }
 
 function enableCESCentralDaemons(){
-    setdaemons "arbiter reactionner receiver scheduler broker poller"  
+    setdaemons "arbiter reactionner receiver scheduler broker poller"
 }
 
 function enableCESPollerDaemons(){
-    setdaemons "poller"  
+    setdaemons "poller"
 }
 
 function disablenagios(){
-    chkconfig nagios off
-    chkconfig ndo2db off
-    /etc/init.d/nagios stop >> $TMP/shinken.install.log 2>&1 
-    /etc/init.d/ndo2db stop >> $TMP/shinken.install.log 2>&1 
+    disable_service nagios
+    disable_service ndo2db
+    manage_service nagios stop
+    manage_service ndo2db stop
 }
 
 function setdaemons(){
     daemons="$(echo $1)"
     avail="AVAIL_MODULES=\"$daemons\""
-    cecho " > Enabling the followings daemons : $daemons" green
+    cecho " > Enabling the followings daemons: $daemons" green
     sed -i "s/^AVAIL_MODULES=.*$/$avail/g" /etc/init.d/shinken
 }
-
-function fixHtpasswdPath(){
-    export PYTHONPATH=$TARGET
-    export PY="$(pythonver)"
-    # fix the htpasswd.users file path for WEBUI authentication
-    result=$($PY $TARGET/install.d/tools/skonf.py -f $TARGET/etc/shinken-specific.cfg -a setparam -o module -r "module_name=Apache_passwd" -d "passwd" -v "$TARGET/etc/htpasswd.users")
-    cecho " > $result" green    
-}
-
 
 # addons installation
 
 # mongodb
 function install_mongodb(){
     cadre "Install mongodb server" green
+    cd $myscripts
     case $CODE in
         REDHAT)
             if [ ! -f "/etc/yum.repos.d/10gen.repo" ]
@@ -940,25 +1424,63 @@ function install_mongodb(){
                         ;;
                 esac
                 sed -i "s/__ARCH__/"$MARCH"/g" /etc/yum.repos.d/10gen.repo
-                yum clean all >> $TMP/shinken.install.log 2>&1
-                yum -y install mongo-10gen mongo-10gen-server >> $TMP/shinken.install.log 2>&1
-                chkconfig --add mongod >> $TMP/shinken.install.log 2>&1
-                chkconfig mongod on >> $TMP/shinken.install.log 2>&1
-                cecho " > Start mongodb server" green
-                /etc/init.d/mongod start >> $TMP/shinken.install.log 2>&1
+                yum clean all >> ${LOGFILE} 2>&1
+                cecho " > Installing mongodb server" green
+                installpkg pkg $MONGOPKGS
+                cecho " > Enable and start mongodb server" green
+                enable_service mongod
+                manage_service mongod start
             else
-                cecho "Allready installed" red
-                exit 2
+                # check if mongo is installed
+                exist=$(rpm -qa | grep mongo-10gen)
+                if [[ -z "$exist" ]]
+                then
+                    cecho " > Installing mongodb server" green
+                    installpkg pkg $MONGOPKGS
+                    cecho " > Enable and start mongodb server" green
+                    enable_service mongod
+                    manage_service mongod start
+                else
+                    cecho "Already installed" yellow
+                fi
             fi
             ;;
+        Fedora)
+            cecho " > Installing mongodb server" green
+            if [ ! -f ${SYSTEMDPATH}lib/systemd/system/mongod.service ]
+            then
+                    installpkg pkg $MONGOPKGS 
+            else
+                cecho "Already installed" yellow
+            fi
+            cecho " > Enable and start mongodb server" green
+            enable_service mongod
+            manage_service mongod start
+            ;;
         DEBIAN)
-            apt-key adv --keyserver keyserver.ubuntu.com --recv 7F0CEB10 >> $TMP/shinken.install.log 2>&1
-            echo "deb http://downloads-distro.mongodb.org/repo/debian-sysvinit dist 10gen" > /etc/apt/sources.list.d/10gen.list
-            apt-get update >> $TMP/shinken.install.log 2>&1
-            apt-get install -y mongodb-10gen >> $TMP/shinken.install.log 2>&1
+            if [ ! -f "/etc/apt/sources.list.d/10gen.list" ]
+            then
+                cecho " > repository configuration not found. Adding 10 gen repository" yellow
+                apt-key adv --keyserver keyserver.ubuntu.com --recv 7F0CEB10 >> ${LOGFILE} 2>&1
+                echo "deb http://downloads-distro.mongodb.org/repo/debian-sysvinit dist 10gen" > /etc/apt/sources.list.d/10gen.list
+                cecho " > Updating repositories " yellow
+                apt-get --allow-unauthenticated update >> ${LOGFILE} 2>&1
+                cecho " > Installing mongodb server" green
+                apt-get --allow-unauthenticated --force-yes install -y $MONGOPKGS >> ${LOGFILE} 2>&1
+            else
+                cecho " > 10gen repository found." green
+                mongoexist=$(dpkg -l | grep "^ii" | grep "mongodb-10gen")
+                if [ -z "$mongoexist" ]
+                then
+                    cecho " > Installing mongodb server" green
+                    installpkg pkg $MONGOPKGS
+                else
+                    cecho " > Mongodb server already installed" green
+                fi
+            fi
             ;;
         *)
-            cecho " > Unknown distribution : $DIST" red
+            cecho " > Unknown distribution: $DIST" red
             exit 2
             ;;
     esac
@@ -967,46 +1489,40 @@ function install_mongodb(){
 # nagvis
 
 function install_nagvis(){
-
     cadre "Install nagvis addon" green
+    manageparameters "quiet"
+    HTTPDCONF="/etc/${WEBSERVER}/conf.d"
+    HTTPDINIT="/etc/init.d/${WEBSERVER}"
     case $CODE in
-        REDHAT)
-            yum install -y $NAGVISYUMPKGS >> $TMP/shinken.install.log 2>&1
-            HTTPDUSER="apache"
-            HTTPDGROUP="apache"
-            HTTPDCONF="/etc/httpd/conf.d"
-            HTTPDINIT="/etc/init.d/httpd"
+        REDHAT|Fedora)
+            cecho " > Installing prerequisites" green
+            yum install -y $NAGVISYUMPKGS >> ${LOGFILE} 2>&1
             ;;
         DEBIAN)
             cecho " > Installing prerequisites" green
-            apt-get update >> $TMP/shinken.install.log 2>&1
-            DEBIAN_FRONTEND=noninteractive apt-get install -y $NAGVISAPTPKGS >> $TMP/shinken.install.log 2>&1
-            HTTPDUSER="www-data"
-            HTTPDGROUP="www-data"
-            HTTPDCONF="/etc/apache2/conf.d"
-            HTTPDINIT="/etc/init.d/apache2"
+            DEBIAN_FRONTEND=noninteractive apt-get --allow-unauthenticated --force-yes install -y $NAGVISAPTPKGS >> ${LOGFILE} 2>&1
             ;;
         *)
             cecho " > Unknown distribution : $DIST" red
             exit 2
             ;;
     esac
-            
-    
+
+
     filename=$(echo $NAGVIS | awk -F"/" '{print $NF}')
     folder=$(echo $filename | sed -e "s/\.tar\.gz//g")
 
     cd $TMP
 
     if [ -d $TMP/$folder ]
-    then 
+    then
         rm -Rf $folder
     fi
 
     if [ ! -f $TMP/$filename ]
     then
         cecho " > Download $filename" green
-        wget $WGETPROXY $NAGVIS >> $TMP/shinken.install.log 2>&1
+        wget $WGETPROXY $NAGVIS >> ${LOGFILE} 2>&1
         if [ $? -ne 0 ]
         then
             cecho " > Error while downloading $NAGVIS" red
@@ -1014,75 +1530,66 @@ function install_nagvis(){
         fi
     fi
     cecho " > Extract archive content" green
-    tar zxvf $filename >> $TMP/shinken.install.log 2>&1
+    tar zxvf $filename >> ${LOGFILE} 2>&1
     cd $folder
     cecho " > Install nagvis" green
-    ./install.sh -a y -q -F -l "tcp:localhost:50000" -i mklivestatus -n $TARGET -p $NAGVISPREFIX -u $HTTPDUSER -g $HTTPDGROUP -w $HTTPDCONF 
+    ./install.sh -a y -q -F -l "tcp:localhost:50000" -i mklivestatus -n $TARGET -p $NAGVISPREFIX -u $HTTPDUSER -g $HTTPDGROUP -w $HTTPDCONF
     if [ -d $MKPREFIX ]
     then
-        cread " > Found a check_mk multisite installation. Do you want to modify the nagvis url so links redirect to multisite ?" yellow "y" "y n"
+        cread " > Found a check_mk multisite installation. Do you want to modify the nagvis url so links redirect to multisite?" yellow "y" "y n"
         if [ "$readvalue" == "y" ]
         then
             cecho " > Patching links for multisite use" green
             cd $NAGVISPREFIX/etc
-            patch < $myscripts/install.d/nagvis.multisite.uri.patch >> /tmp/shinken.install.log 2>&1
+            patch < $myscripts/install.d/nagvis.multisite.uri.patch >> ${LOGFILE} 2>&1
         fi
-    fi 
+    fi
     cecho " > Restart Apache " green
-    $HTTPDINIT restart >> $TMP/shinken.install.log 2>&1 
+    $HTTPDINIT restart >> ${LOGFILE} 2>&1
 }
 
 # mk multisite
 
 function install_multisite(){
     cadre "Install check_mk addon" green
+    manageparameters "quiet"
     cecho " > Installing prerequisites" green
-    if [ "$CODE" == "REDHAT" ]
-    then
-        HTTPDUSER="apache"
-        HTTPDGROUP="apache"
-        HTTPDINIT="/etc/init.d/httpd"
-        HTTPDCONF="/etc/httpd"
-        for p in $MKYUMPKG
-        do
+    HTTPDINIT="/etc/init.d/${WEBSERVER}"
+    HTTPDCONF="/etc/${WEBSERVER}"
+    case $CODE in
+        REDHAT|Fedora)
             cecho " -> Installing $p" green
-            yum -y install $p >> $TMP/shinken.install.log 2>&1 
-        done
+            installpkg pkg $MKYUMPKG
 
-        if [ -f /etc/selinux/config ]
-        then
-            if [ ! -z "$(cat /etc/selinux/config | grep "SELINUX=enforcing")" ]
+            if [ -f /etc/selinux/config ]
             then
-                cecho " > WARNING : selinux is enabled with enforcing state. You should create a rule or disable selinux" yellow
+                if [ ! -z "$(cat /etc/selinux/config | grep "SELINUX=enforcing")" ]
+                then
+                    cecho " > WARNING: selinux is enabled with enforcing state. You should create a rule or disable selinux" yellow
+                fi
             fi
-        fi
-    elif [ "$CODE" == "DEBIAN" ]
-    then
-        HTTPDUSER="www-data"
-        HTTPDGROUP="www-data"
-        HTTPDINIT="/etc/init.d/apache2"
-        HTTPDCONF="/etc/apache2"
-        for p in $MKAPTPKG
-        do
+            ;;
+        DEBIAN)
             cecho " -> Installing $p" green
-            apt-get update >> $TMP/shinken.install.log 2>&1
-            apt-get --force-yes -y install $p >> $TMP/shinken.install.log 2>&1 
-        done
-    else
-        cecho " > Unsupported" red
-        exit 2
-    fi
+            installpkg pkg $MKAPTPKG
+            ;;
+        *)
+            cecho " > Unsupported distro" red
+            exit 2
+            ;;
+    esac
 
 
-    usermod -s /bin/bash $HTTPDUSER >> $TMP/shinken.install.log 2>&1
-    usermod -a -G $HTTPDGROUP $SKUSER >> $TMP/shinken.install.log 2>&1
-    usermod -a -G $SKGROUP $HTTPDUSER >> $TMP/shinken.install.log 2>&1
+    usermod -s /bin/bash $HTTPDUSER >> ${LOGFILE} 2>&1
+    usermod -a -G $HTTPDGROUP $SKUSER >> ${LOGFILE} 2>&1
+    usermod -a -G $SKGROUP $HTTPDUSER >> ${LOGFILE} 2>&1
 
     cecho " > Configure response file" green
     cp install.d/check_mk_setup.conf.in $HOME/.check_mk_setup.conf
     sed -i "s#__PNPPREFIX__#$PNPPREFIX#g" $HOME/.check_mk_setup.conf
     sed -i "s#__MKPREFIX__#$MKPREFIX#g" $HOME/.check_mk_setup.conf
     sed -i "s#__SKPREFIX__#$TARGET#g" $HOME/.check_mk_setup.conf
+    sed -i "s#__SKPREFIXETC__#$ETC#g" $HOME/.check_mk_setup.conf
     sed -i "s#__SKUSER__#$SKUSER#g" $HOME/.check_mk_setup.conf
     sed -i "s#__SKGROUP__#$SKGROUP#g" $HOME/.check_mk_setup.conf
     sed -i "s#__HTTPUSER__#"$HTTPDUSER"#g" $HOME/.check_mk_setup.conf
@@ -1094,132 +1601,444 @@ function install_multisite(){
     filename=$(echo $MKURI | awk -F"/" '{print $NF}')
     folder=$(echo $filename | sed -e "s/\.tar\.gz//g")
     if [ ! -f "$filename" ]
-    then 
+    then
         cecho " > Getting check_mk archive" green
-        wget $WGETPROXY $MKURI >> $TMP/shinken.install.log 2>&1 
+        wget $WGETPROXY $MKURI >> ${LOGFILE} 2>&1
+        if [ $? -ne 0 ]
+        then
+            cecho " > Error: the version of multisite provided could not be found" red
+            cecho " > Go to http://mathias-kettner.de/check_mk.html and check the latest version" red
+            cread " > Please type the correct version here (default: $MKVER)"  yellow "1.1.12p7" "nocheck"
+            export MKVER=$readvalue
+            export MKURI="http://mathias-kettner.de/download/check_mk-$MKVER.tar.gz"
+            wget $WGETPROXY $MKURI >> ${LOGFILE} 2>&1
+            if [ $? -ne 0 ]
+            then
+                cecho " > Error: the version of multisite provided could not be found" red
+                exit 2
+            fi
+            filename=$(echo $MKURI | awk -F"/" '{print $NF}')
+            folder=$(echo $filename | sed -e "s/\.tar\.gz//g")
+        fi
     fi
-    
+
     cecho " > Extracting archive" green
     if [ -d "$folder" ]
-    then 
+    then
         rm -Rf $folder
-    fi 
-    tar zxvf $filename >> $TMP/shinken.install.log 2>&1 
+    fi
+    tar zxvf $filename >> ${LOGFILE} 2>&1
     cd $folder
 
-    # check if pnp4nagios is here if not move the resulting folder 
+    # check if pnp4nagios is here if not move the resulting folder
     movepnp=0
-    if [ ! -d "$PNPPREFIX" ]
+    if [ -d "$PNPPREFIX" ]
     then
         movepnp=1
     fi
 
     cecho " > Install multisite" green
-    ./setup.sh --yes >> $TMP/shinken.install.log 2>&1 
+    ./setup.sh --yes >> ${LOGFILE} 2>&1
 
-#    cread " > [ALPHA] Do you want to enable html form authentication for multisite ? (y|N) =>  "  yellow "n" "y n"
+#    cread " > [ALPHA] Do you want to enable html form authentication for multisite? (y|N) =>  "  yellow "n" "y n"
 #    if [ "$readvalue" == "y" ]
 #    then
 #        cecho " > Enable html form authentication " green
-#        sed -i "/.*AuthType.*$/d" $HTTPDCONF/zzz_check_mk.conf > $TMP/shinken.install.log 2>&1
+#        sed -i "/.*AuthType.*$/d" $HTTPDCONF/zzz_check_mk.conf > ${LOGFILE} 2>&1
 #    fi
 
     # include check_mk configuration folder in nagios.cfg
-    exist=$(cat $TARGET/etc/nagios.cfg | grep check_mk.d)
+    exist=$(cat $ETC/nagios.cfg | grep check_mk.d)
     if [ -z "$exist" ]
-    then 
-        echo "cfg_dir=$TARGET/etc/check_mk.d" >> $TARGET/etc/nagios.cfg 
+    then
+        echo "cfg_dir=$ETC/check_mk.d" >> $ETC/nagios.cfg
     fi
-   
+
     cecho " > Default configuration for multisite" green
-    echo 'sites = {' >> $MKPREFIX/etc/multisite.mk
-    echo '   "default": {' >> $MKPREFIX/etc/multisite.mk
-    echo '    "alias":          "default",' >> $MKPREFIX/etc/multisite.mk
-    echo '    "socket":         "tcp:127.0.0.1:50000",' >> $MKPREFIX/etc/multisite.mk
-    echo '    "url_prefix":     "/",' >> $MKPREFIX/etc/multisite.mk
-    echo '   },' >> $MKPREFIX/etc/multisite.mk
-    echo ' }' >> $MKPREFIX/etc/multisite.mk
-    rm -Rf $TARGET/etc/check_mk.d/*
-    chown -R $SKUSER:$SKGROUP $TARGET/etc/check_mk.d
-    chmod -R g+rwx $TARGET/etc/check_mk.d
+#    echo 'sites = {' >> $MKPREFIX/etc/multisite.mk
+#    echo '   "default": {' >> $MKPREFIX/etc/multisite.mk
+#    echo '    "alias":          "default",' >> $MKPREFIX/etc/multisite.mk
+#    echo '    "socket":         "tcp:127.0.0.1:50000",' >> $MKPREFIX/etc/multisite.mk
+#    echo '    "url_prefix":     "/",' >> $MKPREFIX/etc/multisite.mk
+#    echo '   },' >> $MKPREFIX/etc/multisite.mk
+#    echo ' }' >> $MKPREFIX/etc/multisite.mk
+        cp $src/install.d/multisite.mk $MKPREFIX/etc/
+    ip=$(ifconfig | grep "inet ad" | grep -v 127.0.0.1 | awk '{print $2}' | awk -F : '{print $2}' | head -n 1)
+    sed -i "s#__HOSTADDRESS__#"$ip"#g" $MKPREFIX/etc/multisite.mk
+    rm -Rf $ETC/check_mk.d/*
+    chown -R $SKUSER:$SKGROUP $ETC/check_mk.d
+    chmod -R g+rwx $ETC/check_mk.d
     chown -R $SKUSER:$SKGROUP $MKPREFIX/etc/conf.d
     chmod -R g+rwx $MKPREFIX/etc/conf.d
-    $HTTPDINIT restart >> $TMP/shinken.install.log 2>&1 
+    $HTTPDINIT restart >> ${LOGFILE} 2>&1
     exist=$(cat /etc/sudoers | grep "WATO")
     if [ -z "$exist" ]
     then
         cecho " > Enable sudoers commands for check_mk" green
         echo "# Needed for WATO - the Check_MK Web Administration Tool" >> /etc/sudoers
-        echo "Defaults:$HTTPDUSER !requiretty" >> /etc/sudoers
+        echo "Defaults:$HTTPDUSER!requiretty" >> /etc/sudoers
         echo "$HTTPDUSER ALL = (root) NOPASSWD: $MKPREFIX/check_mk --automation *" >> /etc/sudoers
     fi
-    if [ $movepnp -eq 1 ]
-    then 
-        mv $PNPPREFIX $PNPPREFIX.MK
-    fi
+#    if [ $movepnp -eq 1 ]
+#    then
+#        mv $PNPPREFIX $PNPPREFIX.MK
+#    fi
 }
 
 # pnp4nagios
 function install_pnp4nagios(){
     cadre "Install pnp4nagios addon" green
-    if [ "$CODE" == "REDHAT" ]
+    manageparameters "quiet"
+
+    if [ $SKIPPREREQUISITES -eq 1 ]
     then
-        cecho " > Installing prerequisites" green
-        yum -yq install $PNPYUMPKG >> $TMP/shinken.install.log 2>&1
+        cecho " SKIPPREREQUISITES enabled: won't install pnp4nagios prerequisites" yellow
     else
-        cecho " > Installing prerequisites" green
-        apt-get update >> $TMP/shinken.install.log 2>&1
-        apt-get -y install $PNPAPTPKG >> $TMP/shinken.install.log 2>&1
+        case $CODE in
+            REDHAT|Fedora)
+                cecho " > Installing prerequisites" green
+                installpkg pkg $PNPYUMPKG
+                ;;
+            DEBIAN)
+                cecho " > Installing prerequisites" green
+                installpkg pkg $PNPAPTPKG
+                ;;
+            *)
+                cecho " > Unsupported distro" red
+                exit 2
+                ;;
+        esac
     fi
+
     cd $TMP
 
     filename=$(echo $PNPURI | awk -F"/" '{print $NF}')
     folder=$(echo $filename | sed -e "s/\.tar\.gz//g")
     if [ ! -f "$filename" ]
-    then 
+    then
         cecho " > Getting pnp4nagios archive" green
-        wget $WGETPROXY $PNPURI >> $TMP/shinken.install.log 2>&1 
+        wget $WGETPROXY $PNPURI >> ${LOGFILE} 2>&1
     fi
-    
+
     cecho " > Extracting archive" green
     if [ -d "$folder" ]
-    then 
+    then
         rm -Rf $folder
-    fi 
-    tar zxvf $filename >> $TMP/shinken.install.log 2>&1 
+    fi
+    tar zxvf $filename >> ${LOGFILE} 2>&1
     cd $folder
-    #cecho " > Enable mod rewrite for apache" green 
-    #a2enmod rewrite >> $TMP/shinken.install.log 2>&1
-    if [ "$CODE" == "REDHAT" ]
-    then
-        /etc/init.d/httpd restart >> $TMP/shinken.install.log 2>&1
-    else
-        /etc/init.d/apache2 restart >> $TMP/shinken.install.log 2>&1 
-    fi
+    #cecho " > Enable mod rewrite for apache" green
+    #a2enmod rewrite >> ${LOGFILE} 2>&1
+    manage_service ${WEBSERVER} restart
     cecho " > Configuring source tree" green
-    ./configure --prefix=$PNPPREFIX --with-nagios-user=$SKUSER --with-nagios-group=$SKGROUP >> $TMP/shinken.install.log 2>&1     
+    ./configure --prefix=$PNPPREFIX --with-nagios-user=$SKUSER --with-nagios-group=$SKGROUP >> ${LOGFILE} 2>&1
     cecho " > Building ...." green
-    make all >> $TMP/shinken.install.log 2>&1 
+    make all >> ${LOGFILE} 2>&1
     cecho " > Installing" green
-    make fullinstall >> $TMP/shinken.install.log 2>&1 
+    make fullinstall >> ${LOGFILE} 2>&1
     rm -f $PNPPREFIX/share/install.php
-    if [ "$CODE" == "REDHAT" ]
-    then
-        cecho " > Fix htpasswd.users path" green
-        sed -i "s#/usr/local/nagios/etc/htpasswd.users#$TARGET/etc/htpasswd.users#g" /etc/httpd/conf.d/pnp4nagios.conf 
-        /etc/init.d/httpd restart >> $TMP/shinken.install.log 2>&1 
-    else
-        cecho " > Fix htpasswd.users path" green
-        sed -i "s#/usr/local/nagios/etc/htpasswd.users#$TARGET/etc/htpasswd.users#g" /etc/apache2/conf.d/pnp4nagios.conf 
-        /etc/init.d/apache2 restart >> $TMP/shinken.install.log 2>&1 
-    fi
+
+    cecho " > Fix htpasswd.users path" green
+    sed -i "s#/usr/local/nagios/etc/htpasswd.users#$ETC/htpasswd.users#g" /etc/${WEBSERVER}/conf.d/pnp4nagios.conf
+    manage_service ${WEBSERVER} restart
+    cecho " > Enable npcd startup" green
+    enable_service npcd
+
     cecho " > Enable npcdmod" green
-    ip=$(ifconfig | grep "inet adr" | grep -v 127.0.0.1 | awk '{print $2}' | awk -F : '{print $2}' | head -n 1)
+    ip=$(ifconfig | grep "inet ad" | grep -v 127.0.0.1 | awk '{print $2}' | awk -F : '{print $2}' | head -n 1)
+    cecho " > using ip address: $ip"
     do_skmacro enable_npcd.macro $PNPPREFIX/etc/npcd.cfg,$ip
-    cecho " > Starting npcd" green 
-    /etc/init.d/npcd start >> $TMP/shinken.install.log 2>&1 
+    cecho " > Starting npcd" green
+    manage_service npcd start
 }
 
+function uninstall_pnp4nagios(){
+    cadre "Uninstall pnp4nagios addon" green
+    manageparameters "quiet"
+
+    if [ -d "$PNPPREFIX" ]
+    then
+        #first stop daemons
+        cecho " > Stopping daemons " green
+        manage_service ${WEBSERVER} stop
+        manage_service npcd stop
+        skill
+
+        # remove pnp4nagios folder
+        cecho " > Removing pnp4nagios" green
+        rm -Rf $PNPPREFIX >> ${LOGFILE} 2>&1
+        rm -Rf /etc/init.d/npcd >> ${LOGFILE} 2>&1
+
+        # remove startup scripts
+        cecho " > Removing pnp4nagios startup scripts" green
+        disable_service npcd
+        rm -Rf /etc/init.d/npcd >> ${LOGFILE} 2>&1
+
+        # remove pnp4nagios shinken configuration
+        cecho " > Removing NPCPDMOD module from broker configuration " green
+        BROKERS=$(PYTHONPATH=$TARGET $PY $TARGET/install.d/tools/skonf.py -a getobjectnames -f  $TARGET/etc/shinken-specific.cfg -o broker)
+        for o in $BROKERS
+        do
+            cecho " --> Removing from broker $o" green
+            do_skmacro disable_npcd.macro $o
+        done
+
+        # start daemons
+        cecho " > Starting daemons " green
+        manage_service ${WEBSERVER} start
+        sstart
+    else
+        cecho " > pnp4nagios folder was not found at: $PNPPREFIX" red
+        exit 2
+    fi
+}
+
+
+function install_mysql(){
+    cecho " > Checking for mysql server" green
+    case $CODE in
+        REDHAT|Fedora)
+            if [[ -z "$(rpm -qa | grep mysql-server)" ]]
+            then
+                cecho " --> mysql-server not found. Going to install" yellow
+                installpkg pkg mysql-server
+                enable_service mysqld
+                manage_service mysqld start
+                while true
+                do
+                    creads " --> Please provide a password for root user: " yellow
+                    MYSQLP1=$readvalue
+                    creads " --> Please confirm root password: " yellow
+                    MYSQLP2=$readvalue
+                    if [ "$MYSQLP1" != "$MYSQLP2" ]
+                    then
+                        cecho " --> passwords does not match" red
+                    else
+                        if [ -z "$MYSQLP1" ] || [ -z "$MYSQLP2" ]
+                        then
+                            cecho " --> password should not be empty" red
+                        else
+                            export MYSQLP=$MYSQLP2
+                            mysql -h localhost -u root -e "grant all privileges on *.* to 'root'@'localhost' identified by '$MYSQLP'; flush privileges;"
+                            break
+                        fi
+                    fi
+                done
+            fi
+            ;;
+        DEBIAN)
+            if [ -z "$(dpkg -l | grep ^ii.*mysql-server)" ]
+            then
+                cecho " --> mysql-server not found. Going to install" yellow
+                while true
+                do
+                    creads " --> Please provide a password for root user: " yellow
+                    MYSQLP1=$readvalue
+                    creads " --> Please confirm root password: " yellow
+                    MYSQLP2=$readvalue
+                    if [ "$MYSQLP1" != "$MYSQLP2" ]
+                    then
+                        cecho " --> passwords does not match" red
+                    else
+                        if [ -z "$MYSQLP1" ] || [ -z "$MYSQLP2" ]
+                        then
+                            cecho " --> password should not be empty" red
+                        else
+                            export MYSQLP=$MYSQLP2
+                            break
+                        fi
+                    fi
+                done
+                MYVERS=$(apt-cache search mysql-server- | grep -v "core\|cluster" | grep "mysql-server-" | awk -F\- '{print $3}')
+
+                echo "mysql-server-$MYVERS mysql-server/root_password password $MYSQLP" | debconf-set-selections
+                echo "mysql-server-$MYVERS mysql-server/root_password_again password $MYSQLP" | debconf-set-selections
+                echo "mysql-server-$MYVERS mysql-server/root_password seen true" | debconf-set-selections
+                echo "mysql-server-$MYVERS mysql-server/root_password_again seen true" | debconf-set-selections
+                installpkg pkg mysql-server mysql-client
+            fi
+            ;;
+    esac
+
+}
+
+function remove_nconf(){
+    case $CODE in
+        REDHAT|Fedora)
+            NCONFTARGET=/var/www/html/nconf
+            ;;
+        DEBIAN)
+            NCONFTARGET=/var/www/nconf
+            ;;
+        *)
+            cecho " > Unsupported distro" red
+            exit 2
+            ;;
+    esac
+
+    if [ -d "$NCONFTARGET" ]
+    then
+        rm -Rf $NCONFTARGET
+        creads " --> Please provide a password for root mysql user: " yellow
+        MYSQLP=$readvalue
+        mysql -h localhost -u root -p$MYSQLP -e "drop database nconf;"
+    fi
+}
+
+function install_nconf(){
+    cadre "Install nconf addon" green
+
+    # manageparameters "quiet"
+
+    case $CODE in
+        REDHAT|Fedora)
+            NCONFTARGET=/var/www/html/nconf
+            ;;
+        DEBIAN)
+            NCONFTARGET=/var/www/nconf
+            ;;
+        *)
+            cecho " > Unsupported distro" red
+            exit 2
+            ;;
+    esac
+
+    if [ -d "$NCONFTARGET" ]
+    then
+        cecho "nconf is already installed!" red
+        exit 2
+    fi
+
+    if [ $SKIPPREREQUISITES -eq 1 ]
+    then
+        cecho " SKIPPREREQUISITES enabled: won't install nconf prerequisites" yellow
+    else
+        case $CODE in
+            REDHAT|Fedora)
+                cecho " > Installing prerequisites" green
+                installpkg pkg $NCONFYUMPKG
+                ;;
+            DEBIAN)
+                cecho " > Installing prerequisites" green
+                installpkg pkg $NCONFAPTPKG
+                ;;
+            *)
+                cecho " > Unsupported distro" red
+                exit 2
+                ;;
+        esac
+    fi
+
+    enable_service ${WEBSERVER}
+    manage_service ${WEBSERVER} start
+
+    install_mysql
+
+    cd $TMP
+
+    filename=$(echo $NCONF | awk -F"/" '{print $NF}')
+    folder=$(echo $filename | sed -e "s/\.tgz//g")
+    if [ ! -f "$filename" ]
+    then
+        cecho " > Getting nconf archive" green
+        wget $WGETPROXY $NCONF >> ${LOGFILE} 2>&1
+    fi
+
+    cecho " > Extracting archive" green
+    if [ -d "$folder" ]
+    then
+        rm -Rf $folder
+    fi
+    tar zxvf $filename >> ${LOGFILE} 2>&1
+
+    cecho " > Deploy nconf" green
+
+    cp -a nconf $NCONFTARGET
+
+    cecho " > Change files owner" green
+    chown -R $HTTPDUSER:$HTTPDGROUP $NCONFTARGET
+
+    cecho " > create deployment folders" green
+    mkdir -p $ETC/global
+    mkdir -p $ETC/Default_collector
+    chown $SKUSER:$HTTPDGROUP $ETC/global
+    chown $SKUSER:$HTTPDGROUP $ETC/Default_collector
+    chmod g+rwx $ETC/global
+    chmod g+rwx $ETC/Default_collector
+
+    cecho " > configure sudo for deployment (should not work with systemd)" green
+    if [ -z "$(cat /etc/sudoers | grep shinken-arbiter)" ]
+    then
+        echo "$HTTPDUSER ALL=NOPASSWD: /etc/init.d/shinken-arbiter restart" >> /etc/sudoers
+        echo "$HTTPDUSER ALL=NOPASSWD: $TARGET/bin/nagios" >> /etc/sudoers        
+    fi
+    sed -i "s/^Defaults.*requiretty/#&/g" /etc/sudoers
+
+    cecho " -> Create nconf user and database" green
+    while true
+    do
+        creads " --> Please provide a password for nconf mysql user: " yellow
+        MYSQLP1=$readvalue
+        creads " --> Please confirm nconf password: " yellow
+        MYSQLP2=$readvalue
+        if [ "$MYSQLP1" != "$MYSQLP2" ]
+        then
+            cecho " --> passwords does not match" red
+        else
+            if [ -z "$MYSQLP1" ] || [ -z "$MYSQLP2" ]
+            then
+                cecho " --> password should not be empty" red
+            else
+                export NCONFP=$MYSQLP2
+                break
+            fi
+        fi
+    done
+
+    if [ -z "$MYSQLP" ]
+    then
+        creads " --> Please provide a password for root mysql user: " yellow
+        MYSQLP=$readvalue
+    fi
+    mysql -h localhost -u root -p$MYSQLP -e "create database if not exists nconf;"
+    mysql -h localhost -u root -p$MYSQLP -e "grant all privileges on nconf.* to 'nconf'@'localhost' identified by '$NCONFP';flush privileges;"
+
+
+    cecho " > Patching nconf for shinken support" green
+    cd $NCONFTARGET/include/ajax
+    patch < $myscripts/install.d/exec_generate_config.php.patch >> ${LOGFILE} 2>&1
+
+    cecho " > Configure deployment.ini file" green
+    cp -f $myscripts/install.d/deployment.ini.in $NCONFTARGET/config/deployment.ini
+    sed -i "s#__SHINKENTARGET__#"$TARGET"#g" $NCONFTARGET/config/deployment.ini
+    sed -i "s#__NCONFTARGET__#"$NCONFTARGET"#g" $NCONFTARGET/config/deployment.ini
+    sed -i "s#__SHINKENETC__#"$ETC"#g" $NCONFTARGET/config/deployment.ini
+
+    cecho " > Alter nagios.cfg config file" green
+    sed -i "s/^cfg_dir.*$/#&/g" $TARGET/etc/nagios.cfg
+    sed -i "s/^cfg_file.*$/#&/g" $TARGET/etc/nagios.cfg
+    echo "cfg_dir=global" >> $TARGET/etc/nagios.cfg
+    echo "cfg_dir=Default_collector" >> $TARGET/etc/nagios.cfg
+
+    # restart the webserver for dependencies
+    enable_service ${WEBSERVER}
+    manage_service ${WEBSERVER} restart
+
+    # automaticaly fill default response
+    cecho " > Set default answers on web installer" green
+    sed -i "s#\$nagios_bin =.*#\$nagios_bin = \""$TARGET"/bin/nagios\";#g" $NCONFTARGET/INSTALL.php
+    sed -i "s#\"database_name\"#\"nconf\"#g" $NCONFTARGET/INSTALL.php
+    sed -i "s#\"user_name\"#\"nconf\"#g" $NCONFTARGET/INSTALL.php
+    sed -i "s#\"password\",#\""$NCONFP"\",#g" $NCONFTARGET/INSTALL.php
+
+    cecho " > Nconf is installed, you must go to http://localhost/nconf/INSTALL.php and finalize installation" yellow
+    cecho " > Just click next button until process is done" yellow
+    cecho " > Hit ENTER when you are done with this step" red
+    read
+    cecho " > Nconf is ready to use. Point your browser to http://localhost/nconf." yellow
+    rm -Rf $NCONFTARGET/INSTALL* $NCONFTARGET/UPDATE*
+
+}
 
 function do_skmacro(){
     macro=$1
@@ -1227,24 +2046,133 @@ function do_skmacro(){
     export PYTHONPATH="$TARGET"
     export SHINKEN="$PYTHONPATH"
     export SKTOOLS="$PYTHONPATH/install.d/tools"
-    $PY $SKTOOLS/skonf.py -a macros -f $SKTOOLS/macros/$macro -d $args >> $TMP/shinken.install.log 2>&1 
+
+    $PY $SKTOOLS/skonf.py -a macros -f $SKTOOLS/macros/$macro -d $args  >> ${LOGFILE} 2>&1
+
+
 }
 
+
+function install_notify_by_xmpp(){
+    XMPP_CONFIG_FILE="$LIBEXEC/notify_by_xmpp.ini"
+    cadre "Install notifiy_by_xmpp addon" green
+
+    cecho " > Installing python-xmpp" green
+    installpkg pkg python-xmpp
+
+    cecho " > Configuring the XMPP account that will be used to send the notifications" green
+    cecho " -> The credentials will be written in plain text in $XMPP_CONFIG_FILE" yellow
+    while true
+    do
+        creads " -> Please provide the XMPP address (for ex. monitoring@jabber.org):" yellow
+        XMPP_ADDRESS=$readvalue
+        if [ -z "$XMPP_ADDRESS" ]
+        then
+            cecho " --> the address should not be empty" red
+        else
+            if [[ $XMPP_ADDRESS =~ @ ]]
+            then
+                XMPP_ACCOUNT=$(echo $XMPP_ADDRESS | cut -d@ -f1)
+                XMPP_SERVER=$(echo $XMPP_ADDRESS | cut -d@ -f2)
+                break
+            else
+                cecho " --> the adress should be like account_name@server_name" red
+            fi
+        fi
+    done
+    
+    while true
+    do
+        creads " -> Please provide the password of this account:" yellow
+        XMPP_PASSWORD_1=$readvalue
+        creads " -> Please confirm the password:" yellow
+        XMPP_PASSWORD_2=$readvalue
+        if [ -z "$XMPP_PASSWORD_1" ] || [ -z "$XMPP_PASSWORD_2" ]
+        then
+            cecho " --> passwords should not be empty" red
+        else
+            if [ "$XMPP_PASSWORD_1" != "$XMPP_PASSWORD_2" ]
+            then
+                cecho " --> passwords does not match" red
+            else
+                break
+            fi
+        fi
+    done
+
+    cecho " > Writing credentials in $XMPP_CONFIG_FILE" green
+    sed -i "s/^server=.*$/server=$XMPP_SERVER/g" $XMPP_CONFIG_FILE
+    sed -i "s/^#username=.*$/username=$XMPP_ACCOUNT/g" $XMPP_CONFIG_FILE
+    sed -i "s/^#password=.*$/password=$XMPP_PASSWORD_1/g" $XMPP_CONFIG_FILE
+}
 
 #################################
 ### PLUGINS INSTALLATION PART ###
 #################################
+
+# CUCUMBER
+function install_cucumber(){
+    if [[ "$CODE" == "REDHAT" ]]
+    then
+        if [[ ! -f /etc/yum.repos.d/dag.repo ]]
+        then
+            cecho " > Enable dag repository for ffmpeg" green
+            cp $myscripts/install.d/dag.repo /etc/yum.repos.d
+            yum clean all >> ${LOGFILE} 2>&1
+        fi
+        cecho " > Installing eue dependencies" green
+        installpkg pkg $EUEYUMPKG
+    elif [[ "$CODE" == "Fedora" ]]
+    then
+        cecho " > Installing eue dependencies" green
+        installpkg pkg $EUEYUMPKG
+    elif [[ "$CODE" == "DEBIAN" ]]
+    then
+        cecho " > Unsuported at the moment ...." red
+        exit 2
+    else
+        cecho " > Unsupported distribution" red
+        exit 2
+    fi
+
+    cecho " --> Installing ruby gems" green
+    for g in $EUEGEMS
+    do
+        gem=$(echo $g | awk -F: '{print $1}')
+        gemver=$(echo $g | awk -F: '{print $2}')
+        cecho " ----> Installing gem ${gem} version ${gemver}" green
+        gem install --no-ri --no-rdoc $gem --version $gemver >> ${LOGFILE} 2>&1
+        if [[ $? -ne 0 ]]
+        then
+            cecho " ------> There was a problem installing gem ${gem} version ${gemver}" red
+        fi
+    done
+
+    cecho " --> Alter max_ouput_length for webui" green
+    do_skmacro set_webui_ouptput_length.macro 200 
+  
+    cecho " --> Deploy example eue service" green
+    IP=$(ifconfig  | grep adr | awk -F: '{print $2}' | awk '{print $1}' | head -n 1)
+    install -b -g $SKGROUP -o $SKUSER -m 0664 $TARGET/etc/sample/services/eue_glpi.cfg $TARGET/etc/services 
+    install -b -g $SKGROUP -o $SKUSER -m 0664 $LIBEXEC/eue/glpi.ini.in $LIBEXEC/eue/glpi.ini
+    sed -i "s/@@IPWEBUI@@/"$IP"/g" $LIBEXEC/eue/glpi.ini
+
+    cecho " --> restart shinken" green
+    skill
+    sstart
+}
+
+
+
 
 # CAPTURE_PLUGIN
 function install_capture_plugin(){
     cadre "Install capture_plugin" green
     cd $TMP
     cecho " > Getting capture_plugin" green
-    wget $WGETPROXY http://www.waggy.at/nagios/capture_plugin.txt >> $TMP/shinken.install.log 2>&1 
+    wget $WGETPROXY $CAPTURE_PLUGIN >> ${LOGFILE} 2>&1
     cecho " > Installing capture_plugin" green
-    mv capture_plugin.txt $TARGET/libexec/capture_plugin
-    chmod +x $TARGET/libexec/capture_plugin    
-    chown $SKUSER:$SKGROUP $TARGET/libexec/capture_plugin
+    install -b -g $SKGROUP -o $SKUSER -m 0775 capture_plugin.txt $LIBEXEC/capture_plugin
 }
 
 # CHECK_HPASM
@@ -1254,15 +2182,20 @@ function install_check_hpasm(){
     cecho "You must install hpasm and or hp snmp agents on the monitored servers" yellow
     read taste
 
-    if [ "$CODE" == "REDHAT" ]
-    then
-        cecho " > Installing prerequisites" green 
-        yum install -yq $CHECKHPASMYUMPKGS  >> $TMP/shinken.install.log 2>&1 
-    else
-        cecho " > Installing prerequisites" green 
-        apt-get update >> $TMP/shinken.install.log 2>&1
-        apt-get -y install $CHECKHPASMAPTPKGS >> $TMP/shinken.install.log 2>&1 
-    fi
+    case $CODE in
+        REDHAT|Fedora)
+            cecho " > Installing prerequisites" green
+            installpkg pkg $CHECKHPASMYUMPKGS
+            ;;
+        DEBIAN)
+            cecho " > Installing prerequisites" green
+            installpkg pkg $CHECKHPASMAPTPKGS
+            ;;
+        *)
+            cecho " > Unsupported distro" red
+            exit 2
+            ;;
+    esac
 
     if [ $? -ne 0 ]
     then
@@ -1278,7 +2211,7 @@ function install_check_hpasm(){
     if [ ! -f "$TMP/$archive" ]
     then
         cecho " > Downloading check_hpasm" green
-        wget $WGETPROXY $CHECKHPASM  >> $TMP/shinken.install.log 2>&1     
+        wget $WGETPROXY $CHECKHPASM  >> ${LOGFILE} 2>&1
         if [ $? -ne 0 ]
         then
             cecho " > Error while downloading check_hpasm" red
@@ -1286,26 +2219,24 @@ function install_check_hpasm(){
         fi
     fi
     cecho " > Extract archive content" green
-    tar zxvf $archive >> $TMP/shinken.install.log 2>&1
+    tar zxvf $archive >> ${LOGFILE} 2>&1
     cd $folder
     cecho " > Configure source tree" green
-    ./configure >> $TMP/shinken.install.log 2>&1
+    ./configure >> ${LOGFILE} 2>&1
     if [ $? -ne 0 ]
     then
         cecho " > Error while configuring source tree" red
         exit 2
     fi
     cecho " > Build" green
-    make  >> $TMP/shinken.install.log 2>&1
+    make  >> ${LOGFILE} 2>&1
     if [ $? -ne 0 ]
     then
         cecho " > Error while building" red
         exit 2
     fi
     cecho " > Installing check_hpasm" green
-    cp plugins-scripts/check_hpasm $TARGET/libexec/ >> $TMP/shinken.install.log 2>&1
-    chmod +x $TARGET/libexec/check_hpasm  >> $TMP/shinken.install.log 2>&1   
-    chown $SKUSER:$SKGROUP $TARGET/libexec/check_hpasm >> $TMP/shinken.install.log 2>&1
+    install -b -g $SKGROUP -o $SKUSER -m 0775 plugins-scripts/check_hpasm $LIBEXEC/ >> ${LOGFILE} 2>&1
 }
 
 # CHECK_MONGODB
@@ -1313,21 +2244,22 @@ function install_check_mongodb(){
 
     cadre "Install check_mongodb plugin from Mike Zupan" green
 
-    if [ "$CODE" == "REDHAT" ]
-    then
-        if [ ! -z "$CHECKMONGOYUMPKG" ]
-        then
-            cecho " > Installing prerequisites" green 
-            yum install -yq $CHECKMONGOYUMPKG  >> $TMP/shinken.install.log 2>&1 
-        fi
-    else
-        if [ ! -z "$CHECKMONGOAPTPKG" ]
-        then
-            cecho " > Installing prerequisites" green 
-            apt-get update >> $TMP/shinken.install.log 2>&1
-            apt-get -y install $CHECKMONGOAPTPKG >> $TMP/shinken.install.log 2>&1 
-        fi
-    fi
+    case $CODE in
+        REDHAT|Fedora)
+            if [ ! -z "$CHECKMONGOYUMPKG" ]
+            then
+                cecho " > Installing prerequisites" green
+                installpkg pkg $CHECKMONGOYUMPKS
+            fi
+            ;;
+        DEBIAN)
+            if [ ! -z "$CHECKMONGOAPTPKG" ]
+            then
+                cecho " > Installing prerequisites" green
+                installpkg pkg $CHECKMONGOAPTPKG
+            fi
+            ;;
+    esac
 
     if [ $? -ne 0 ]
     then
@@ -1340,7 +2272,7 @@ function install_check_mongodb(){
     if [ ! -f "$TMP/check_mongodb.py" ]
     then
         cecho " > Downloading check_mongodb.py" green
-        wget $WGETPROXY $CHECKMONGO  >> $TMP/shinken.install.log 2>&1     
+        wget $WGETPROXY $CHECKMONGO  >> ${LOGFILE} 2>&1
         if [ $? -ne 0 ]
         then
             cecho " > Error while downloading check_mongodb.py" red
@@ -1349,10 +2281,50 @@ function install_check_mongodb(){
     fi
 
     cecho " > Installing check_mongodb.py" green
-    mv check_mongodb.py $TARGET/libexec/check_mongodb.py
-    chmod +x $TARGET/libexec/check_mongodb.py    
-    chown $SKUSER:$SKGROUP $TARGET/libexec/check_mongodb.py
-        
+    install -b -g $SKGROUP -o $SKUSER -m 0775 check_mongodb.py $LIBEXEC/check_mongodb.py
+}
+
+# Add two plugins to check IBM DS san devices.
+function install_IBM_DS() {
+    cadre "Install check_IBM_DS_health.sh and check_IBM_DS_performance.pl plugins" green
+
+    SMcli_bin=$(which SMcli)
+    if [ $? -ne 0 ]
+    then
+        cecho "You do not have Storage Manager installed. Go on:" red
+        cecho "http://www-933.ibm.com/support/fixcentral/swg/selectFixes?parent=Entry-level+disk+systems&product=ibm/Storage_Disk/DS3500&release=All&platform=All&function=all#Storage%20Manager" red
+        cecho "to download Storage Manager for Linux according to your arch" red
+        exit 2
+    else
+        cecho "Downloading plugins..." green
+        wget $WGETPROXY -O check_IBM_DS_health.sh $CHECKIBMDSHEALTH >> ${LOGFILE} 2>&1
+        wget $WGETPROXY -O check_IBM_DS_performance.pl $CHECKIBMDSPERF >> ${LOGFILE} 2>&1
+    fi
+
+    cecho "Installing plugins..." green
+    install -b -g $SKGROUP -o $SKUSER -m 0775 -t $LIBEXEC check_IBM_DS_health.sh check_IBM_DS_performance.pl >> ${LOGFILE} 2>&1
+
+    cadre "Successfully installed IBM DS san monitoring plugins." green
+}
+
+function install_IBM_plugins() {
+    cadre "Install check_snmp_aixVGstate.pl, check_snmp_HACMP.pl, check_snmp_Safekit.pl and check_snmp_systemHealth.pl" green
+
+    cecho "Downloading plugins..." green
+    wget $WGETPROXY $CHECKIBM >> ${LOGFILE} 2>&1
+
+    cecho "Installing plugins..." green
+    install -b -g $SKGROUP -o $SKUSER -m 0775 -t $LIBEXEC check_snmp_systemHealth.pl check_snmp_aixVGstate.pl check_snmp_HACMP.pl check_snmp_Safekit.pl >> ${LOGFILE} 2>&1
+}
+
+function install_HPUX_plugins() {
+    cadre "Install HPUX plugins" green
+
+    cecho "Downloading plugins..." green
+    wget $WGETPROXY $CHECKHPUX >> ${LOGFILE} 2>&1
+
+    cecho "Installing plugins..." green
+    install -b -g $SKGROUP -o $SKUSER -m 0775 -t $LIBEXEC check_snmp_hpux_storage.pl check_snmp_mem >> ${LOGFILE} 2>&1
 }
 
 # CHECK_NWC_HEALTH
@@ -1360,21 +2332,22 @@ function install_check_nwc_health(){
 
     cadre "Install check_nwc_health plugin" green
 
-    if [ "$CODE" == "REDHAT" ]
-    then
-        if [ ! -z "$CHECKNWCYUMPKG" ]
-        then 
-            cecho " > Installing prerequisites" green 
-            yum install -yq $CHECKNWCYUMPKG  >> $TMP/shinken.install.log 2>&1 
-        fi
-    else
-        if [ ! -z "$CHECKNWCAPTPKG" ]
-        then 
-            cecho " > Installing prerequisites" green 
-            apt-get update >> $TMP/shinken.install.log 2>&1
-            apt-get -y install $CHECKNWCAPTPKG >> $TMP/shinken.install.log 2>&1 
-        fi
-    fi
+    case $CODE in
+        REDHAT|Fedora)
+            if [ ! -z "$CHECKNWCYUMPKG" ]
+            then
+                cecho " > Installing prerequisites" green
+                installpkg pkg $CHECKNWCYUMPKG
+            fi
+            ;;
+        DEBIAN)
+           if [ ! -z "$CHECKNWCAPTPKG" ]
+            then
+                cecho " > Installing prerequisites" green
+                installpkg pkg $CHECKNWCAPTPKG
+            fi
+            ;;
+    esac
 
     if [ $? -ne 0 ]
     then
@@ -1387,7 +2360,7 @@ function install_check_nwc_health(){
     if [ ! -f "$TMP/master" ]
     then
         cecho " > Downloading check_nwc_health" green
-        wget $WGETPROXY $CHECKNWC -O check_nwc_health.tar.gz  >> $TMP/shinken.install.log 2>&1     
+        wget $WGETPROXY $CHECKNWC -O check_nwc_health.tar.gz  >> ${LOGFILE} 2>&1
         if [ $? -ne 0 ]
         then
             cecho " > Error while downloading check_wc" red
@@ -1398,17 +2371,17 @@ function install_check_nwc_health(){
     folder=$(ls -1 | grep "^lausser-check_nwc_health")
     if [ ! -z "$folder" ]
     then
-        rm -Rf lausser-check_nwc_health* >> $TMP/shinken.install.log 2>&1
+        rm -Rf lausser-check_nwc_health* >> ${LOGFILE} 2>&1
     fi
-    tar zxvf check_nwc_health.tar.gz >> $TMP/shinken.install.log 2>&1
+    tar zxvf check_nwc_health.tar.gz >> ${LOGFILE} 2>&1
     folder=$(ls -1 | grep "^lausser-check_nwc_health")
-    cd $folder 
-    cecho " > Build check_nwc_health.pl" green 
-    autoreconf >> $TMP/shinken.install.log 2>&1
-    ./configure --with-nagios-user=$SKUSER --with-nagios-group=$SKGROUP --enable-perfdata --enable-extendedinfo --prefix=$TARGET >> $TMP/shinken.install.log 2>&1
-    make >> $TMP/shinken.install.log 2>&1
-    cecho " > Install check_nwc_health.pl" green 
-    make install >> $TMP/shinken.install.log 2>&1
+    cd $folder
+    cecho " > Build check_nwc_health.pl" green
+    autoreconf >> ${LOGFILE} 2>&1
+    ./configure --with-nagios-user=$SKUSER --with-nagios-group=$SKGROUP --enable-perfdata --enable-extendedinfo --prefix=$TARGET >> ${LOGFILE} 2>&1
+    make >> ${LOGFILE} 2>&1
+    cecho " > Install check_nwc_health.pl" green
+    make install >> ${LOGFILE} 2>&1
 }
 
 # CHECK_EMC_CLARIION
@@ -1421,21 +2394,22 @@ plugin. Ask your vendor to know how to get it." yellow
     cecho " You should also customize the navisphere agent path in the plugin" yellow
     read taste
 
-    if [ "$CODE" == "REDHAT" ]
-    then
-        if [ ! -z "$CHECKEMCYUMPKG" ]
-        then 
-            cecho " > Installing prerequisites" green 
-            yum install -yq $CHECKEMCYUMPKG  >> $TMP/shinken.install.log 2>&1 
-        fi
-    else
-        if [ ! -z "$CHECKEMCAPTPKG" ]
-        then 
-            cecho " > Installing prerequisites" green 
-            apt-get update >> $TMP/shinken.install.log 2>&1
-            apt-get -y install $CHECKEMCAPTPKG >> $TMP/shinken.install.log 2>&1 
-        fi
-    fi
+    case $CODE in
+        REDHAT|Fedora)
+            if [ ! -z "$CHECKEMCYUMPKG" ]
+            then
+                cecho " > Installing prerequisites" green
+                installpkg pkg $CHECKEMCYUMPKG
+            fi
+            ;;
+        DEBIAN)
+            if [ ! -z "$CHECKEMCAPTPKG" ]
+            then
+                cecho " > Installing prerequisites" green
+                installpkg pkg $CHECKEMCAPTPKG
+            fi
+            ;;
+    esac
 
     if [ $? -ne 0 ]
     then
@@ -1448,7 +2422,7 @@ plugin. Ask your vendor to know how to get it." yellow
     if [ ! -f "$TMP/check_emc.zip" ]
     then
         cecho " > Downloading check_emc.zip" green
-        wget $WGETPROXY $CHECKEMC  >> $TMP/shinken.install.log 2>&1     
+        wget $WGETPROXY $CHECKEMC  >> ${LOGFILE} 2>&1
         if [ $? -ne 0 ]
         then
             cecho " > Error while downloading check_emc.zip" red
@@ -1457,22 +2431,20 @@ plugin. Ask your vendor to know how to get it." yellow
     fi
 
     cecho " > Extract check_emc.zip" green
-    if [ -d check_emc ] 
-    then 
+    if [ -d check_emc ]
+    then
         rm -Rf check_emc
     fi
-    unzip check_emc.zip >> $TMP/shinken.install.log 2>&1
+    unzip check_emc.zip >> ${LOGFILE} 2>&1
     if [ $? -ne 0 ]
     then
         cecho " > Error while trying to extract check_emc.zip" red
         exit 2
     fi
-  
-    cecho " > Install check_emc_clariion.pl" green 
-    cd check_emc 
-    mv check_emc_clariion.pl $TARGET/libexec/
-    chmod +x $TARGET/libexec/check_emc_clariion.pl    
-    chown $SKUSER:$SKGROUP $TARGET/libexec/check_emc_clariion.pl
+
+    cecho " > Install check_emc_clariion.pl" green
+    cd check_emc
+    install -b -g $SKGROUP -o $SKUSER -m 0775 check_emc_clariion.pl $LIBEXEC/
 }
 
 # CHECK_ESX3
@@ -1480,35 +2452,50 @@ function install_check_esx3(){
 
     cadre "Install check_esx3 plugin from op5" green
 
-    if [ "$CODE" == "REDHAT" ]
-    then
-        cecho " > Installing prerequisites" green 
-        # because redhat package nagios-plugins-perl does not ship all files from Nagios::plugins
-        yum install -yq $NAGPLUGYUMPKGS  >> $TMP/shinken.install.log 2>&1 
-        cd $TMP
-        wget $WGETPROXY $NAGPLUGPERL >> $TMP/shinken.install.log 2>&1
-        tar zxvf $(echo $NAGPLUGPERL | awk -F "/" '{print $NF}') >> $TMP/shinken.install.log 2>&1
-        cd  $(echo $NAGPLUGPERL | awk -F "/" '{print $NF}' |sed -e "s/\.tar\.gz//g") >> $TMP/shinken.install.log 2>&1
-        perl Makefile.PL >> $TMP/shinken.install.log 2>&1
-        make >> $TMP/shinken.install.log 2>&1
-        if [ $? -ne 0 ]
-        then
-            cecho " > Error while building Nagios::Plugins perl modules" red
-            exit 2
-        fi    
-        make install >> $TMP/shinken.install.log 2>&1
-        yum install -yq $VSPHERESDKYUMPKGS  >> $TMP/shinken.install.log 2>&1 
-    else
-        cecho " > Installing prerequisites" green 
-        apt-get update >> $TMP/shinken.install.log 2>&1
-        apt-get -y install $VSPHERESDKAPTPKGS >> $TMP/shinken.install.log 2>&1 
-    fi
+    cecho " > Installing prerequisites" green
+    case $CODE in
+        REDHAT|Fedora)
+            # because redhat package nagios-plugins-perl does not ship all files from Nagios::plugins
+            yum install -y $NAGPLUGYUMPKGS  >> ${LOGFILE} 2>&1
+            cd $TMP
+            wget $WGETPROXY $NAGPLUGPERL >> ${LOGFILE} 2>&1
+            tar zxvf $(echo $NAGPLUGPERL | awk -F "/" '{print $NF}') >> ${LOGFILE} 2>&1
+            cd  $(echo $NAGPLUGPERL | awk -F "/" '{print $NF}' |sed -e "s/\.tar\.gz//g") >> ${LOGFILE} 2>&1
+            perl Makefile.PL >> ${LOGFILE} 2>&1
+            make >> ${LOGFILE} 2>&1
+            if [ $? -ne 0 ]
+            then
+                cecho " > Error while building Nagios::Plugins perl modules" red
+                exit 2
+            fi
+            make install >> ${LOGFILE} 2>&1
+            yum install -y $VSPHERESDKYUMPKGS  >> ${LOGFILE} 2>&1
+            ;;
+        DEBIAN)
+            installpkg pkg $VSPHERESDKAPTPKGS
+            ;;
+    esac
     cd $TMP
 
-    if [ ! -f "$TMP/VMware-vSphere-SDK-for-Perl-$VSPHERESDKVER.$ARCH.tar.gz" ]
+    # workaround arch naming
+    case $ARCH in
+        i686)
+            MARCH=i386
+            ;;
+        i586)
+            MARCH=i386
+            ;;
+        *)
+            MARCH=$ARCH
+            ;;
+    esac
+
+    VSPHERESDK=$(echo $VSPHERESDK | sed -e "s/$ARCH/$MARCH/g")
+
+    if [ ! -f "$TMP/VMware-vSphere-SDK-for-Perl-$VSPHERESDKVER.$MARCH.tar.gz" ]
     then
         cecho " > Downloading VSPHERE SPHERE SDK FOR PERL" green
-        wget $WGETPROXY $VSPHERESDK  >> $TMP/shinken.install.log 2>&1     
+        wget $WGETPROXY $VSPHERESDK  >> ${LOGFILE} 2>&1
         if [ $? -ne 0 ]
         then
             cecho " > Error while downloading vsphere sdk for perl" red
@@ -1517,79 +2504,82 @@ function install_check_esx3(){
     fi
 
     cecho " > Extracting vsphere sdk for perl" green
-    if [ -d "$TMP/vmware-vsphere-cli-distrib" ] 
+    if [ -d "$TMP/vmware-vsphere-cli-distrib" ]
     then
         cecho " > Removing old building folder" green
         rm -Rf vmware-vsphere-cli-distrib
     fi
-    tar zxvf VMware-vSphere-SDK-for-Perl-$VSPHERESDKVER.$ARCH.tar.gz  >> $TMP/shinken.install.log 2>&1 
-    cd vmware-vsphere-cli-distrib 
+    tar zxvf VMware-vSphere-SDK-for-Perl-$VSPHERESDKVER.$MARCH.tar.gz  >> ${LOGFILE} 2>&1
+    cd vmware-vsphere-cli-distrib
     cecho " > Building vsphere sdk for perl" green
-    perl Makefile.PL >> $TMP/shinken.install.log 2>&1 
-    make >> $TMP/shinken.install.log 2>&1 
+    perl Makefile.PL >> ${LOGFILE} 2>&1
+    make >> ${LOGFILE} 2>&1
     cecho " > Installing vsphere sdk for perl" green
-    make install >> $TMP/shinken.install.log 2>&1 
+    make install >> ${LOGFILE} 2>&1
 
     cd $TMP
     cecho " > Getting check_esx3 plugin from op5" green
-    wget $WGETPROXY $CHECK_ESX3_SCRIPT -O check_esx3.pl >> $TMP/shinken.install.log 2>&1 
-    mv check_esx3.pl $TARGET/libexec/check_esx3.pl
-    chmod +x $TARGET/libexec/check_esx3.pl    
-    chown $SKUSER:$SKGROUP $TARGET/libexec/check_esx3.pl
-        
+    wget $WGETPROXY $CHECK_ESX3_SCRIPT -O check_esx3.pl >> ${LOGFILE} 2>&1
+    install -b -g $SKGROUP -o $SKUSER -m 0775 check_esx3.pl $LIBEXEC/check_esx3.pl
 }
 
 # NAGIOS-PLUGINS
 function install_nagios-plugins(){
     cadre "Install nagios plugins" green
 
-    if [ "$CODE" == "REDHAT" ]
-    then
-        cecho " > Installing prerequisites" green
-        yum install -yq $NAGPLUGYUMPKG  >> $TMP/shinken.install.log 2>&1 
-    else
-        cecho " > Installing prerequisites" green 
-        apt-get update >> $TMP/shinken.install.log 2>&1
-        DEBIAN_FRONTEND=noninteractive apt-get -y install $NAGPLUGAPTPKG >> $TMP/shinken.install.log 2>&1 
-    fi
+    cecho " > Installing prerequisites" green
+    case $CODE in
+        REDHAT|Fedora)
+            installpkg pkg $NAGPLUGYUMPKG 
+            ;;
+        DEBIAN)
+            DEBIAN_FRONTEND=noninteractive apt-get -y install $NAGPLUGAPTPKG >> ${LOGFILE} 2>&1
+            ;;
+    esac
+
     cd $TMP
     if [ ! -f "nagios-plugins-$NAGPLUGVERS.tar.gz" ]
     then
         cecho " > Getting nagios-plugins archive" green
-        wget $WGETPROXY $NAGPLUGBASEURI >> $TMP/shinken.install.log 2>&1 
+        wget $WGETPROXY $NAGPLUGBASEURI >> ${LOGFILE} 2>&1
     fi
     cecho " > Extract archive content " green
     rm -Rf nagios-plugins-$NAGPLUGVERS
-    tar zxvf nagios-plugins-$NAGPLUGVERS.tar.gz >> $TMP/shinken.install.log 2>&1 
+    tar zxvf nagios-plugins-$NAGPLUGVERS.tar.gz >> ${LOGFILE} 2>&1
     cd nagios-plugins-$NAGPLUGVERS
+    cecho " > Patching nagios-plugins" green
+    patch -p0 < $myscripts/install.d/nagios-plugins-gets-patch.patch >> ${LOGFILE} 2>&1
     cecho " > Configure source tree" green
-    ./configure --with-nagios-user=$SKUSER --with-nagios-group=$SKGROUP --enable-libtap --enable-extra-opts --prefix=$TARGET --enable-perl-modules >> $TMP/shinken.install.log 2>&1 
+    ./configure --with-nagios-user=$SKUSER --with-nagios-group=$SKGROUP --enable-libtap --enable-extra-opts --prefix=$TARGET --enable-perl-modules >> ${LOGFILE} 2>&1
     cecho " > Building ...." green
-    make >> $TMP/shinken.install.log >> $TMP/shinken.install.log  2>&1 
+    make >> ${LOGFILE} >> ${LOGFILE}  2>&1
     cecho " > Installing" green
-    make install >> $TMP/shinken.install.log >> $TMP/shinken.install.log  2>&1 
-    cp contrib/check_mem.pl $TARGET/libexec >> $TMP/shinken.install.log  2>&1 
-    chmod +x $TARGET/libexec/check_mem.pl >> $TMP/shinken.install.log  2>&1
-    chown $SKUSER:$SKGROUP $TARGET/libexec/check_mem.pl >> $TMP/shinken.install.log 2>&1
+    make install >> ${LOGFILE} >> ${LOGFILE}  2>&1
+    #if [ $? -ne 0 ]
+    #then
+    #    cecho " > Error while installing nagios-plugins" red
+    #    exit 2
+    #fi
+    install -b -g $SKGROUP -o $SKUSER -m 0775 contrib/check_mem.pl $LIBEXEC >> ${LOGFILE} 2>&1
 }
 
-# MANUBULON SNMP PLUGINS 
+# MANUBULON SNMP PLUGINS
 function install_manubulon(){
     cadre "Install manubulon plugins" green
 
-    if [ "$CODE" == "REDHAT" ]
-    then
-        cecho " > Installing prerequisites" green
-        yum install -yq $MANUBULONYUMPKG  >> $TMP/shinken.install.log 2>&1 
-    else
-        cecho " > Installing prerequisites" green 
-        apt-get update >> $TMP/shinken.install.log 2>&1
-        apt-get -y install $MANUBULONAPTPKG >> $TMP/shinken.install.log 2>&1 
-    fi
+    cecho " > Installing prerequisites" green
+    case $CODE in
+        REDHAT|Fedora)
+            installpkg pkg $MANUBULONYUMPKG
+            ;;
+        DEBIAN)
+            installpkg pkg $MANUBULONAPTPKG
+            ;;
+    esac
     cd $TMP
 
     # check if utils.pm is there
-    if [ ! -f $TARGET/libexec/utils.pm ]
+    if [ ! -f $LIBEXEC/utils.pm ]
     then
         cecho " > Unable to find utils.pm. You should install nagios-plugins first (./shinken.sh -p nagios-plugins)" red
         exit 2
@@ -1600,88 +2590,89 @@ function install_manubulon(){
     if [ ! -f "$archive" ]
     then
         cecho " > Getting manubulon archive" green
-        wget $WGETPROXY $MANUBULON >> $TMP/shinken.install.log 2>&1 
+        wget $WGETPROXY $MANUBULON >> ${LOGFILE} 2>&1
     fi
     cecho " > Extract archive content " green
     if [ -d $folder ]
     then
-        rm -Rf $folder 
+        rm -Rf $folder
     fi
-    tar zxvf $archive >> $TMP/shinken.install.log 2>&1 
-    cd $folder 
+    tar zxvf $archive >> ${LOGFILE} 2>&1
+    cd $folder
     cecho " > Relocate libs" green
     for s in $(ls -1 $TMP/$folder/*.pl)
     do
         cecho " => Processing $s" green
-        sed -i "s#/usr/local/nagios/libexec#"$TARGET"/libexec#g" $s
-        cecho " => Installing $s" green
-        cp $s $TARGET/libexec
+        sed -i "s#/usr/local/nagios/libexec#"$LIBEXEC"#g" $s
     done
+    cecho " => Installing" green
+    install -b -g $SKGROUP -o $SKUSER -m 0775 $TMP/$folder/*pl $LIBEXEC
 }
 
 # CHECK_WMI_PLUS
 function install_check_wmi_plus(){
     cadre "Install check_wmi_plus" green
 
-    if [ "$CODE" == "REDHAT" ]
-    then
-        cecho " > Installing prerequisites" green 
-        yum -yq install $WMICYUMPKG >> $TMP/shinken.install.log 2>&1 
-    else
-        cecho " > Installing prerequisites" green 
-        apt-get update >> $TMP/shinken.install.log 2>&1
-        apt-get -y install $WMICAPTPKG >> $TMP/shinken.install.log 2>&1
-    fi 
+    cecho " > Installing prerequisites" green
+    case $CODE in
+        REDHAT|Fedora)
+            installpkg pkg $WMICYUMPKG
+            ;;
+        DEBIAN)
+            installpkg pkg $WMICAPTPKG
+            ;;
+    esac
+
     cd $TMP
     filename=$(echo $WMIC | awk -F"/" '{print $NF}')
     folder=$(echo $filename | sed -e "s/\.tar\.gz//g")
     if [ ! -f $filename ]
     then
         cecho " > Downloading wmic" green
-        wget $WGETPROXY $WMIC >> $TMP/shinken.install.log 2>&1
+        wget $WGETPROXY $WMIC >> ${LOGFILE} 2>&1
         if [ $? -ne 0 ]
         then
             cecho " > Error while downloading $VMIC" red
             exit 2
-        fi 
+        fi
     fi
     if [ -d $folder ]
-    then 
+    then
         rm -Rf $folder
     fi
     cecho " > Extracting archive " green
-    tar zxvf $filename >> $TMP/shinken.install.log 2>&1
+    tar zxvf $filename >> ${LOGFILE} 2>&1
     cd $folder
     cecho " > Building wmic" green
-    make >> $TMP/shinken.install.log 2>&1 
-    if [ $? -ne 0 ] 
+    make >> ${LOGFILE} 2>&1
+    if [ $? -ne 0 ]
     then
         cecho " > Error while building wmic" red
         exit 2
     fi
     cecho " > Installing wmic" green
-    cp Samba/source/bin/wmic $TARGET/libexec/
-    chown $SKUSER:$SKGROUP Samba/source/bin/wmic
+    install -b -g $SKGROUP -o $SKUSER -m 0775 Samba/source/bin/wmic $LIBEXEC
     cd $TMP
     cecho " > Downloading check_wmi_plus" green
     filename=$(echo $CHECKWMIPLUS | awk -F"/" '{print $NF}')
     folder=$(echo $filename | sed -e "s/\.tar\.gz//g")
     if [ ! -f "$filename" ]
     then
-        wget $WGETPROXY $CHECKWMIPLUS >> $TMP/shinken.install.log 2>&1  
+        wget $WGETPROXY $CHECKWMIPLUS >> ${LOGFILE} 2>&1
     fi
     cecho " > Extracting archive" green
-    tar zxvf $filename >> $TMP/shinken.install.log 2>&1 
+    tar zxvf $filename >> ${LOGFILE} 2>&1
     cecho " > Installing plugin" green
-    cp check_wmi_plus.conf.sample $TARGET/libexec/check_wmi_plus.conf 
-    cp check_wmi_plus.pl $TARGET/libexec/check_wmi_plus.pl
-    cp -R $TMP/check_wmi_plus.d $TARGET/libexec/
-    chown $SKUSER:$SKGROUP $TARGET/libexec/check_wmi_plus* 
+    install -b -g $SKGROUP -o $SKUSER -m 0664 check_wmi_plus.conf.sample $LIBEXEC/check_wmi_plus.conf
+    install -b -g $SKGROUP -o $SKUSER -m 0775 check_wmi_plus.pl $LIBEXEC/check_wmi_plus.pl
+    install -g $SKGROUP -o $SKUSER -m 0775 -d $LIBEXEC/check_wmi_plus.d
+    install -b -g $SKGROUP -o $SKUSER -m 0664 $TMP/check_wmi_plus.d/* $LIBEXEC/check_wmi_plus.d
+
     cecho " > configuring plugin" green
-    sed -i "s#/usr/lib/nagios/plugins#"$TARGET"/libexec#g" $TARGET/libexec/check_wmi_plus.conf
-    sed -i "s#/bin/wmic#"$TARGET"/libexec/wmic#g" $TARGET/libexec/check_wmi_plus.conf
-    sed -i "s#/opt/nagios/bin/plugins#"$TARGET"/libexec#g" $TARGET/libexec/check_wmi_plus.pl
-    sed -i "s#/usr/lib/nagios/plugins#"$TARGET"/libexec#g" $TARGET/libexec/check_wmi_plus.pl
+    sed -i "s#/usr/lib/nagios/plugins#"$LIBEXEC"#g" $LIBEXEC/check_wmi_plus.conf
+    sed -i "s#/bin/wmic#"$LIBEXEC"/wmic#g" $LIBEXEC/check_wmi_plus.conf
+    sed -i "s#/opt/nagios/bin/plugins#"$LIBEXEC"#g" $LIBEXEC/check_wmi_plus.pl
+    sed -i "s#/usr/lib/nagios/plugins#"$LIBEXEC"#g" $LIBEXEC/check_wmi_plus.pl
 }
 
 # CHECK_ORACLE_HEALTH
@@ -1690,26 +2681,25 @@ function install_check_oracle_health(){
 
     if [ -z "$ORACLE_HOME" ]
     then
-        cadre "WARNING YOU SHOULD INSTALL ORACLE INSTANT CLIENT FIRST !!!!" yellow
-        cecho " > Download the oracle instant client there (basic AND sdk AND sqlplus) : " yellow
-        cecho " > 64 bits : http://www.oracle.com/technetwork/topics/linuxx86-64soft-092277.html" yellow
-        cecho " > 32 bits : http://www.oracle.com/technetwork/topics/linuxsoft-082809.html" yellow
+        cadre "WARNING YOU SHOULD INSTALL ORACLE INSTANT CLIENT FIRST!!!!" yellow
+        cecho " > Download the oracle instant client there (basic AND sdk AND sqlplus): " yellow
+        cecho " > 64 bits: http://www.oracle.com/technetwork/topics/linuxx86-64soft-092277.html" yellow
+        cecho " > 32 bits: http://www.oracle.com/technetwork/topics/linuxsoft-082809.html" yellow
         cecho " > Set the ORACLE_HOME environment variable (better to set it in the bashrc)" yellow
         cecho " > Set LD_LIBRARY_PATH to ORACLE_HOME (or better create a config file in /etc/ld.so.conf) then run ldconfig" yellow
         cecho " > press ENTER to continue or CTRL+C to abort" yellow
         exit 2
     fi
 
-    if [ "$CODE" == "REDHAT" ]
-    then
-        cecho " > Installing prerequisites" green 
-        apt-get update >> $TMP/shinken.install.log 2>&1
-        apt-get -y install $CHECKORACLEHEALTHYUMPKG >> $TMP/shinken.install.log 2>&1 
-    else
-        cecho " > Installing prerequisites" green 
-        apt-get update >> $TMP/shinken.install.log 2>&1
-        apt-get -y install $CHECKORACLEHEALTHAPTPKG >> $TMP/shinken.install.log 2>&1 
-    fi
+    cecho " > Installing prerequisites" green
+    case $CODE in
+        REDHAT|Fedora)
+            installpkg pkg $CHECKORACLEHEALTHYUMPKG
+            ;;
+        DEBIAN)
+            installpkg pkg $CHECKORACLEHEALTHAPTPKG
+            ;;
+    esac
     cecho " > Installing cpan prerequisites" green
     cd $TMP
     for m in $CHECKORACLEHEALTHCPAN
@@ -1717,27 +2707,27 @@ function install_check_oracle_health(){
         filename=$(echo $m | awk -F"/" '{print $NF}')
         if [ ! -f "$filename" ]
         then
-            wget $WGETPROXY $m >> $TMP/shinken.install.log 2>&1 
+            wget $WGETPROXY $m >> ${LOGFILE} 2>&1
             if [ $? -ne 0 ]
             then
                 cecho " > Error while downloading $m" red
                 exit 2
             fi
-        fi    
-        tar zxvf $filename  >> $TMP/shinken.install.log 2>&1 
+        fi
+        tar zxvf $filename  >> ${LOGFILE} 2>&1
         cd $(echo $filename | sed -e "s/\.tar\.gz//g")
-        perl Makefile.PL >> $TMP/shinken.install.log 2>&1 
-        make >> $TMP/shinken.install.log 2>&1 
+        perl Makefile.PL >> ${LOGFILE} 2>&1
+        make >> ${LOGFILE} 2>&1
         if [ $? -ne 0 ]
         then
             cecho " > There was an error building module" red
             exit 2
         fi
-        make install  >> $TMP/shinken.install.log 2>&1 
+        make install  >> ${LOGFILE} 2>&1
     done
     cd $TMP
     cecho " > Downloading check_oracle_health" green
-    wget $WGETPROXY $CHECKORACLEHEALTH >> $TMP/shinken.install.log 2>&1 
+    wget $WGETPROXY $CHECKORACLEHEALTH >> ${LOGFILE} 2>&1
     if [ $? -ne 0 ]
     then
         cecho " > Error while downloading $filename" red
@@ -1745,43 +2735,44 @@ function install_check_oracle_health(){
     fi
     cecho " > Extracting archive " green
     filename=$(echo $CHECKORACLEHEALTH | awk -F"/" '{print $NF}')
-    tar zxvf $filename >> $TMP/shinken.install.log 2>&1 
+    tar zxvf $filename >> ${LOGFILE} 2>&1
     cd $(echo $filename | sed -e "s/\.tar\.gz//g")
-    ./configure --prefix=$TARGET --with-nagios-user=$SKUSER --with-nagios-group=$SKGROUP --with-mymodules-dir=$TARGET/libexec --with-mymodules-dyn-dir=$TARGET/libexec --with-statefiles-dir=$TARGET/var$TMP >> $TMP/shinken.install.log 2>&1 
+    ./configure --prefix=$TARGET --with-nagios-user=$SKUSER --with-nagios-group=$SKGROUP --with-mymodules-dir=$LIBEXEC --with-mymodules-dyn-dir=$LIBEXEC --with-statefiles-dir=$TARGET/var$TMP >> ${LOGFILE} 2>&1
     cecho " > Building plugin" green
-    make >> $TMP/shinken.install.log 2>&1 
-    if [ $? -ne 0 ] 
+    make >> ${LOGFILE} 2>&1
+    if [ $? -ne 0 ]
     then
         cecho " > Error while building check_oracle_health module" red
         exit 2
     fi
-    make check >> $TMP/shinken.install.log 2>&1     
+    make check >> ${LOGFILE} 2>&1
     if [ $? -ne 0 ]
     then
         cecho " > Error while building check_oracle_health module" red
         exit 2
     fi
     cecho " > Installing plugin" green
-    make install >> $TMP/shinken.install.log 2>&1
-    mkdir -p $TARGET/var$TMP >> $TMP/shinke.install.log 2>&1 
+    make install >> ${LOGFILE} 2>&1
+    mkdir -p ${VAR}${TMP} >> ${LOGFILE} 2>&1
 }
 # CHECK_NETAPP2
 
 function install_check_netapp2(){
     cadre "Install check_netapp2" green
 
-    if [ "$CODE" == "REDHAT" ]
-    then
-        cecho " > Installing prerequisites" green
-        yum -yq install $CHECKNETAPP2YUMPKGS >> $TMP/shinken.install.log
-    else
-        cecho " > Installing prerequisites" green
-        apt-get update >> $TMP/shinken.install.log 2>&1
-        apt-get -y install $CHECKNETAPP2APTPKGS >> $TMP/shinken.install.log
-    fi
+    cecho " > Installing prerequisites" green
+    case $CODE in
+        REDHAT|Fedora)
+            installpkg pkg $CHECKNETAPP2YUMPKGS
+            ;;
+        DEBIAN)
+            installpkg pkg $CHECKNETAPP2APTPKGS
+            ;;
+    esac
+
     cd $TMP
     cecho " > Downloading check_netapp2" green
-    wget $WGETPROXY -O check_netapp2 $CHECKNETAPP2 >> $TMP/shinken.install.log 2>&1 
+    wget $WGETPROXY -O check_netapp2 $CHECKNETAPP2 >> ${LOGFILE} 2>&1
     if [ $? -ne 0 ]
     then
         cecho " > Error while downloading check_netapp2" red
@@ -1790,28 +2781,53 @@ function install_check_netapp2(){
     cecho " > Installing plugin" green
     # fuckin assholes that upload perl scripts edited with notepad or so
     perl -p -e 's/\r$//' < check_netapp2 > check_netapp2.pl
-    chmod +x check_netapp2.pl >> $TMP/shinken.install.log 2>&1
-    chown $SKUSER:$SKGROUP check_netapp2.pl >> $TMP/shinken.install.log 2>&1
-    cp -p check_netapp2.pl $TARGET/libexec/check_netapp2 >> $TMP/shinken.install.log 2>&1 
-    sed -i "s#/usr/local/nagios/libexec#"$TARGET"/libexec#g" $TARGET/libexec/check_netapp2 >> $TMP/shinken.install.log 2>&1
+    install -b -g $SKGROUP -o $SKUSER -m 0775 check_netapp2.pl $LIBEXEC
+    sed -i "s#/usr/local/nagios/libexec#"$LIBEXEC"#g" $LIBEXEC/check_netapp2.pl >> ${LOGFILE} 2>&1
+}
+
+    # CHECK_MEM
+function install_check_mem(){
+    cadre "Install check_mem" green
+    cd $TMP
+    if [ ! -f $TMP/check_mem.tar.gz ]
+    then
+        cecho " > Downloading check_mem" green
+        wget -O check_mem.tar.gz $WGETPROXY $CHECKMEM >> ${LOGFILE} 2>&1
+        if [ $? -ne 0 ]
+        then
+            cecho " > Error while downloading $filename" red
+            exit 2
+        fi
+    else
+        for f in $(ls -1 | grep "^justintime")
+        do
+            rm -Rf $f >> ${LOGFILE} 2>&1
+        done
+    fi
+    cecho " > Extracting archive " green
+    tar zxvf check_mem.tar.gz >> ${LOGFILE} 2>&1
+    cecho " > Installing plugin" green
+    folder=$(ls -1 | grep "^justintime")
+    install -b -g $SKGROUP -o $SKUSER -m 0775 $folder/check_mem/check_mem.pl $LIBEXEC
 }
 
 # CHECK_MYSQL_HEALTH
 function install_check_mysql_health(){
     cadre "Install check_mysql_health" green
 
-    if [ "$CODE" == "REDHAT" ]
-    then
-        cecho " > Installing prerequisites" green
-        yum -yq install $CHECKMYSQLHEALTHYUMPKG >> $TMP/shinken.install.log
-    else
-        cecho " > Installing prerequisites" green
-        apt-get update >> $TMP/shinken.install.log 2>&1
-        apt-get -y install $CHECKMYSQLHEALTHAPTPKG >> $TMP/shinken.install.log
-    fi
+    cecho " > Installing prerequisites" green
+    case $CODE in
+        REDHAT|Fedora)
+            installpkg pkg $CHECKMYSQLHEALTHYUMPKG
+            ;;
+        DEBIAN)
+            cecho " > Installing prerequisites" green
+            installpkg pkg $CHECKMYSQLHEALTHAPTPKG
+            ;;
+    esac
     cd $TMP
     cecho " > Downloading check_mysql_health" green
-    wget $WGETPROXY $CHECKMYSQLHEALTH >> $TMP/shinken.install.log 2>&1 
+    wget $WGETPROXY $CHECKMYSQLHEALTH >> ${LOGFILE} 2>&1
     if [ $? -ne 0 ]
     then
         cecho " > Error while downloading $filename" red
@@ -1819,82 +2835,308 @@ function install_check_mysql_health(){
     fi
     cecho " > Extracting archive " green
     filename=$(echo $CHECKMYSQLHEALTH | awk -F"/" '{print $NF}')
-    tar zxvf $filename >> $TMP/shinken.install.log 2>&1 
+    tar zxvf $filename >> ${LOGFILE} 2>&1
     cd $(echo $filename | sed -e "s/\.tar\.gz//g")
-    ./configure --prefix=$TARGET --with-nagios-user=$SKUSER --with-nagios-group=$SKGROUP --with-mymodules-dir=$TARGET/libexec --with-mymodules-dyn-dir=$TARGET/libexec --with-statefiles-dir=$TARGET/var$TMP >> $TMP/shinken.install.log 2>&1 
+    ./configure --prefix=$TARGET --with-nagios-user=$SKUSER --with-nagios-group=$SKGROUP --with-mymodules-dir=$LIBEXEC --with-mymodules-dyn-dir=$LIBEXEC --with-statefiles-dir=$TARGET/var$TMP >> ${LOGFILE} 2>&1
     cecho " > Building plugin" green
-    make >> $TMP/shinken.install.log 2>&1 
-    if [ $? -ne 0 ] 
+    make >> ${LOGFILE} 2>&1
+    if [ $? -ne 0 ]
     then
         cecho " > Error while building check_mysql_health module" red
         exit 2
     fi
-    make check >> $TMP/shinken.install.log 2>&1     
+    make check >> ${LOGFILE} 2>&1
     if [ $? -ne 0 ]
     then
         cecho " > Error while building check_mysql_health module" red
         exit 2
     fi
     cecho " > Installing plugin" green
-    make install >> $TMP/shinken.install.log 2>&1 
+    make install >> ${LOGFILE} 2>&1
 }
 
+function install_check_snmp_bandwidth(){
+    cadre "Install install_check_snmp_bandwidth" green
+
+    cd $TMP
+
+    filename=$(echo $CHECKSNMPBANDWIDTH | awk -F"/" '{print $NF}')
+    script=$(echo $filename | sed -e "s/\.txt/\.sh/g")
+    cecho " > Downloading check_snmp_bandwidth" green
+    wget --no-check-certificate $WGETPROXY $CHECKSNMPBANDWIDTH >> ${LOGFILE} 2>&1
+    if [ $? -ne 0 ]
+    then
+        cecho " > Error while downloading $script" red
+        exit 2
+    fi
+
+    cecho " > install check_snmp_bandwidth" green
+    cp $filename $LIBEXEC/$script
+    chmod +x $LIBEXEC/$script
+    chown $SKUSER:$SKGROUP $LIBEXEC/$script
+
+    filename=$(echo $CHECKSNMPBANDWIDTH | awk -F"/" '{print $NF}')
+    if [ -d "$PNPPREFIX" ]
+    then
+        cecho " > Downloading check_snmp_bandwidth pnp template" green
+        wget --no-check-certificate $WGETPROXY $CHECKSNMPBANDWIDTHPNP >> ${LOGFILE} 2>&1
+        if [ $? -ne 0 ]
+        then
+            cecho " > Error while downloading $filename" red
+            exit 2
+        fi
+    fi
+
+    cecho " > install check_snmp_bandwidth pnp template" green
+    install -b -g $SKGROUP -o $SKUSER -m 0775 $filename $LIBEXEC/$script
+}
+
+function install_check_netint(){
+    cadre "Install install_check_netint" green
+
+    cd $TMP
+
+    filename="check_netint.pl"
+    cecho " > Installing pre-requisites." green
+    case $CODE in
+        REDHAT|Fedora)
+            installpkg pkg perl-Net-SNMP
+            ;;
+        DEBIAN)
+            installpkg pkg libnet-snmp-perl
+            ;;
+    esac
+
+    cecho " > Downloading check_netint" green
+    wget $WGETPROXY $CHECKNETINT -O ${filename} >> ${LOGFILE} 2>&1
+    if [ $? -ne 0 ]
+    then
+        cecho " > Error while downloading $script" red
+        exit 2
+    fi
+
+    cecho " > install check_netint" green
+    install -b -g $SKGROUP -o $SKUSER -m 0775 -t $LIBEXEC check_netint.pl
+}
+
+function install_check_rsync(){
+    cadre "Install the rsync check plugin" green
+
+    cd $TMP
+    cecho " > Getting check_rsync" green
+    wget $WGETPROXY "$CHECKRSYNC" -O check_rsync >> ${LOGFILE} 2>&1
+    if [ $? -ne 0 ]
+    then
+        cecho " -> Error while downloading $script" red
+        exit 2
+    fi
+
+    cecho " > Installing check_rsync" green
+    install -b -g $SKGROUP -o $SKUSER -m 0775 check_rsync $LIBEXEC/check_rsync
+
+    cecho " > Configuring check_rsync" green
+    sed -i "s#/usr/local/nagios/libexec#"$LIBEXEC"#g" $LIBEXEC/check_rsync
+}
+
+function nconf-import-packs(){
+    manageparameters 'quiet'
+    packs=$TARGET/etc/packs
+
+    # cecho "
+    #     Some tips that are not curently implemented: \n
+    #      - add an attribute called password to class service-template \n
+    #      - edit nagiosadmin contact and replace nagiosadmin by admin and fill the password as you want \n
+    #      - add an attribute called check_command to class service-template \n
+    #      - add an attribute called host_name to class service-template \n
+
+    #      > press ENTER to continue
+    # " red
+
+    # read fake
+
+    case $CODE in
+        REDHAT|Fedora)
+            NCONFTARGET=/var/www/html/nconf
+            ;;
+        DEBIAN)
+            NCONFTARGET=/var/www/nconf
+            ;;
+        *)
+            cecho " > Unsupported distro" red
+            exit 2
+            ;;
+    esac
+
+
+    objects="macros commands templates"
+    excludekw="databases\|storage\|virtualization\|network\|servers\|microsoft\|sample\|printers\|environmental"
+
+    for o in $objects
+    do
+        cecho " --> Processing $o" green
+        for domain in $(find $packs -type f -name $o.cfg | grep -v "$excludekw")
+        do
+            cecho "  ----> Processing $(echo $domain | sed -e "s#$packs##g" -e "s#/#->#g" -e "s#->macros\.cfg##g")" green
+            case $o in
+                macros)
+                    for line in $(cat $domain | grep -v "^#")
+                    do
+                        if [ -z "$(cat $TARGET/etc/resource.cfg | grep $line)" ]
+                        then
+                            cecho " ------> Adding macros: $line" green
+                            echo $line >> $TARGET/etc/resource.cfg
+                        fi
+                    done
+                    ;;
+                commands)
+                    # nconf nedd a directive named command_param_count. so we prepare a file to add this argument
+                    if [ -f /tmp/commands.nconf ]
+                    then
+                        rm -f /tmp/commands.nconf
+                    fi
+                    while read -r line
+                    do
+                        if [ ! -z "$(echo $line | grep command_line)" ]
+                        then
+                            num=$(echo $line  | awk '/ARG/ { count++ } END { print count}')
+                            if [ -z $(echo $num | sed -e 's/\s//g' -e '/^$/d' ) ]
+                            then
+                                num=0
+                            fi
+                            echo "   command_param_count $num" >> /tmp/commands.nconf
+                        fi
+                        echo $line >> /tmp/commands.nconf
+                    done < $domain
+                    $NCONFTARGET/bin/add_items_from_nagios.pl -c checkcommand -f /tmp/commands.nconf 2>&1 | grep "ERROR\|WARN"
+                    ;;
+                templates)
+                    # macros are not imported!!!!
+                    # may be defining static files and position them inside
+                    $NCONFTARGET/bin/add_items_from_nagios.pl -x 4 -c host-template -f $domain 2>&1 | grep "ERROR\|WARN"
+                    ;;
+            esac
+        done
+    done
+
+    # cecho "  ----> Processing services templates" green
+
+
+    # for file in $(find $TARGET/etc/packs -type f | grep -v "$excludekw" | grep services | grep -v templates.cfg | grep -v commands.cfg | grep -v sample)
+    # do
+    #     # strange: nconf need a directive called name to import services template
+    #     cp $file $file.nconf
+    #     sed -i "s/service_description\(.*\)$/name \1\n   service_description \1/g" $file.nconf
+    #     # what we need to do is to create first a service template and then an advanced service linked to the template
+    #     $NCONFTARGET/bin/add_items_from_nagios.pl -x 4 -c service-template -f $file.nconf 2>&1 | grep "ERROR\|WARN"
+    #     rm -f $file.nconf
+    # done
+}
+
+#     ___                                          __          ____                                 _
+#    /   |  _________ ___  ______ ___  ___  ____  / /______   / __ \_________  ________  __________(_)___  ____ _
+#   / /| | / ___/ __ `/ / / / __ `__ \/ _ \/ __ \/ __/ ___/  / /_/ / ___/ __ \/ ___/ _ \/ ___/ ___/ / __ \/ __ `/
+#  / ___ |/ /  / /_/ / /_/ / / / / / /  __/ / / / /_(__  )  / ____/ /  / /_/ / /__/  __(__  |__  ) / / / / /_/ /
+# /_/  |_/_/   \__, /\__,_/_/ /_/ /_/\___/_/ /_/\__/____/  /_/   /_/   \____/\___/\___/____/____/_/_/ /_/\__, /
+#             /____/                                                                                    /____/
 
 function usage(){
-echo "Usage : install -k | -i | -w | -d | -u | -b | -r | -l | -c | -h | -a | -z [poller|centreon] | -e daemons | -p plugins [plugname]
-    -k  Kill shinken
-    -i  Install shinken
-    -w  Remove demo configuration (DEPRECATED)
-    -d  Remove shinken
-    -u  Update an existing shinken installation (DEPRECATED)
-    -v  purge livestatus sqlite db and shrink sqlite db
-    -b  Backup shinken configuration plugins and data
-    -r  Restore shinken configuration plugins and data
-    -l  List shinken backups
-    -c  Compress rotated logs
-    -e  Which daemons to keep enabled at boot time
-    -z  This is a really special usecase that allow to install shinken on Centreon Enterprise Server in place of nagios (DEPRECATED)
-    -p  Install plugins or addons (args should be one of the following : 
-        check_esx3
-        nagios-plugins
-        check_oracle_health
-        check_mysql_health
-        check_wmi_plus
-        check_mongodb
-        check_emc_clariion
-        check_nwc_health
-        check_hpasm
-        manubulon (snmp plugins)
-        capture_plugin
-        pnp4nagios
-        multisite
-        nagvis
-        mongodb
-    -h  Show help"
+echo "Usage: install -k | -i | -u [addonname] | -b | -r backupname | -l | -c | -e \"daemonslist\" | -p pluginname | -a addonname
+    -k | --kill             Kill shinken
+    -i | --install          Install shinken
+    -u | --uninstall        Remove shinken and all of the addons. if an argument is specified then just remove the specified argument
+    -b | --backup           Backup shinken configuration plugins and data
+    -r | --restore          Restore shinken configuration plugins and data
+    -l | --listbackups      List shinken backups
+    -c | --compresslogs     Compress rotated logs
+    -e | --enabledaemons    Which daemons to keep enabled at boot time. It's a quoted list of shinken daemons that should be enabled at startup.
+                            Daemons are:
+                                arbiter
+                                scheduler
+                                poller
+                                broker
+                                reactionner
+                                receiver
+                                skonf
+    -p | --plugin           Install plugins. Argument should be one of the following:
+                               check_esx3
+                               nagios-plugins
+                               check_oracle_health
+                               check_mysql_health
+                               capture_plugin
+                               check_wmi_plus
+                               check_mongodb
+                               check_emc_clariion
+                               check_nwc_health
+                               manubulon (snmp plugins)
+                               check_hpasm
+                               check_netapp2
+                               check_mem (local enhanced memory check plugin)
+                               check_snmp_bandwidth (check bandwidth usage with snmp)
+                               check_netint (enhanced version of check_snmp_int plugins)
+                               check_IBM
+                               check_IBM_DS
+                               check_HPUX
+                               check_rsync
+    -a | --addon            Install addons. Argument should be one of the following:
+                               pnp4nagios
+                               multisite
+                               nagvis
+                               mongodb
+                               nconf (experimental)
+                               notify_by_xmpp
+    --nconf-import-packs    Import shinken packs into nconf (experimental). This require nconf to be installed
+    --register              Register on community (experimental)
+    --enableeue             Enable application performance monitoring stack (experimental)
+    -h | --help             Show help"
 }
 
-# Check if we launch the script with root privileges (aka sudo)
-if [ "$UID" != "0" ]
+function trapmsg(){
+    # signal was caught
+    echo
+    cecho "An interupt signal was caught." red
+    cecho "This script will keep running to not leave the system in an inconsistent state." red
+    echo
+}
+
+# remove last install log file
+if [ -f ${LOGFILE} ]
 then
-        cecho "You should start the script with sudo!" red
-        exit 1
+    rm -f ${LOGFILE}
 fi
 
+# should we use a proxy for downloading archives
 if [ $USEPROXY -eq 1 ]
 then
     export WGETPROXY=" -Y on "
 fi
 
-while getopts "kidubcr:lz:hsvp:we:" opt; do
-    case $opt in
-        p)
-            if [ "$OPTARG" != "mongodb" ]
+# options may be followed by one colon to indicate they have a required argument
+
+if ! options=$(getopt -u -o kiu::br:lce:p:a:h -l register,nconf-import-packs,kill,install,uninstall::,backup,restore:,listbackups,compresslogs,enabledaemons:,plugin:,addon:,enableeue,help -- "$@")
+then
+    # something went wrong, getopt will put out an error message for us
+    exit 2
+fi
+
+
+set -- $options
+
+# catch ctrl-c
+trap trapmsg INT TERM
+
+while [ $# -gt 0 ]
+do
+    case $1 in
+        -p|--plugin)
+            shift
+            OPTARG=$1
+            shift
+            manageparameters  "quiet"
+            cecho " > checking if shinken is installed in $TARGET" green
+            if [ $(shinken_exist) -eq 0 ]
             then
-                if [ $(shinken_exist) -eq 0 ]
-                then
-                    cecho " > You should install shinken first ! " red
-                    exit 2
-                fi
+                cecho " > You should install shinken first! " red
+                exit 2
             fi
             if [ "$OPTARG" == "check_esx3" ]
             then
@@ -1903,6 +3145,10 @@ while getopts "kidubcr:lz:hsvp:we:" opt; do
             elif [ "$OPTARG" == "nagios-plugins" ]
             then
                 install_nagios-plugins
+                exit 0
+            elif [ "$OPTARG" == "check_mem" ]
+            then
+                install_check_mem
                 exit 0
             elif [ "$OPTARG" == "check_oracle_health" ]
             then
@@ -1944,7 +3190,44 @@ while getopts "kidubcr:lz:hsvp:we:" opt; do
             then
                 install_check_netapp2
                 exit 0
-            elif [ "$OPTARG" == "pnp4nagios" ]
+            elif [ "$OPTARG" == "check_snmp_bandwidth" ]
+            then
+                install_check_snmp_bandwidth
+                exit 0
+            elif [ "$OPTARG" == "check_netint" ]
+            then
+                install_check_netint
+                exit 0
+            elif [ "$OPTARG" == "check_IBM" ]
+            then
+                install_IBM_plugins
+                exit 0
+            elif [ "$OPTARG" == "check_IBM_DS" ]
+            then
+                install_IBM_DS
+                exit 0
+            elif [ "$OPTARG" == "check_HPUX" ]
+            then
+                install_HPUX_plugins
+                exit 0
+            elif [ "$OPTARG" == "check_rsync" ]
+            then
+                install_check_rsync
+                exit 0
+            fi
+            ;;
+        -a|--addon)
+            shift
+            OPTARG=$1
+            shift
+            manageparameters  "quiet"
+            cecho " > checking if shinken is installed in $TARGET" green
+            if [ $(shinken_exist) -eq 0 ]
+            then
+                cecho " > You should install shinken first! " red
+                exit 2
+            fi
+            if [ "$OPTARG" == "pnp4nagios" ]
             then
                 install_pnp4nagios
                 exit 0
@@ -1960,92 +3243,136 @@ while getopts "kidubcr:lz:hsvp:we:" opt; do
             then
                 install_mongodb
                 exit 0
+            elif [ "$OPTARG" == "nconf" ]
+            then
+                #cecho " > Not implemented yet"
+                install_nconf
+                exit 0
+            elif [ "$OPTARG" == "notify_by_xmpp" ]
+            then
+                install_notify_by_xmpp
+                exit 0
             else
-                cecho " > Unknown plugin $OPTARG" red
+                cecho " > Unknown addon $OPTARG" red
             fi
             ;;
-        
-        j)
-            addpoller "$OPTARG"
-            exit 0
-            ;;
-        e)
+        -e|--enabledaemons)
+            shift
+            OPTARG=$(echo "$*" |sed 's/--//g')
+            shift
             setdaemons "$OPTARG"
             exit 0
             ;;
-        w)
-            cleanconf    
+        -p|--purgelogs)
+            purgeSQLITE
             exit 0
             ;;
-        z)
-            mode=$OPTARG
-            cleanconf
-            disablenagios
-            fixsudoers
-            if [ "$mode" = "centreon" ]
-            then
-                fixcentreondb
-                fixforfan
-                enablendodb
-                #enableretention
-                enableperfdata
-                setdaemonsaddresses
-                enableCESCentralDaemons
-                #fixHtpasswdPath
-                #addCESPollers
-            else
-                enableCESPollerDaemons
-            fi
-            exit 0
-            ;;
-        s)
-            rheldvd    
-            exit 0
-            ;;
-        v)
-            purgeSQLITE    
-            exit 0
-            ;;
-        k)
+        -k|--kill)
             skill
             exit 0
             ;;
-        i)
+        -i|--install)
             FROMSRC=1
             sinstall 
-            fixHtpasswdPath
             exit 0
             ;;
-        d)
-            remove 
+        -u|--uninstall)
+            # check if there is an optional argument
+            # if so just uninstall the specified addon
+            shift
+            shift
+            OPTARG=$1
+            if [ -z "$OPTARG" ] || [ "$OPTARG" == "--" ]
+            then
+                cread " > Are you sure you want to remove shinken? (y|N)." yellow "n" "y n"
+                if [ "$readvalue" == "y" ]
+                then
+                    remove
+                else
+                    cecho " > Aborting uninstallation" yellow
+                fi
+                exit 0
+            fi
+
+            cread " > Are you sure you want to remove $OPTARG? (y|N)." yellow "n" "y n"
+            if [ "$readvalue" == "y" ]
+            then
+                case $OPTARG in
+                    pnp4nagios)
+                        uninstall_pnp4nagios
+                        exit 0
+                        ;;
+                    nagvis)
+                        cecho " > Not implemented yet" red
+                        exit 2
+                        ;;
+                    multisite)
+                        cecho " > Not implemented yet" red
+                        exit 2
+                        ;;
+                    nconf)
+                        remove_nconf
+                        exit 0
+                        ;;
+                    *)
+                        cecho "Unknown addon $OPTARG" red
+                        exit 2
+                        ;;
+                esac
+            else
+                cecho " > Aborting uninstallation" yellow
+            fi
+
             exit 0
             ;;
-        u)
-            supdate 
+        -b|--backup)
+            backup
             exit 0
             ;;
-        b)
-            backup 
+        -r|--restore)
+            shift
+            OPTARG=$1
+            shift
+            restore $OPTARG
             exit 0
             ;;
-        r)
-            restore $OPTARG 
+        -l|--listbackups)
+            backuplist
             exit 0
             ;;
-        l)
-            backuplist 
-            exit 0
-            ;;
-        c)
+        -c|--compresslogs)
             compresslogs
             exit 0
             ;;
-        h)
-            shelp    
+        -h|--help)
+            usage
             exit 0
             ;;
+        --nconf-import-packs)
+            nconf-import-packs
+            exit 0
+            ;;
+        --register)
+            register
+            exit 0
+            ;;
+        --enableeue)
+            install_cucumber
+            exit 0
+            ;;
+        (--)
+            shift
+            break
+            ;;
+        (-*)
+            cecho "$0: error - unrecognized option $1" red 1>&2
+            exit 2
+            ;;
+        (*)
+            break
+            ;;
     esac
+    shift
 done
 usage
 exit 0
-

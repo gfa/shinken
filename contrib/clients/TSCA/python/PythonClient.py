@@ -21,10 +21,15 @@
 import csv
 import time
 import sys
-sys.path.append('../../../../thrift/gen-py')
+sys.path.append('gen-py')
 
-from org.shinken_monitoring.tsca import StateService
-from org.shinken_monitoring.tsca.ttypes import *
+try:
+    from org.shinken_monitoring.tsca import StateService
+    from org.shinken_monitoring.tsca.ttypes import *
+except:
+    print "Can't import tsca stub."
+    print "Have you run thrift --gen py ../../../../shinken/modules/tsca/tsca.thrift ?"
+    sys.exit(1)
 
 from thrift import Thrift
 from thrift.transport import TSocket
@@ -47,19 +52,19 @@ try:
 
     # Connect!
     transport.open()
-    # Thrift server wait a list of list whith the following args :
+    # Thrift server wait a list of list whith the following args:
     #      '''
     #      Read the list result
-    #       Value n1 : Timestamp
-    #       Value n2 : Hostname
-    #       Value n3 : Service
-    #       Value n4 : Return Code
-    #       Value n5 : Output
+    #       Value n1: Timestamp
+    #       Value n2: Hostname
+    #       Value n3: Service
+    #       Value n4: Return Code
+    #       Value n5: Output
     #      '''
     states_list = []
     data = dataArgs()
-    cr = csv.reader(open(sys.argv[1],"rb"))
-    for elt in cr :
+    cr = csv.reader(open(sys.argv[1], "rb"))
+    for elt in cr:
         trace = State()
         trace.timestamp = long(round(time.time()))
         trace.hostname = elt[0]
@@ -73,4 +78,4 @@ try:
     transport.close()
 
 except Thrift.TException, tx:
-    print '%s' % (tx.message)
+    print '%s' % tx.message

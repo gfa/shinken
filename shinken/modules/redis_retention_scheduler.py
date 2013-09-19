@@ -1,72 +1,84 @@
 #!/usr/bin/python
-#Copyright (C) 2009 Gabes Jean, naparuba@gmail.com
+# -*- coding: utf-8 -*-
 #
-#This file is part of Shinken.
+# Copyright (C) 2009-2012:
+#    Gabes Jean, naparuba@gmail.com
+#    Gerhard Lausser, Gerhard.Lausser@consol.de
+#    Gregory Starck, g.starck@gmail.com
+#    Hartmut Goebel, h.goebel@goebel-consult.de
 #
-#Shinken is free software: you can redistribute it and/or modify
-#it under the terms of the GNU Affero General Public License as published by
-#the Free Software Foundation, either version 3 of the License, or
-#(at your option) any later version.
+# This file is part of Shinken.
 #
-#Shinken is distributed in the hope that it will be useful,
-#but WITHOUT ANY WARRANTY; without even the implied warranty of
-#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#GNU Affero General Public License for more details.
+# Shinken is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#You should have received a copy of the GNU Affero General Public License
-#along with Shinken.  If not, see <http://www.gnu.org/licenses/>.
+# Shinken is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with Shinken.  If not, see <http://www.gnu.org/licenses/>.
 
+# This Class is an example of an Scheduler module
+# Here for the configuration phase AND running one
 
-#This Class is an example of an Scheduler module
-#Here for the configuration phase AND running one
-
-
-import redis
+try:
+    import redis
+except ImportError:
+    redis = None
 import cPickle
 
 from shinken.basemodule import BaseModule
 from shinken.log import logger
 
 properties = {
-    'daemons' : ['scheduler'],
-    'type' : 'redis_retention',
-    'external' : False,
+    'daemons': ['scheduler'],
+    'type': 'redis_retention',
+    'external': False,
     }
 
 
-#called by the plugin manager to get a broker
 def get_instance(plugin):
-    print "Get a redis retention scheduler module for plugin %s" % plugin.get_name()
+    """
+    Called by the plugin manager to get a broker
+    """
+    logger.debug("Get a redis retention scheduler module for plugin %s" % plugin.get_name())
+    if not redis:
+        logger.error('Missing the module python-redis. Please install it.')
+        raise Exception
     server = plugin.server
     instance = Redis_retention_scheduler(plugin, server)
     return instance
 
 
-
-#Just print some stuff
 class Redis_retention_scheduler(BaseModule):
     def __init__(self, modconf, server):
         BaseModule.__init__(self, modconf)
         self.server = server
 
-    #Called by Scheduler to say 'let's prepare yourself guy'
     def init(self):
-        print "Initilisation of the redis module"
+        """
+        Called by Scheduler to say 'let's prepare yourself guy'
+        """
+        logger.debug("[RedisRetention] Initialization of the redis module")
         #self.return_queue = self.properties['from_queue']
         self.mc = redis.Redis(self.server)
 
-
-    #Ok, main function that is called in the retention creation pass
     def hook_save_retention(self, daemon):
-        log_mgr = logger
-        print "[RedisRetention] asking me to update the retention objects"
+        """
+        main function that is called in the retention creation pass
+        """
+        logger.debug("[RedisRetention] asking me to update the retention objects")
 
         all_data = daemon.get_retention_data()
-        
+
         hosts = all_data['hosts']
         services = all_data['services']
-        
-        #Now the flat file method
+
+        # Now the flat file method
         for h_name in hosts:
             h = hosts[h_name]
             key = "HOST-%s" % h_name
@@ -76,23 +88,20 @@ class Redis_retention_scheduler(BaseModule):
         for (h_name, s_desc) in services:
             s = services[(h_name, s_desc)]
             key = "SERVICE-%s,%s" % (h_name, s_desc)
-            #space are not allowed in memcache key.. so change it by SPACE token
+            # space are not allowed in memcache key.. so change it by SPACE token
             key = key.replace(' ', 'SPACE')
             #print "Using key", key
             val = cPickle.dumps(s)
             self.mc.set(key, val)
-        log_mgr.log("Retention information updated in Redis")
+        logger.info("Retention information updated in Redis")
 
-
-
-    #Should return if it succeed in the retention load or not
+    # Should return if it succeed in the retention load or not
     def hook_load_retention(self, daemon):
-        log_mgr = logger
 
         # Now the new redis way :)
-        log_mgr.log("[RedisRetention] asking me to load the retention objects")
+        logger.debug("[RedisRetention] asking me to load the retention objects")
 
-        #We got list of loaded data from retention server
+        # We got list of loaded data from retention server
         ret_hosts = {}
         ret_services = {}
 
@@ -102,27 +111,26 @@ class Redis_retention_scheduler(BaseModule):
             val = self.mc.get(key)
             if val is not None:
                 # redis get unicode, but we send string, so we are ok
-#                val = str(unicode(val))
+                #val = str(unicode(val))
                 val = cPickle.loads(val)
                 ret_hosts[h.host_name] = val
 
         for s in daemon.services:
             key = "SERVICE-%s,%s" % (s.host.host_name, s.service_description)
-            #space are not allowed in memcache key.. so change it by SPACE token
+            # space are not allowed in memcache key.. so change it by SPACE token
             key = key.replace(' ', 'SPACE')
             #print "Using key", key
             val = self.mc.get(key)
             if val is not None:
-#                val = str(unicode(val))
+                #val = str(unicode(val))
                 val = cPickle.loads(val)
                 ret_services[(s.host.host_name, s.service_description)] = val
 
-        
-        all_data = {'hosts' : ret_hosts, 'services' : ret_services}
+        all_data = {'hosts': ret_hosts, 'services': ret_services}
 
         # Ok, now comme load them scheduler :)
         daemon.restore_retention_data(all_data)
 
-        log_mgr.log("[RedisRetention] OK we've load data from redis server")
+        logger.info("[RedisRetention] Retention objects loaded successfully.")
 
         return True

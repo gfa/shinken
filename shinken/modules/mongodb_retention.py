@@ -1,80 +1,120 @@
 #!/usr/bin/python
-#Copyright (C) 2009 Gabes Jean, naparuba@gmail.com
+# -*- coding: utf-8 -*-
 #
-#This file is part of Shinken.
+# Copyright (C) 2009-2012:
+#    Gabes Jean, naparuba@gmail.com
+#    Gerhard Lausser, Gerhard.Lausser@consol.de
+#    Gregory Starck, g.starck@gmail.com
+#    Hartmut Goebel, h.goebel@goebel-consult.de
 #
-#Shinken is free software: you can redistribute it and/or modify
-#it under the terms of the GNU Affero General Public License as published by
-#the Free Software Foundation, either version 3 of the License, or
-#(at your option) any later version.
+# This file is part of Shinken.
 #
-#Shinken is distributed in the hope that it will be useful,
-#but WITHOUT ANY WARRANTY; without even the implied warranty of
-#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#GNU Affero General Public License for more details.
+# Shinken is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#You should have received a copy of the GNU Affero General Public License
-#along with Shinken.  If not, see <http://www.gnu.org/licenses/>.
+# Shinken is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with Shinken.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-This is a scheduler module to save host/sevice retention data into a mongodb databse
+This is a scheduler module to save host/service retention data into a mongodb database
 """
 
 import cPickle
 
-from pymongo.connection import Connection
-import gridfs
-from gridfs import GridFS
+try:
+    from pymongo.connection import Connection
+    import gridfs
+    from gridfs import GridFS
+except ImportError:
+    Connection = None
+
+try:
+    from pymongo import ReplicaSetConnection, ReadPreference
+except ImportError:
+    ReplicaSetConnection = None
+    ReadPreference = None
+
 
 from shinken.basemodule import BaseModule
 from shinken.log import logger
 
 properties = {
-    'daemons' : ['scheduler'],
-    'type' : 'mongodb_retention',
-    'external' : False,
+    'daemons': ['scheduler'],
+    'type': 'mongodb_retention',
+    'external': False,
     }
 
 
-# Called by the plugin manager to get a broker
 def get_instance(plugin):
-    print "Get a Mongodb retention scheduler module for plugin %s" % plugin.get_name()
+    """
+    Called by the plugin manager to get a broker
+    """
+    logger.debug("Get a Mongodb retention scheduler module for plugin %s" % plugin.get_name())
+    if not Connection:
+        raise Exception('Cannot find the module python-pymongo or python-gridfs. Please install both.')
     uri = plugin.uri
     database = plugin.database
-    instance = Mongodb_retention_scheduler(plugin, uri, database)
+    replica_set = getattr(plugin, 'replica_set', '')
+    instance = Mongodb_retention_scheduler(plugin, uri, database, replica_set)
     return instance
 
 
-
-# Just print some stuff
 class Mongodb_retention_scheduler(BaseModule):
-    def __init__(self, modconf, uri, database):
+    def __init__(self, modconf, uri, database, replica_set):
         BaseModule.__init__(self, modconf)
         self.uri = uri
         self.database = database
+        self.replica_set = replica_set
+        if self.replica_set and not ReplicaSetConnection:
+            logger.error('[MongodbRetention] Can not initialize module with '
+                         'replica_set because your pymongo lib is too old. '
+                         'Please install it with a 2.x+ version from '
+                         'https://github.com/mongodb/mongo-python-driver/downloads')
+            return None
 
 
-    # Called by Scheduler to say 'let's prepare yourself guy'
+
     def init(self):
-        print "Initilisation of the mongodb module"
-        self.con = Connection(self.uri)
+        """
+        Called by Scheduler to say 'let's prepare yourself guy'
+        """
+        logger.debug("Initialization of the mongodb  module")
+
+        if self.replica_set:
+            self.con = ReplicaSetConnection(self.uri, replicaSet=self.replica_set, fsync=True)
+        else:
+            # Old versions of pymongo do not known about fsync
+            if ReplicaSetConnection:
+                self.con = Connection(self.uri, fsync=True)
+            else:
+                self.con = Connection(self.uri)
+
+        #self.con = Connection(self.uri)
         # Open a gridfs connection
         self.db = getattr(self.con, self.database)
         self.hosts_fs = GridFS(self.db, collection='retention_hosts')
         self.services_fs = GridFS(self.db, collection='retention_services')
 
 
-    # Ok, main function that is called in the retention creation pass
     def hook_save_retention(self, daemon):
-        log_mgr = logger
-        print "[MongodbRetention] asking me to update the retention objects"
+        """
+        main function that is called in the retention creation pass
+        """
+        logger.debug("[MongodbRetention] asking me to update the retention objects")
 
         all_data = daemon.get_retention_data()
-        
+
         hosts = all_data['hosts']
         services = all_data['services']
-        
-        #Now the flat file method
+
+        # Now the flat file method
         for h_name in hosts:
             h = hosts[h_name]
             key = "HOST-%s" % h_name
@@ -98,19 +138,15 @@ class Mongodb_retention_scheduler(BaseModule):
             self.services_fs.delete(key)
             fd = self.services_fs.put(val, _id=key, filename=key)
 
-
-        log_mgr.log("Retention information updated in Mongodb")
-
-
+        logger.info("Retention information updated in Mongodb")
 
     # Should return if it succeed in the retention load or not
     def hook_load_retention(self, daemon):
-        log_mgr = logger
 
         # Now the new redis way :)
-        log_mgr.log("MongodbRetention] asking me to load the retention objects")
+        logger.debug("MongodbRetention] asking me to load the retention objects")
 
-        #We got list of loaded data from retention uri
+        # We got list of loaded data from retention uri
         ret_hosts = {}
         ret_services = {}
 
@@ -123,14 +159,14 @@ class Mongodb_retention_scheduler(BaseModule):
                 # Go in the next host object
                 continue
             val = fd.read()
-            
+
             if val is not None:
                 val = cPickle.loads(val)
                 ret_hosts[h.host_name] = val
 
         for s in daemon.services:
             key = "SERVICE-%s,%s" % (s.host.host_name, s.service_description)
-            #space are not allowed in memcache key.. so change it by SPACE token
+            # space are not allowed in memcache key.. so change it by SPACE token
             key = key.replace(' ', 'SPACE')
             try:
                 fd = self.services_fs.get_last_version(key)
@@ -143,12 +179,11 @@ class Mongodb_retention_scheduler(BaseModule):
                 val = cPickle.loads(val)
                 ret_services[(s.host.host_name, s.service_description)] = val
 
-        
-        all_data = {'hosts' : ret_hosts, 'services' : ret_services}
+        all_data = {'hosts': ret_hosts, 'services': ret_services}
 
         # Ok, now comme load them scheduler :)
         daemon.restore_retention_data(all_data)
 
-        log_mgr.log("[MongodbRetention] OK we've load data from Mongodb server")
+        logger.info("[MongodbRetention] Retention objects loaded successfully.")
 
         return True

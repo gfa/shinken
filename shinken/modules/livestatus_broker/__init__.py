@@ -1,10 +1,12 @@
+#!/usr/bin/python
+
 # -*- coding: utf-8 -*-
-#
+
 # Copyright (C) 2009-2012:
-#     Gabes Jean, naparuba@gmail.com
-#     Gerhard Lausser, Gerhard.Lausser@consol.de
-#     Gregory Starck, g.starck@gmail.com
-#     Hartmut Goebel, h.goebel@goebel-consult.de
+#    Gabes Jean, naparuba@gmail.com
+#    Gerhard Lausser, Gerhard.Lausser@consol.de
+#    Gregory Starck, g.starck@gmail.com
+#    Hartmut Goebel, h.goebel@goebel-consult.de
 #
 # This file is part of Shinken.
 #
@@ -21,27 +23,27 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Shinken.  If not, see <http://www.gnu.org/licenses/>.
 
+from shinken.log import logger
 
 properties = {
-    'daemons': ['broker'],
+    'daemons': ['broker', 'scheduler'],
     'type': 'livestatus',
     'phases': ['running'],
     'external': True,
     }
-
 
 from livestatus_broker import LiveStatus_broker
 # called by the plugin manager to get an instance
 
 
 def get_instance(plugin):
-    print "Get a Livestatus instance for plugin %s" % plugin.get_name()
+    logger.info("[Livestatus Broker] Get a Livestatus instance for plugin %s" % plugin.get_name())
 
-    #First try to import
+    # First try to import
     try:
         from livestatus_broker import LiveStatus_broker
     except ImportError, exp:
-        print "Warning : the plugin type %s is unavalable : %s" % ('livestatus', exp)
+        logger.warning("[Livestatus Broker] Warning: the plugin type %s is unavailable: %s" % ('livestatus', exp))
         return None
 
     instance = LiveStatus_broker(plugin)

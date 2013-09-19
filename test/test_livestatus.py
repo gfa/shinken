@@ -1,24 +1,24 @@
-#!/usr/bin/env python2.6
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-#Copyright (C) 2009-2010 :
+# Copyright (C) 2009-2010:
 #    Gabes Jean, naparuba@gmail.com
 #    Gerhard Lausser, Gerhard.Lausser@consol.de
 #
-#This file is part of Shinken.
+# This file is part of Shinken.
 #
-#Shinken is free software: you can redistribute it and/or modify
-#it under the terms of the GNU Affero General Public License as published by
-#the Free Software Foundation, either version 3 of the License, or
-#(at your option) any later version.
+# Shinken is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#Shinken is distributed in the hope that it will be useful,
-#but WITHOUT ANY WARRANTY; without even the implied warranty of
-#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#GNU Affero General Public License for more details.
+# Shinken is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
 #
-#You should have received a copy of the GNU Affero General Public License
-#along with Shinken.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Affero General Public License
+# along with Shinken.  If not, see <http://www.gnu.org/licenses/>.
 
 
 #
@@ -38,6 +38,7 @@ from shinken.brok import Brok
 from shinken.objects.timeperiod import Timeperiod
 from shinken.objects.module import Module
 from shinken.comment import Comment
+from shinken.util import from_bool_to_int
 
 sys.setcheckinterval(10000)
 
@@ -50,27 +51,25 @@ class TestConfig(ShinkenTest):
                 return True
         return False
 
-
     def scheduler_loop(self, count, reflist, do_sleep=False, sleep_time=61):
         super(TestConfig, self).scheduler_loop(count, reflist, do_sleep, sleep_time)
         if self.nagios_installed() and hasattr(self, 'nagios_started'):
             self.nagios_loop(1, reflist)
-  
 
     def update_broker(self, dodeepcopy=False):
-        #The brok should be manage in the good order
-        ids = self.sched.broks.keys()
+        # The brok should be manage in the good order
+        ids = self.sched.brokers['Default-Broker']['broks'].keys()
         ids.sort()
         for brok_id in ids:
-            brok = self.sched.broks[brok_id]
+            brok = self.sched.brokers['Default-Broker']['broks'][brok_id]
             #print "Managing a brok type", brok.type, "of id", brok_id
             #if brok.type == 'update_service_status':
-            #    print "Problem?", brok.data
+            #    print "Problem?", brok.data['is_problem']
             if dodeepcopy:
                 brok = copy.deepcopy(brok)
+            brok.prepare()
             self.livestatus_broker.manage_brok(brok)
-        self.sched.broks = {}
-
+        self.sched.brokers['Default-Broker']['broks'] = {}
 
     def lines_equal(self, text1, text2):
         # gets two multiline strings and compares the contents
@@ -105,22 +104,21 @@ class TestConfig(ShinkenTest):
             data2 = [[sorted(c.split(',')) for c in columns] for columns in [line.split(';') for line in sorted(text2.split("\n")) if line]]
             #print "text1 //%s//" % data1
             #print "text2 //%s//" % data2
-            # cmp is clever enough to handle nested arrays 
+            # cmp is clever enough to handle nested arrays
             return cmp(data1, data2) == 0
-            
 
     def show_broks(self, title):
         print
         print "--- ", title
         for brok in sorted(self.sched.broks.values(), lambda x, y: x.id - y.id):
             if re.compile('^service_').match(brok.type):
-                print "BROK:", brok.type
-                print "BROK   ", brok.data['in_checking']
+                pass
+                #print "BROK:", brok.type
+                #print "BROK   ", brok.data['in_checking']
         self.update_broker()
         request = 'GET services\nColumns: service_description is_executing\n'
         response, keepalive = self.livestatus_broker.livestatus.handle_request(request)
         print response
-
 
     def nagios_installed(self, path='/usr/local/nagios/bin/nagios', livestatus='/usr/local/nagios/lib/mk-livestatus/livestatus.o'):
         return False
@@ -131,7 +129,6 @@ class TestConfig(ShinkenTest):
             return True
         else:
             return False
-
 
     # shinkenize_nagios_config('nagios_1r_1h_1s')
     # We assume that there is a nagios_1r_1h_1s.cfg and a nagios_1r_1h_1s directory for the objects
@@ -192,7 +189,6 @@ class TestConfig(ShinkenTest):
                 newconfig.close()
         return new_configname
 
-    
     def start_nagios(self, config):
         if os.path.exists('var/spool/checkresults'):
             # Cleanup leftover checkresults
@@ -211,7 +207,6 @@ class TestConfig(ShinkenTest):
         self.nagios_started = time.time()
         time.sleep(2)
 
-
     def stop_nagios(self):
         if self.nagios_installed():
             print "i stop nagios!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
@@ -228,7 +223,6 @@ class TestConfig(ShinkenTest):
                     shutil.rmtree('etc/' + self.nagios_config)
                 if os.path.exists('etc/nagios_' + self.nagios_config + '.cfg'):
                     os.remove('etc/nagios_' + self.nagios_config + '.cfg')
-
 
     def ask_nagios(self, request):
         if time.time() - self.nagios_started < 2:
@@ -249,8 +243,7 @@ class TestConfig(ShinkenTest):
             unixcat.kill()
         print "unixcat says", out
         return out
-        
-    
+
     def nagios_loop(self, count, reflist, do_sleep=False, sleep_time=61):
         now = time.time()
         buffer = open('var/pipebuffer', 'w')
@@ -272,14 +265,12 @@ class TestConfig(ShinkenTest):
         fifo.close()
         time.sleep(5)
 
-
     def nagios_extcmd(self, cmd):
         fifo = open('var/nagios.cmd', 'w')
         fifo.write(cmd)
         fifo.flush()
         fifo.close()
         time.sleep(5)
-
 
 
 class TestConfigSmall(TestConfig):
@@ -289,7 +280,9 @@ class TestConfigSmall(TestConfig):
         self.testid = str(os.getpid() + random.randint(1, 1000))
         self.init_livestatus()
         print "Cleaning old broks?"
-        self.sched.fill_initial_broks()
+        self.sched.conf.skip_initial_broks = False
+        self.sched.brokers['Default-Broker'] = {'broks' : {}, 'has_full_broks' : False}
+        self.sched.fill_initial_broks('Default-Broker')
         self.update_broker()
         self.nagios_path = None
         self.livestatus_path = None
@@ -299,16 +292,14 @@ class TestConfigSmall(TestConfig):
         host = self.sched.hosts.find_by_name("test_host_0")
         host.__class__.use_aggressive_host_checking = 1
 
-
-
     def tearDown(self):
         self.stop_nagios()
         self.livestatus_broker.db.commit()
         self.livestatus_broker.db.close()
         if os.path.exists(self.livelogs):
             os.remove(self.livelogs)
-        if os.path.exists(self.livelogs+"-journal"):
-            os.remove(self.livelogs+"-journal")
+        if os.path.exists(self.livelogs + "-journal"):
+            os.remove(self.livelogs + "-journal")
         if os.path.exists(self.livestatus_broker.pnp_path):
             shutil.rmtree(self.livestatus_broker.pnp_path)
         if os.path.exists('var/nagios.log'):
@@ -319,6 +310,55 @@ class TestConfigSmall(TestConfig):
             os.remove('var/status.dat')
         self.livestatus_broker = None
 
+    def test_check_type(self):
+        self.print_header()
+        now = time.time()
+        objlist = []
+        for host in self.sched.hosts:
+            objlist.append([host, 0, 'UP'])
+        for service in self.sched.services:
+            objlist.append([service, 2, 'CRIT'])
+        self.scheduler_loop(1, objlist)
+        self.update_broker()
+        svc = self.sched.services.find_srv_by_name_and_hostname("test_host_0", "test_ok_0")
+
+        request = """GET services
+Columns: host_name service_description state check_type
+Filter: host_name = test_host_0
+Filter: description = test_ok_0
+OutputFormat: csv
+"""
+        response, keepalive = self.livestatus_broker.livestatus.handle_request(request)
+        # The last check was an active check -> check_type=0
+        goodresponse = """test_host_0;test_ok_0;2;0
+"""
+        print response
+        self.assert_(response == goodresponse)
+
+        excmd = '[%d] PROCESS_SERVICE_CHECK_RESULT;test_host_0;test_ok_0;1;WARN' % int(time.time())
+        self.sched.run_external_command(excmd)
+        self.scheduler_loop(1, [])
+        self.scheduler_loop(1, [])  # Need 2 run for get then consume)
+        self.update_broker()
+
+        response, keepalive = self.livestatus_broker.livestatus.handle_request(request)
+        # The result was from a passive check -> check_type=1
+        goodresponse = """test_host_0;test_ok_0;1;1
+"""
+        print response
+        self.assert_(response == goodresponse)
+
+        for service in self.sched.services:
+            objlist.append([service, 2, 'CRIT'])
+        self.scheduler_loop(1, objlist)
+        self.update_broker()
+
+        response, keepalive = self.livestatus_broker.livestatus.handle_request(request)
+        # The last check was an active check -> check_type=0
+        goodresponse = """test_host_0;test_ok_0;2;0
+"""
+        print response
+        self.assert_(response == goodresponse)
 
     def test_childs(self):
         if self.nagios_installed():
@@ -340,7 +380,7 @@ KeepAlive: on
 ResponseHeader: fixed16
 """
         response, keepalive = self.livestatus_broker.livestatus.handle_request(request)
-        print response 
+        print response
         if self.nagios_installed():
             nagresponse = self.ask_nagios(request)
             print "nagresponse----------------------------------------------"
@@ -436,7 +476,7 @@ Invalid GET request, no such table 'hostshundsglumpvarreckts'
         self.scheduler_loop(1, objlist)
         self.update_broker()
         request = """GET services
-Columns: host_name wrdlbrmpft description 
+Columns: host_name wrdlbrmpft description
 Filter: host_name = test_host_0
 OutputFormat: csv
 KeepAlive: on
@@ -448,7 +488,7 @@ ResponseHeader: off
 """
         self.assert_(response == good_response)
         request = """GET services
-Columns: host_name wrdlbrmpft description 
+Columns: host_name wrdlbrmpft description
 Filter: host_name = test_host_0
 OutputFormat: json
 KeepAlive: on
@@ -459,9 +499,6 @@ ResponseHeader: off
         good_response = """[["test_host_0","","test_ok_0"]]
 """
         self.assert_(response == good_response)
-
-
-
 
     def test_servicesbyhostgroup(self):
         if self.nagios_installed():
@@ -505,7 +542,6 @@ ResponseHeader: fixed16
             print nagresponse
             self.assert_(self.lines_equal(response, nagresponse))
 
-
     def test_hostsbygroup(self):
         self.print_header()
         if self.nagios_installed():
@@ -535,7 +571,6 @@ ResponseHeader: fixed16
             print nagresponse
             self.assert_(self.lines_equal(response, nagresponse))
 
-
     def test_delegate_to_host(self):
         self.print_header()
         if self.nagios_installed():
@@ -558,13 +593,13 @@ Filter: host_state != 0
         self.assert_(response == '\n')
         host = self.sched.hosts.find_by_name("test_host_0")
         host.checks_in_progress = []
-        host.act_depend_of = [] # ignore the router
+        host.act_depend_of = []  # ignore the router
         router = self.sched.hosts.find_by_name("test_router_0")
         router.checks_in_progress = []
-        router.act_depend_of = [] # ignore the router
+        router.act_depend_of = []  # ignore the router
         svc = self.sched.services.find_srv_by_name_and_hostname("test_host_0", "test_ok_0")
         svc.checks_in_progress = []
-        svc.act_depend_of = [] # no hostchecks on critical checkresults
+        svc.act_depend_of = []  # no hostchecks on critical checkresults
         self.scheduler_loop(3, [[host, 2, 'DOWN'], [router, 0, 'UP'], [svc, 2, 'BAD']])
         self.update_broker()
         request = """GET services
@@ -576,7 +611,6 @@ Filter: host_state != 0
         print response
         self.assert_(response == 'test_host_0;test_ok_0;2;1;BAD;1;1;DOWN\n')
 
-
     def test_status(self):
         self.print_header()
         if self.nagios_installed():
@@ -584,13 +618,13 @@ Filter: host_state != 0
         now = time.time()
         host = self.sched.hosts.find_by_name("test_host_0")
         host.checks_in_progress = []
-        host.act_depend_of = [] # ignore the router
+        host.act_depend_of = []  # ignore the router
         router = self.sched.hosts.find_by_name("test_router_0")
         router.checks_in_progress = []
-        router.act_depend_of = [] # ignore the router
+        router.act_depend_of = []  # ignore the router
         svc = self.sched.services.find_srv_by_name_and_hostname("test_host_0", "test_ok_0")
         svc.checks_in_progress = []
-        svc.act_depend_of = [] # no hostchecks on critical checkresults
+        svc.act_depend_of = []  # no hostchecks on critical checkresults
         self.scheduler_loop(2, [[host, 0, 'UP'], [router, 0, 'UP'], [svc, 2, 'BAD']])
         self.update_broker(True)
         #---------------------------------------------------------------
@@ -698,6 +732,17 @@ Filter: host_state != 0
         response, keepalive = self.livestatus_broker.livestatus.handle_request(request)
         print 'query_6_______________\n%s\n%s\n' % (request, response)
         self.assert_(response == '0;0;1;0\n')
+
+        # service-contact_groups
+        request = 'GET services\nFilter: description = test_ok_0\nFilter: host_name = test_host_0\nColumns: contacts contact_groups\nOutputFormat: python\n'
+        response, keepalive = self.livestatus_broker.livestatus.handle_request(request)
+        print 'query_contact_groups_______________\n%s\n%s\n' % (request, response)
+        pyresponse = eval(response)
+        self.assert_(isinstance(pyresponse[0][0], list))
+        self.assert_(isinstance(pyresponse[0][1], list))
+        self.assert_(isinstance(pyresponse[0][0][0], basestring))
+        self.assert_(isinstance(pyresponse[0][1][0], basestring))
+
         if self.nagios_installed():
             nagresponse = self.ask_nagios(request)
             print "nagresponse----------------------------------------------"
@@ -708,11 +753,11 @@ Filter: host_state != 0
     def test_modified_attributes(self):
         host = self.sched.hosts.find_by_name("test_host_0")
         host.checks_in_progress = []
-        host.act_depend_of = [] # ignore the router
+        host.act_depend_of = []  # ignore the router
         svc = self.sched.services.find_srv_by_name_and_hostname("test_host_0", "test_ok_0")
         self.scheduler_loop(2, [[host, 0, 'UP'], [svc, 0, 'OK']])
         self.update_broker()
-        
+
         request = """GET services
 Columns: host_name description modified_attributes modified_attributes_list
 Filter: host_name = test_host_0
@@ -744,20 +789,19 @@ Filter: description = test_ok_0
         self.assert_(response == 'test_host_0;test_ok_0;3;notifications_enabled,active_checks_enabled\n')
         print "ma", lssvc.modified_attributes
 
-
     def test_json(self):
         self.print_header()
         print "got initial broks"
         now = time.time()
         host = self.sched.hosts.find_by_name("test_host_0")
         host.checks_in_progress = []
-        host.act_depend_of = [] # ignore the router
+        host.act_depend_of = []  # ignore the router
         router = self.sched.hosts.find_by_name("test_router_0")
         router.checks_in_progress = []
-        router.act_depend_of = [] # ignore the router
+        router.act_depend_of = []  # ignore the router
         svc = self.sched.services.find_srv_by_name_and_hostname("test_host_0", "test_ok_0")
         svc.checks_in_progress = []
-        svc.act_depend_of = [] # no hostchecks on critical checkresults
+        svc.act_depend_of = []  # no hostchecks on critical checkresults
         self.scheduler_loop(2, [[host, 0, 'UP'], [router, 0, 'UP'], [svc, 2, 'BAD']])
         self.update_broker()
         request = 'GET services\nColumns: host_name description state\nOutputFormat: json'
@@ -768,8 +812,7 @@ Filter: description = test_ok_0
         response, keepalive = self.livestatus_broker.livestatus.handle_request(request)
         print 'json with headers__________\n%s\n%s\n' % (request, response)
         self.assert_(response == '[["host_name","description","state"],["test_host_0","test_ok_0",2]]\n')
-        #100% mklivesttaus: self.assert_(response == '[["host_name","description","state"],\n["test_host_0","test_ok_0",2]]\n')
-
+        # 100% mklivesttaus: self.assert_(response == '[["host_name","description","state"],\n["test_host_0","test_ok_0",2]]\n')
 
     def test_thruk(self):
         self.print_header()
@@ -778,13 +821,13 @@ Filter: description = test_ok_0
         now = time.time()
         host = self.sched.hosts.find_by_name("test_host_0")
         host.checks_in_progress = []
-        host.act_depend_of = [] # ignore the router
+        host.act_depend_of = []  # ignore the router
         router = self.sched.hosts.find_by_name("test_router_0")
         router.checks_in_progress = []
-        router.act_depend_of = [] # ignore the router
+        router.act_depend_of = []  # ignore the router
         svc = self.sched.services.find_srv_by_name_and_hostname("test_host_0", "test_ok_0")
         svc.checks_in_progress = []
-        svc.act_depend_of = [] # no hostchecks on critical checkresults
+        svc.act_depend_of = []  # no hostchecks on critical checkresults
         self.scheduler_loop(2, [[host, 0, 'UP'], [router, 0, 'UP'], [svc, 2, 'BAD']])
         self.update_broker()
         #---------------------------------------------------------------
@@ -872,7 +915,7 @@ ResponseHeader: fixed16"""
             print nagresponse
             # TODO timing problem?
             #self.assert_(self.lines_equal(response, nagresponse))
-        
+
         request = """GET comments
 Columns: host_name source type author comment entry_time entry_type expire_time
 Filter: service_description ="""
@@ -920,7 +963,7 @@ Separators: 10 59 44 124"""
             nagresponse = self.ask_nagios(request)
             print "nagresponse----------------------------------------------"
             print nagresponse
-            #TODO the entry_times are different. find a way to round the numbers
+            # TODO the entry_times are different. find a way to round the numbers
             # so that they are equal
             #self.assert_(self.lines_equal(response, nagresponse))
 
@@ -1019,7 +1062,6 @@ ResponseHeader: fixed16"""
         for s in self.livestatus_broker.livestatus.datamgr.rg.services:
             print "%s %d %s;%d" % (s.state, s.state_id, s.state_type, s.attempt)
 
-
     def test_thruk_config(self):
         self.print_header()
         if self.nagios_installed():
@@ -1027,13 +1069,13 @@ ResponseHeader: fixed16"""
         now = time.time()
         host = self.sched.hosts.find_by_name("test_host_0")
         host.checks_in_progress = []
-        host.act_depend_of = [] # ignore the router
+        host.act_depend_of = []  # ignore the router
         router = self.sched.hosts.find_by_name("test_router_0")
         router.checks_in_progress = []
-        router.act_depend_of = [] # ignore the router
+        router.act_depend_of = []  # ignore the router
         svc = self.sched.services.find_srv_by_name_and_hostname("test_host_0", "test_ok_0")
         svc.checks_in_progress = []
-        svc.act_depend_of = [] # no hostchecks on critical checkresults
+        svc.act_depend_of = []  # no hostchecks on critical checkresults
         self.scheduler_loop(2, [[host, 0, 'UP'], [router, 0, 'UP'], [svc, 2, 'BAD']])
         self.update_broker()
         #---------------------------------------------------------------
@@ -1044,19 +1086,17 @@ ResponseHeader: fixed16"""
         response, keepalive = self.livestatus_broker.livestatus.handle_request(request)
         print response
 
-
-
     def test_thruk_comments(self):
         self.print_header()
         host = self.sched.hosts.find_by_name("test_host_0")
         host.checks_in_progress = []
-        host.act_depend_of = [] # ignore the router
+        host.act_depend_of = []  # ignore the router
         router = self.sched.hosts.find_by_name("test_router_0")
         router.checks_in_progress = []
-        router.act_depend_of = [] # ignore the router
+        router.act_depend_of = []  # ignore the router
         svc = self.sched.services.find_srv_by_name_and_hostname("test_host_0", "test_ok_0")
         svc.checks_in_progress = []
-        svc.act_depend_of = [] # no hostchecks on critical checkresults
+        svc.act_depend_of = []  # no hostchecks on critical checkresults
         duration = 600
         now = time.time()
         # downtime valid for the next 2 minutes
@@ -1064,7 +1104,7 @@ ResponseHeader: fixed16"""
         self.sched.run_external_command(cmd)
         svc = self.sched.services.find_srv_by_name_and_hostname("test_host_0", "test_ok_0")
         svc.checks_in_progress = []
-        svc.act_depend_of = [] # no hostchecks on critical checkresults
+        svc.act_depend_of = []  # no hostchecks on critical checkresults
         self.scheduler_loop(1, [[host, 0, 'UP'], [router, 0, 'UP'], [svc, 0, 'OK']], do_sleep=False)
 
         print "downtime was scheduled. check its activity and the comment"
@@ -1094,19 +1134,21 @@ ResponseHeader: fixed16"""
         #request = """GET comments\nColumns: host_name service_description id source type author comment entry_time entry_type persistent expire_time expires\nFilter: service_description !=\nResponseHeader: fixed16\nOutputFormat: json\n"""
         request = """GET services\nColumns: comments host_comments host_is_executing is_executing\nFilter: service_description !=\nResponseHeader: fixed16\nOutputFormat: json\n"""
         response, _ = self.livestatus_broker.livestatus.handle_request(request)
-        print response
+        print "resp (%s) resp" % response
         good_response = """200          17
-[[[""" + svc_comment_list +"""],[],0,0]]
+[[[""" + svc_comment_list + """],[],0,0]]
 """
-        self.assert_(response == good_response) # json
+        print "resp (%s) resp" % response
+        print "good (%s) good" % good_response
+        self.assert_(response == good_response)  # json
 
         request = """GET services\nColumns: comments host_comments host_is_executing is_executing\nFilter: service_description !=\nResponseHeader: fixed16\n"""
         response, _ = self.livestatus_broker.livestatus.handle_request(request)
-#        print response
+        #print response
         good_response = """200           9
-""" + svc_comment_list + """;;0;0
+""" + svc_comment_list.replace(" ", "") + """;;0;0
 """
-        self.assert_(response == good_response) # csv
+        self.assert_(response == good_response)  # csv
 
         request = """GET comments
 Columns: author entry_type expires expire_time host_name id persistent service_description source type
@@ -1124,19 +1166,18 @@ ResponseHeader: fixed16\n"""
         print "goodresp", good_response
         self.assert_(response == good_response)
 
-
     def test_thruk_logs(self):
         self.print_header()
         start = time.time()
         host = self.sched.hosts.find_by_name("test_host_0")
         host.checks_in_progress = []
-        host.act_depend_of = [] # ignore the router
+        host.act_depend_of = []  # ignore the router
         router = self.sched.hosts.find_by_name("test_router_0")
         router.checks_in_progress = []
-        router.act_depend_of = [] # ignore the router
+        router.act_depend_of = []  # ignore the router
         svc = self.sched.services.find_srv_by_name_and_hostname("test_host_0", "test_ok_0")
         svc.checks_in_progress = []
-        svc.act_depend_of = [] # no hostchecks on critical checkresults
+        svc.act_depend_of = []  # no hostchecks on critical checkresults
         self.scheduler_loop(3, [[host, 0, 'UP'], [router, 0, 'UP'], [svc, 1, 'WARNING']])
         self.update_broker()
         duration = 600
@@ -1146,7 +1187,7 @@ ResponseHeader: fixed16\n"""
         self.sched.run_external_command(cmd)
         svc = self.sched.services.find_srv_by_name_and_hostname("test_host_0", "test_ok_0")
         svc.checks_in_progress = []
-        svc.act_depend_of = [] # no hostchecks on critical checkresults
+        svc.act_depend_of = []  # no hostchecks on critical checkresults
         self.scheduler_loop(1, [[host, 0, 'UP'], [router, 0, 'UP'], [svc, 0, 'OK']], do_sleep=False)
         now = time.time()
         cmd = "[%lu] ADD_SVC_COMMENT;test_host_0;test_ok_0;1;lausser;comment" % now
@@ -1194,19 +1235,18 @@ Or: 3"""
         print response
         self.assert_(self.contains_line(response, 'SERVICE DOWNTIME ALERT;test_host_0;test_ok_0;STARTED; Service has entered a period of scheduled downtime'))
 
-
     def test_thruk_logs_alerts_summary(self):
         self.print_header()
         start = time.time()
         host = self.sched.hosts.find_by_name("test_host_0")
         host.checks_in_progress = []
-        host.act_depend_of = [] # ignore the router
+        host.act_depend_of = []  # ignore the router
         router = self.sched.hosts.find_by_name("test_router_0")
         router.checks_in_progress = []
-        router.act_depend_of = [] # ignore the router
+        router.act_depend_of = []  # ignore the router
         svc = self.sched.services.find_srv_by_name_and_hostname("test_host_0", "test_ok_0")
         svc.checks_in_progress = []
-        svc.act_depend_of = [] # no hostchecks on critical checkresults
+        svc.act_depend_of = []  # no hostchecks on critical checkresults
         self.scheduler_loop(3, [[host, 0, 'UP'], [router, 0, 'UP'], [svc, 1, 'WARNING']])
         self.update_broker()
         duration = 600
@@ -1216,7 +1256,7 @@ Or: 3"""
         self.sched.run_external_command(cmd)
         svc = self.sched.services.find_srv_by_name_and_hostname("test_host_0", "test_ok_0")
         svc.checks_in_progress = []
-        svc.act_depend_of = [] # no hostchecks on critical checkresults
+        svc.act_depend_of = []  # no hostchecks on critical checkresults
         self.scheduler_loop(1, [[host, 0, 'UP'], [router, 0, 'UP'], [svc, 0, 'OK']], do_sleep=False)
         now = time.time()
         cmd = "[%lu] ADD_SVC_COMMENT;test_host_0;test_ok_0;1;lausser;comment" % now
@@ -1231,7 +1271,6 @@ Or: 3"""
         self.scheduler_loop(3, [[host, 0, 'UP'], [router, 0, 'UP'], [svc, 0, 'OK']], do_sleep=False)
         self.update_broker()
         end = time.time()
-
         # is this an error in thruk?
 
         request = """GET log
@@ -1252,19 +1291,18 @@ Columns: time state state_type host_name service_description current_host_groups
         response, keepalive = self.livestatus_broker.livestatus.handle_request(request)
         print response
 
-
     def test_thruk_logs_current(self):
         self.print_header()
         start = time.time()
         host = self.sched.hosts.find_by_name("test_host_0")
         host.checks_in_progress = []
-        host.act_depend_of = [] # ignore the router
+        host.act_depend_of = []  # ignore the router
         router = self.sched.hosts.find_by_name("test_router_0")
         router.checks_in_progress = []
-        router.act_depend_of = [] # ignore the router
+        router.act_depend_of = []  # ignore the router
         svc = self.sched.services.find_srv_by_name_and_hostname("test_host_0", "test_ok_0")
         svc.checks_in_progress = []
-        svc.act_depend_of = [] # no hostchecks on critical checkresults
+        svc.act_depend_of = []  # no hostchecks on critical checkresults
         self.scheduler_loop(3, [[host, 0, 'UP'], [router, 0, 'UP'], [svc, 1, 'WARNING']])
         self.update_broker()
         duration = 600
@@ -1274,7 +1312,7 @@ Columns: time state state_type host_name service_description current_host_groups
         self.sched.run_external_command(cmd)
         svc = self.sched.services.find_srv_by_name_and_hostname("test_host_0", "test_ok_0")
         svc.checks_in_progress = []
-        svc.act_depend_of = [] # no hostchecks on critical checkresults
+        svc.act_depend_of = []  # no hostchecks on critical checkresults
         self.scheduler_loop(1, [[host, 0, 'UP'], [router, 0, 'UP'], [svc, 0, 'OK']], do_sleep=False)
         now = time.time()
         cmd = "[%lu] ADD_SVC_COMMENT;test_host_0;test_ok_0;1;lausser;comment" % now
@@ -1288,9 +1326,9 @@ Columns: time state state_type host_name service_description current_host_groups
         time.sleep(1)
         self.scheduler_loop(3, [[host, 0, 'UUP'], [router, 0, 'UP'], [svc, 0, 'OK']], do_sleep=False)
         self.update_broker()
-#        time.sleep(1)
-#        self.scheduler_loop(3, [[host, 0, 'UP'], [router, 2, 'DOWN'], [svc, 0, 'OK']], do_sleep=False)
-#        self.update_broker()
+        ## time.sleep(1)
+        ## self.scheduler_loop(3, [[host, 0, 'UP'], [router, 2, 'DOWN'], [svc, 0, 'OK']], do_sleep=False)
+        ## self.update_broker()
         end = time.time()
 
         # show history for service
@@ -1319,19 +1357,18 @@ And: 2"""
         response, keepalive = self.livestatus_broker.livestatus.handle_request(request)
         print response
 
-
     def test_thruk_logs_utf8(self):
         self.print_header()
         start = time.time()
         host = self.sched.hosts.find_by_name("test_host_0")
         host.checks_in_progress = []
-        host.act_depend_of = [] # ignore the router
+        host.act_depend_of = []  # ignore the router
         router = self.sched.hosts.find_by_name("test_router_0")
         router.checks_in_progress = []
-        router.act_depend_of = [] # ignore the router
+        router.act_depend_of = []  # ignore the router
         svc = self.sched.services.find_srv_by_name_and_hostname("test_host_0", "test_ok_0")
         svc.checks_in_progress = []
-        svc.act_depend_of = [] # no hostchecks on critical checkresults
+        svc.act_depend_of = []  # no hostchecks on critical checkresults
         # -----------------------------------------------------------------> HERE is the UTF8 char :)
         self.scheduler_loop(3, [[host, 0, 'UP'], [router, 0, 'UP'], [svc, 1, u'WARNINGé']])
         self.update_broker()
@@ -1342,7 +1379,7 @@ And: 2"""
         self.sched.run_external_command(cmd)
         svc = self.sched.services.find_srv_by_name_and_hostname("test_host_0", "test_ok_0")
         svc.checks_in_progress = []
-        svc.act_depend_of = [] # no hostchecks on critical checkresults
+        svc.act_depend_of = []  # no hostchecks on critical checkresults
         self.scheduler_loop(1, [[host, 0, 'UP'], [router, 0, 'UP'], [svc, 0, 'OK']], do_sleep=False)
         now = time.time()
         cmd = "u[%lu] ADD_SVC_COMMENT;test_host_0;test_ok_0;1;lausser;commenté" % now
@@ -1356,9 +1393,9 @@ And: 2"""
         time.sleep(1)
         self.scheduler_loop(3, [[host, 0, 'UUP'], [router, 0, 'UP'], [svc, 0, 'OK']], do_sleep=False)
         self.update_broker()
-#        time.sleep(1)
-#        self.scheduler_loop(3, [[host, 0, 'UP'], [router, 2, 'DOWN'], [svc, 0, 'OK']], do_sleep=False)
-#        self.update_broker()
+        ## time.sleep(1)
+        ## self.scheduler_loop(3, [[host, 0, 'UP'], [router, 2, 'DOWN'], [svc, 0, 'OK']], do_sleep=False)
+        ## self.update_broker()
         end = time.time()
 
         # show history for service
@@ -1387,7 +1424,6 @@ And: 2"""
         response, keepalive = self.livestatus_broker.livestatus.handle_request(request)
         #print response
 
-
     def test_thruk_tac_svc(self):
         self.print_header()
         if self.nagios_installed():
@@ -1397,13 +1433,13 @@ And: 2"""
         start = time.time()
         host = self.sched.hosts.find_by_name("test_host_0")
         host.checks_in_progress = []
-        host.act_depend_of = [] # ignore the router
+        host.act_depend_of = []  # ignore the router
         router = self.sched.hosts.find_by_name("test_router_0")
         router.checks_in_progress = []
-        router.act_depend_of = [] # ignore the router
+        router.act_depend_of = []  # ignore the router
         svc = self.sched.services.find_srv_by_name_and_hostname("test_host_0", "test_ok_0")
         svc.checks_in_progress = []
-        svc.act_depend_of = [] # no hostchecks on critical checkresults
+        svc.act_depend_of = []  # no hostchecks on critical checkresults
         self.scheduler_loop(3, [[host, 0, 'UP'], [router, 0, 'UP'], [svc, 1, 'WARNING']])
         self.update_broker()
         duration = 600
@@ -1413,7 +1449,7 @@ And: 2"""
         self.sched.run_external_command(cmd)
         svc = self.sched.services.find_srv_by_name_and_hostname("test_host_0", "test_ok_0")
         svc.checks_in_progress = []
-        svc.act_depend_of = [] # no hostchecks on critical checkresults
+        svc.act_depend_of = []  # no hostchecks on critical checkresults
         self.scheduler_loop(1, [[host, 0, 'UP'], [router, 0, 'UP'], [svc, 0, 'OK']], do_sleep=False)
         now = time.time()
         cmd = "[%lu] ADD_SVC_COMMENT;test_host_0;test_ok_0;1;lausser;comment" % now
@@ -1427,9 +1463,9 @@ And: 2"""
         time.sleep(1)
         self.scheduler_loop(3, [[host, 0, 'UUP'], [router, 0, 'UP'], [svc, 0, 'OK']], do_sleep=False)
         self.update_broker()
-#        time.sleep(1)
-#        self.scheduler_loop(3, [[host, 0, 'UP'], [router, 2, 'DOWN'], [svc, 0, 'OK']], do_sleep=False)
-#        self.update_broker()
+        ## time.sleep(1)
+        ## self.scheduler_loop(3, [[host, 0, 'UP'], [router, 2, 'DOWN'], [svc, 0, 'OK']], do_sleep=False)
+        ## self.update_broker()
         end = time.time()
 
         # show history for service
@@ -1452,7 +1488,6 @@ Stats: max execution_time"""
         #    print nagresponse
         #    self.assert_(self.lines_equal(response, nagresponse))
 
-
     def test_columns(self):
         self.print_header()
         self.update_broker()
@@ -1463,18 +1498,17 @@ Stats: max execution_time"""
         response, keepalive = self.livestatus_broker.livestatus.handle_request(request)
         print response
 
-
     def test_scheduler_table(self):
         self.print_header()
         self.update_broker()
 
-        creation_tab = {'scheduler_name' : 'scheduler-1', 'address' : 'localhost', 'spare' : '0'}
+        creation_tab = {'scheduler_name': 'scheduler-1', 'address': 'localhost', 'spare': '0'}
         schedlink = SchedulerLink(creation_tab)
         schedlink.pythonize()
         schedlink.alive = True
         b = schedlink.get_initial_status_brok()
         self.sched.add(b)
-        creation_tab = {'scheduler_name' : 'scheduler-2', 'address' : 'othernode', 'spare' : '1'}
+        creation_tab = {'scheduler_name': 'scheduler-2', 'address': 'othernode', 'spare': '1'}
         schedlink = SchedulerLink(creation_tab)
         schedlink.pythonize()
         schedlink.alive = True
@@ -1496,8 +1530,8 @@ localhost;1;scheduler-1;7768;0;1
         print "FUCK", response, "TOTO"
         self.assert_(self.lines_equal(response, good_response))
 
-        #Now we update a scheduler state and we check
-        #here the N2
+        # Now we update a scheduler state and we check
+        # here the N2
         schedlink.alive = False
         b = schedlink.get_update_status_brok()
         self.sched.add(b)
@@ -1510,18 +1544,16 @@ localhost;1;scheduler-1;7768;0;1
 """
         self.assert_(self.lines_equal(response, good_response))
 
-
-
     def test_reactionner_table(self):
         self.print_header()
         self.update_broker()
-        creation_tab = {'reactionner_name' : 'reactionner-1', 'address' : 'localhost', 'spare' : '0'}
+        creation_tab = {'reactionner_name': 'reactionner-1', 'address': 'localhost', 'spare': '0'}
         reac = ReactionnerLink(creation_tab)
         reac.pythonize()
         reac.alive = True
         b = reac.get_initial_status_brok()
         self.sched.add(b)
-        creation_tab = {'reactionner_name' : 'reactionner-2', 'address' : 'othernode', 'spare' : '1'}
+        creation_tab = {'reactionner_name': 'reactionner-2', 'address': 'othernode', 'spare': '1'}
         reac = ReactionnerLink(creation_tab)
         reac.pythonize()
         reac.alive = True
@@ -1542,7 +1574,7 @@ othernode;1;reactionner-2;7769;1
         print response == good_response
         self.assert_(self.lines_equal(response, good_response))
 
-        #Now the update part
+        # Now the update part
         reac.alive = False
         b2 = reac.get_update_status_brok()
         self.sched.add(b2)
@@ -1557,19 +1589,17 @@ othernode;0;reactionner-2;7769;1
         print response == good_response
         self.assert_(self.lines_equal(response, good_response))
 
-
-
     def test_poller_table(self):
         self.print_header()
         self.update_broker()
 
-        creation_tab = {'poller_name' : 'poller-1', 'address' : 'localhost', 'spare' : '0'}
+        creation_tab = {'poller_name': 'poller-1', 'address': 'localhost', 'spare': '0'}
         pol = PollerLink(creation_tab)
         pol.pythonize()
         pol.alive = True
         b = pol.get_initial_status_brok()
         self.sched.add(b)
-        creation_tab = {'poller_name' : 'poller-2', 'address' : 'othernode', 'spare' : '1'}
+        creation_tab = {'poller_name': 'poller-2', 'address': 'othernode', 'spare': '1'}
         pol = PollerLink(creation_tab)
         pol.pythonize()
         pol.alive = True
@@ -1590,7 +1620,7 @@ othernode;1;poller-2;7771;1
         print response == good_response
         self.assert_(self.lines_equal(response, good_response))
 
-        #Now the update part
+        # Now the update part
         pol.alive = False
         b2 = pol.get_update_status_brok()
         self.sched.add(b2)
@@ -1609,19 +1639,17 @@ othernode;0;poller-2;7771;1
         print response == good_response
         self.assert_(self.lines_equal(response, good_response))
 
-
-
     def test_broker_table(self):
         self.print_header()
         self.update_broker()
 
-        creation_tab = {'broker_name' : 'broker-1', 'address' : 'localhost', 'spare' : '0'}
+        creation_tab = {'broker_name': 'broker-1', 'address': 'localhost', 'spare': '0'}
         pol = BrokerLink(creation_tab)
         pol.pythonize()
         pol.alive = True
         b = pol.get_initial_status_brok()
         self.sched.add(b)
-        creation_tab = {'broker_name' : 'broker-2', 'address' : 'othernode', 'spare' : '1'}
+        creation_tab = {'broker_name': 'broker-2', 'address': 'othernode', 'spare': '1'}
         pol = BrokerLink(creation_tab)
         pol.pythonize()
         pol.alive = True
@@ -1642,7 +1670,7 @@ othernode;1;broker-2;7772;1
         print response == good_response
         self.assert_(self.lines_equal(response, good_response))
 
-        #Now the update part
+        # Now the update part
         pol.alive = False
         b2 = pol.get_initial_status_brok()
         self.sched.add(b2)
@@ -1661,8 +1689,6 @@ othernode;0;broker-2;7772;1
         print response == good_response
         self.assert_(self.lines_equal(response, good_response))
 
-
-
     def test_problems_table(self):
         self.print_header()
         self.update_broker()
@@ -1675,7 +1701,7 @@ othernode;0;broker-2;7772;1
         #router.act_depend_of = [] # ignore the router
         svc = self.sched.services.find_srv_by_name_and_hostname("test_host_0", "test_ok_0")
         svc.checks_in_progress = []
-        svc.act_depend_of = [] # no hostchecks on critical checkresults
+        svc.act_depend_of = []  # no hostchecks on critical checkresults
 
         lshost = self.livestatus_broker.rg.hosts.find_by_name("test_host_0")
         lsrouter = self.livestatus_broker.rg.hosts.find_by_name("test_router_0")
@@ -1713,14 +1739,13 @@ test_host_0/test_ok_0,test_host_0;test_router_0
         print response == good_response
         self.assert_(response == good_response)
 
-
     def test_parent_childs_dep_lists(self):
         self.print_header()
         self.update_broker()
         host = self.sched.hosts.find_by_name("test_host_0")
         router = self.sched.hosts.find_by_name("test_router_0")
         svc = self.sched.services.find_srv_by_name_and_hostname("test_host_0", "test_ok_0")
-        
+
         #---------------------------------------------------------------
         # get the columns meta-table
         #---------------------------------------------------------------
@@ -1748,9 +1773,8 @@ test_host_0/test_ok_0,test_host_0;test_router_0
         good_response = """test_host_0"""
         self.assert_(response.strip() == good_response.strip())
 
-
     def test_limit(self):
-        self.print_header() 
+        self.print_header()
         if self.nagios_installed():
             self.start_nagios('1r_1h_1s')
         now = time.time()
@@ -1771,7 +1795,7 @@ test_router_0
         print response
         good_response = """test_host_0
 """
-        # it must be test_host_0 because with Limit: the output is 
+        # it must be test_host_0 because with Limit: the output is
         # alphabetically ordered
         self.assert_(response == good_response)
         # TODO look whats wrong
@@ -1780,17 +1804,15 @@ test_router_0
         #    print nagresponse
         #    self.assert_(self.lines_equal(response, nagresponse))
 
-
-
     def test_problem_impact_in_host_service(self):
-        self.print_header() 
+        self.print_header()
         now = time.time()
         self.update_broker()
 
         host_router_0 = self.sched.hosts.find_by_name("test_router_0")
         host_router_0.checks_in_progress = []
 
-        #Then initialize host under theses routers
+        # Then initialize host under theses routers
         host_0 = self.sched.hosts.find_by_name("test_host_0")
         host_0.checks_in_progress = []
 
@@ -1806,7 +1828,7 @@ test_router_0
         self.scheduler_loop(1, [[host_router_0, 1, 'DOWN']], do_sleep=False)
         self.scheduler_loop(1, [[host_router_0, 1, 'DOWN']], do_sleep=False)
 
-        #Max attempt is reach, should be HARD now
+        # Max attempt is reach, should be HARD now
         for h in all_routers:
             self.assert_(h.state == 'DOWN')
             self.assert_(h.state_type == 'HARD')
@@ -1815,14 +1837,14 @@ test_router_0
             print "All broks", b.type, b
             if b.type == 'update_host_status':
                 print "***********"
-                print "Impacts", b.data['impacts']
-                print "Sources",  b.data['source_problems']
+                #print "Impacts", b.data['impacts']
+                #print "Sources",  b.data['source_problems']
 
         for b in host_router_0.broks:
             print " host_router_0.broks", b
 
         self.update_broker()
-        
+
         print "source de host_0", host_0.source_problems
         for i in host_0.source_problems:
             print "source", i.get_name()
@@ -1856,11 +1878,9 @@ test_host_0;0;"""
         good_response = """test_host_0
 """
         print "goodresp(%s)" % good_response
-        # it must be test_host_0 because with Limit: the output is 
+        # it must be test_host_0 because with Limit: the output is
         # alphabetically ordered
         self.assert_(response == good_response)
-
-
 
     def test_thruk_servicegroup(self):
         self.print_header()
@@ -1868,7 +1888,7 @@ test_host_0;0;"""
         self.update_broker()
         #---------------------------------------------------------------
         # get services of a certain servicegroup
-        # test_host_0/test_ok_0 is in 
+        # test_host_0/test_ok_0 is in
         #   servicegroup_01,ok via service.servicegroups
         #   servicegroup_02 via servicegroup.members
         #---------------------------------------------------------------
@@ -1893,7 +1913,37 @@ ResponseHeader: fixed16
 test_host_0;test_ok_0
 """)
 
+    def test_host_and_service_eventhandler(self):
+        self.print_header()
+        now = time.time()
+        self.update_broker()
+        host = self.sched.hosts.find_by_name("test_host_0")
+        svc = self.sched.services.find_srv_by_name_and_hostname("test_host_0", "test_ok_0")
+        self.assert_(host.event_handler_enabled == True)
+        self.assert_(svc.event_handler_enabled == True)
 
+        request = """GET services
+Columns: host_name service_description event_handler_enabled event_handler
+Filter: host_name = test_host_0
+Filter: description = test_ok_0
+OutputFormat: csv
+"""
+        response, keepalive = self.livestatus_broker.livestatus.handle_request(request)
+        print response
+        self.assert_("""test_host_0;test_ok_0;1;eventhandler
+""")
+        self.assert_(response == "%s;%s;%d;%s\n" % (svc.host_name, svc.service_description, from_bool_to_int(svc.event_handler_enabled), svc.event_handler.get_name()))
+
+        request = """GET hosts
+Columns: host_name event_handler_enabled event_handler
+Filter: host_name = test_host_0
+OutputFormat: csv
+"""
+        response, keepalive = self.livestatus_broker.livestatus.handle_request(request)
+        print response
+        self.assert_("""test_host_0;1;eventhandler
+""")
+        self.assert_(response == "%s;%d;%s\n" % (host.host_name, from_bool_to_int(host.event_handler_enabled), host.event_handler.get_name()))
 
     def test_is_executing(self):
         self.print_header()
@@ -1903,13 +1953,13 @@ test_host_0;test_ok_0
         now = time.time()
         host = self.sched.hosts.find_by_name("test_host_0")
         host.checks_in_progress = []
-        host.act_depend_of = [] # ignore the router
+        host.act_depend_of = []  # ignore the router
         router = self.sched.hosts.find_by_name("test_router_0")
         router.checks_in_progress = []
-        router.act_depend_of = [] # ignore the router
+        router.act_depend_of = []  # ignore the router
         svc = self.sched.services.find_srv_by_name_and_hostname("test_host_0", "test_ok_0")
         svc.checks_in_progress = []
-        svc.act_depend_of = [] # no hostchecks on critical checkresults
+        svc.act_depend_of = []  # no hostchecks on critical checkresults
 
         for loop in range(1, 2):
             print "processing check", loop
@@ -1954,8 +2004,6 @@ test_host_0;test_ok_0
         request = 'GET services\nColumns: service_description is_executing\n'
         response, keepalive = self.livestatus_broker.livestatus.handle_request(request)
         print response
-        
-
 
     def test_pnp_path(self):
         self.print_header()
@@ -1998,7 +2046,7 @@ test_host_0;test_ok_0;0
             print "there is an empty spool dir", pnp_path
         except:
             pass
-        
+
         response, keepalive = self.livestatus_broker.livestatus.handle_request(request)
         print response
         self.assert_(response == """200          24
@@ -2010,12 +2058,12 @@ test_host_0;test_ok_0;0
 
         try:
             os.makedirs(pnp_path + '/test_host_0')
-            open(pnp_path + '/test_host_0/_HOST_.xml', 'w').close() 
-            open(pnp_path + '/test_host_0/test_ok_0.xml', 'w').close() 
+            open(pnp_path + '/test_host_0/_HOST_.xml', 'w').close()
+            open(pnp_path + '/test_host_0/test_ok_0.xml', 'w').close()
             print "there is a spool dir with data", pnp_path
         except:
             pass
-        
+
         response, keepalive = self.livestatus_broker.livestatus.handle_request(request)
         print response
         self.assert_(response == """200          24
@@ -2028,7 +2076,6 @@ test_router_0;0
 test_host_0;1
 """
         self.assert_(self.lines_equal(response, goodresponse))
-
 
     def test_thruk_action_notes_url_icon_image(self):
         self.print_header()
@@ -2123,6 +2170,37 @@ ResponseHeader: fixed16
 test_host_0;/nagios/wiki/doku.php/test_host_0
 """)
 
+    def test_thruk_action_notes_url_icon_image_complicated(self):
+        self.print_header()
+        svc = self.sched.services.find_srv_by_name_and_hostname("test_host_0", "test_ok_0")
+        svc.action_url = "/pnp4nagios/index.php/graph?host=$HOSTNAME$&srv=$SERVICEDESC$' class='tips' rel='/pnp4nagios/index.php/popup?host=$HOSTNAME$&srv=$SERVICEDESC$"
+        self.sched.get_and_register_status_brok(svc)
+        now = time.time()
+        self.update_broker()
+        request = """GET services
+Columns: host_name service_description action_url
+Filter: host_name = test_host_0
+Filter: service_description = test_ok_0
+OutputFormat: csv
+ResponseHeader: fixed16
+"""
+        response, keepalive = self.livestatus_broker.livestatus.handle_request(request)
+        print response
+        self.assert_(response == """200         165
+test_host_0;test_ok_0;/pnp4nagios/index.php/graph?host=$HOSTNAME$&srv=$SERVICEDESC$' class='tips' rel='/pnp4nagios/index.php/popup?host=$HOSTNAME$&srv=$SERVICEDESC$
+""")
+        request = """GET services
+Columns: host_name service_description action_url_expanded
+Filter: host_name = test_host_0
+Filter: service_description = test_ok_0
+OutputFormat: csv
+ResponseHeader: fixed16
+"""
+        response, keepalive = self.livestatus_broker.livestatus.handle_request(request)
+        print response
+        self.assert_(response == """200         159
+test_host_0;test_ok_0;/pnp4nagios/index.php/graph?host=test_host_0&srv=test_ok_0' class='tips' rel='/pnp4nagios/index.php/popup?host=test_host_0&srv=test_ok_0
+""")
 
     def test_thruk_custom_variables(self):
         self.print_header()
@@ -2150,7 +2228,6 @@ ResponseHeader: fixed16
         self.assert_(response == """200          41
 test_host_0;test_ok_0;CUSTNAME;custvalue
 """)
-
 
     def test_multisite_hostgroup_alias(self):
         self.print_header()
@@ -2186,8 +2263,6 @@ OutputFormat: csv
 test_host_0;hostgroup_01;test_ok_0|0|0;test_ok_0
 test_host_0;up;test_ok_0|0|0;test_ok_0
 """)
-
-
 
     def test_multisite_in_check_period(self):
         self.print_header()
@@ -2231,24 +2306,24 @@ test_host_0;1;0
 test_host_0;0;1
 """)
 
-
     def test_thruk_log_current_groups(self):
-        self.print_header() 
+        self.print_header()
         now = time.time()
-        b = Brok('log', {'log' : "[%lu] EXTERNAL COMMAND: [%lu] DISABLE_NOTIFICATIONS" % (now, now) })
+        self.update_broker()
+        b = Brok('log', {'log': "[%lu] EXTERNAL COMMAND: [%lu] DISABLE_NOTIFICATIONS" % (now, now)})
         self.livestatus_broker.manage_brok(b)
-        b = Brok('log', {'log' : "[%lu] EXTERNAL COMMAND: [%lu] STOP_EXECUTING_SVC_CHECKS" % (now, now) })
+        b = Brok('log', {'log': "[%lu] EXTERNAL COMMAND: [%lu] STOP_EXECUTING_SVC_CHECKS" % (now, now)})
         self.livestatus_broker.manage_brok(b)
         self.update_broker()
         host = self.sched.hosts.find_by_name("test_host_0")
         host.checks_in_progress = []
-        host.act_depend_of = [] # ignore the router
+        host.act_depend_of = []  # ignore the router
         router = self.sched.hosts.find_by_name("test_router_0")
         router.checks_in_progress = []
-        router.act_depend_of = [] # ignore the router
+        router.act_depend_of = []  # ignore the router
         svc = self.sched.services.find_srv_by_name_and_hostname("test_host_0", "test_ok_0")
         svc.checks_in_progress = []
-        svc.act_depend_of = [] # no hostchecks on critical checkresults
+        svc.act_depend_of = []  # no hostchecks on critical checkresults
         self.update_broker()
         self.scheduler_loop(1, [[host, 0, 'UP'], [router, 0, 'UP'], [svc, 1, 'WARNING']])
         self.update_broker()
@@ -2269,9 +2344,14 @@ OutputFormat: json
 """
         response, keepalive = self.livestatus_broker.livestatus.handle_request(request)
         good_response = "[[\"[%lu] EXTERNAL COMMAND: [%lu] DISABLE_NOTIFICATIONS\",[]],[\"[%lu] EXTERNAL COMMAND: [%lu] STOP_EXECUTING_SVC_CHECKS\",[]]]\n" % (now, now, now, now)
+        pyresponse = eval(response)
+        response = [l[0] for l in pyresponse if not ("Info" in l[0] or "Warning" in l[0] or "Debug" in l[0])]
+        print "pyth", pyresponse
         print "good", good_response
         print "resp", response
-        self.assert_(response == good_response)
+        self.assert_(len(response) == 2)
+        self.assert_("DISABLE_NOTIFICATIONS" in response[0])
+        self.assert_("STOP_EXECUTING_SVC_CHECKS" in response[1])
 
         request = """GET log
 Columns: time current_host_name current_service_description current_host_groups current_service_groups
@@ -2288,7 +2368,6 @@ And: 2"""
         print response
         self.assert_(self.lines_equal(response, good_response))
 
-
     def test_thruk_empty_stats(self):
         self.print_header()
         self.update_broker()
@@ -2301,13 +2380,12 @@ Stats: sum percent_state_change
 Stats: min percent_state_change
 Stats: max percent_state_change
 OutputFormat: csv"""
-        
+
         good_response = """0;0;0"""
 
         response, keepalive = self.livestatus_broker.livestatus.handle_request(request)
         print response
         self.assert_(self.lines_equal(response, good_response))
-
 
     def test_thruk_host_parents(self):
         self.print_header()
@@ -2317,7 +2395,7 @@ OutputFormat: csv"""
         request = """GET hosts
 Columns: host_name parents
 OutputFormat: csv"""
-        
+
         good_response = """test_router_0;
 test_host_0;test_router_0
 """
@@ -2325,8 +2403,6 @@ test_host_0;test_router_0
         response, keepalive = self.livestatus_broker.livestatus.handle_request(request)
         print response
         self.assert_(self.lines_equal(response, good_response))
-
-
 
     def test_statsgroupby(self):
         self.print_header()
@@ -2367,7 +2443,6 @@ StatsGroupBy: state
         #self.assert_(self.contains_line(response, '2;0'))
         #self.assert_(self.contains_line(response, '3;0'))
 
-
     def test_multisite_column_groupby(self):
         self.print_header()
         now = time.time()
@@ -2406,14 +2481,11 @@ Limit: 1001"""
         self.assert_(self.contains_line(response, 'test_host_0;;1;3;0;0;3'))
         self.assert_(self.contains_line(response, 'test_router_0;;1;4;0;0;4'))
         self.assert_(self.contains_line(response, 'test_host_0;test_ok_0;1;2;1;0;3'))
-
-
         # does not show null-values
         #self.assert_(self.contains_line(response, '0;0'))
         #self.assert_(self.contains_line(response, '1;1'))
         #self.assert_(self.contains_line(response, '2;0'))
         #self.assert_(self.contains_line(response, '3;0'))
-
 
     def test_downtimes_ref(self):
         self.print_header()
@@ -2434,7 +2506,6 @@ Limit: 1001"""
         response, keepalive = self.livestatus_broker.livestatus.handle_request(request)
         print response
         self.assert_(response == 'test_host_0;test_ok_0;1;blablub\n')
-
 
     def test_display_name(self):
         self.print_header()
@@ -2457,9 +2528,7 @@ Filter: host_name = test_host_0
 Filter: description = test_ok_0
 Columns: description host_name display_name"""
         response, keepalive = self.livestatus_broker.livestatus.handle_request(request)
-        print "hihi",response
         self.assert_(response == 'test_ok_0;test_host_0;test_ok_0\n')
-
 
 
 class TestConfigBig(TestConfig):
@@ -2470,7 +2539,10 @@ class TestConfigBig(TestConfig):
         self.testid = str(os.getpid() + random.randint(1, 1000))
         self.init_livestatus()
         print "Cleaning old broks?"
-        self.sched.fill_initial_broks()
+        self.sched.conf.skip_initial_broks = False
+        self.sched.brokers['Default-Broker'] = {'broks' : {}, 'has_full_broks' : False}
+        self.sched.fill_initial_broks('Default-Broker')
+
         self.update_broker()
         print "************* Overall Setup:", time.time() - start_setUp
         # add use_aggressive_host_checking so we can mix exit codes 1 and 2
@@ -2484,8 +2556,8 @@ class TestConfigBig(TestConfig):
         self.livestatus_broker.db.close()
         if os.path.exists(self.livelogs):
             os.remove(self.livelogs)
-        if os.path.exists(self.livelogs+"-journal"):
-            os.remove(self.livelogs+"-journal")
+        if os.path.exists(self.livelogs + "-journal"):
+            os.remove(self.livelogs + "-journal")
         if os.path.exists(self.livestatus_broker.pnp_path):
             shutil.rmtree(self.livestatus_broker.pnp_path)
         if os.path.exists('var/nagios.log'):
@@ -2495,7 +2567,6 @@ class TestConfigBig(TestConfig):
         if os.path.exists('var/status.dat'):
             os.remove('var/status.dat')
         self.livestatus_broker = None
-
 
     def test_negate(self):
         # test_host_005 is in hostgroup_01
@@ -2632,8 +2703,6 @@ OutputFormat: python
         self.assert_(h_response == """1;1;0;2;2
 """)
 
-
-
     def test_stats(self):
         self.print_header()
         if self.nagios_installed():
@@ -2676,7 +2745,6 @@ Stats: state = 3"""
             nagresponse = self.ask_nagios(request)
             print nagresponse
             self.assert_(self.lines_equal(response, nagresponse))
-
 
     def test_statsgroupby(self):
         self.print_header()
@@ -2728,7 +2796,6 @@ StatsGroupBy: state
             print nagresponse
             self.assert_(self.lines_equal(response, nagresponse))
 
-
     def test_hostsbygroup(self):
         self.print_header()
         if self.nagios_installed():
@@ -2755,7 +2822,6 @@ ResponseHeader: fixed16
             nagresponse = self.ask_nagios(request)
             print nagresponse
             self.assert_(self.lines_equal(response, nagresponse))
-
 
     def test_servicesbyhostgroup(self):
         self.print_header()
@@ -2916,7 +2982,6 @@ ResponseHeader: fixed16
             print nagresponse
             self.assert_(self.lines_equal(response, nagresponse))
 
-
     def test_childs(self):
         if self.nagios_installed():
             self.start_nagios('5r_100h_2000s')
@@ -2958,14 +3023,13 @@ ResponseHeader: fixed16
             print nagresponse
             self.assert_(self.lines_equal(response, nagresponse))
 
-
     def test_thruk_servicegroup(self):
         self.print_header()
         now = time.time()
         self.update_broker()
         #---------------------------------------------------------------
         # get services of a certain servicegroup
-        # test_host_0/test_ok_0 is in 
+        # test_host_0/test_ok_0 is in
         #   servicegroup_01,ok via service.servicegroups
         #   servicegroup_02 via servicegroup.members
         #---------------------------------------------------------------
@@ -2977,7 +3041,7 @@ ResponseHeader: fixed16
 """
         # 400 services => 400 lines + header + empty last line
         response, keepalive = self.livestatus_broker.livestatus.handle_request(request)
-        print "r1",response
+        print "r1", response
         self.assert_(len(response.split("\n")) == 402)
 
         request = """GET servicegroups
@@ -2989,10 +3053,9 @@ OutputFormat: csv
         print "sg01 is", sg01
         # 400 services => 400 lines
         response, keepalive = self.livestatus_broker.livestatus.handle_request(request)
-        print "r2",response
+        print "r2", response
         # take first line, take members column, count list elements = 400 services
         self.assert_(len(((response.split("\n")[0]).split(';')[1]).split(',')) == 400)
-
 
     def test_sorted_limit(self):
         self.print_header()
@@ -3013,12 +3076,12 @@ OutputFormat: csv
         #for s in self.livestatus_broker.rg.services:
         #    print s.get_full_name()
         if hasattr(self.livestatus_broker.rg.services, "__iter__") and hasattr(self.livestatus_broker.rg.services, "itersorted"):
-                print "ris__iter__", self.livestatus_broker.rg.services.__iter__
-                print "ris__itersorted__",self.livestatus_broker.rg.services.itersorted
+            print "ris__iter__", self.livestatus_broker.rg.services.__iter__
+            print "ris__itersorted__", self.livestatus_broker.rg.services.itersorted
         i = 0
         while i < 10:
             print self.livestatus_broker.rg.services._id_heap[i]
-            idx = self.livestatus_broker.rg.services._id_heap[i][1]
+            idx = self.livestatus_broker.rg.services._id_heap[i]
             print self.livestatus_broker.rg.services[idx].get_full_name()
             i += 1
         i = 0
@@ -3035,9 +3098,9 @@ OutputFormat: csv
         print "last of sched\n(%s)\n--------------\n" % sched_unsorted[-100:]
         print "last of live \n(%s)\n--------------\n" % live_sorted[-100:]
         print "last of sssed \n(%s)\n--------------\n" % sched_live_sorted[-100:]
-        # But sorted they are the same. 
+        # But sorted they are the same.
         self.assert_('\n'.join(sorted(sched_unsorted.split('\n'))) == live_sorted)
-  
+
         svc1 = self.sched.services.find_srv_by_name_and_hostname("test_host_005", "test_ok_00")
         print svc1
         svc2 = self.sched.services.find_srv_by_name_and_hostname("test_host_005", "test_ok_15")
@@ -3086,6 +3149,7 @@ OutputFormat: csv"""
         response, keepalive = self.livestatus_broker.livestatus.handle_request(request)
         # Again, get all bad services from the scheduler
         sched_bad_unsorted = '\n'.join(["%s;%s;%d" % (s.host_name, s.service_description, s.state_id) for s in self.sched.services])
+
         # Check if the result of the query is sorted
         ## FIXME LAUSSER self.assert_('\n'.join(sorted(sched_bad_unsorted.split('\n'))) == response.strip())
 
@@ -3099,9 +3163,7 @@ OutputFormat: csv"""
         # python test_livestatus.py TestConfigBig.test_thruk_unhandled_srv_page_perf
         return
         import cProfile
-        cProfile.runctx('''self.do_test_thruk_unhandled_srv_page_perf()''', globals(), locals(),'/tmp/livestatus_thruk_perf.profile')
-        
-
+        cProfile.runctx('''self.do_test_thruk_unhandled_srv_page_perf()''', globals(), locals(), '/tmp/livestatus_thruk_perf.profile')
 
     def do_test_thruk_unhandled_srv_page_perf(self):
         self.print_header()
@@ -3126,7 +3188,7 @@ OutputFormat: csv"""
 
         # We will look for the overall page loading time
         total_page = 0.0
-        
+
         # First Query
         query_start = time.time()
         request = """
@@ -3140,9 +3202,9 @@ ResponseHeader: fixed16
         #print response
         load_time = time.time() - query_start
         total_page += load_time
-        print "Response time 1 : %.3f" % load_time
+        print "Response time 1: %.3f" % load_time
 
-        #Second Query
+        # Second Query
         query_start = time.time()
         request = """
 GET hosts
@@ -3258,8 +3320,7 @@ ResponseHeader: fixed16
         #print response
         load_time = time.time() - query_start
         total_page += load_time
-        print "Response time 2 : %.3f" % load_time
-
+        print "Response time 2: %.3f" % load_time
 
         # Now Query 3 (service stats)
         query_start = time.time()
@@ -3416,8 +3477,7 @@ ResponseHeader: fixed16
         #print response
         load_time = time.time() - query_start
         total_page += load_time
-        print "Response time 3 : %.3f" % load_time
-
+        print "Response time 3: %.3f" % load_time
 
         # 4th Query
         query_start = time.time()
@@ -3435,9 +3495,7 @@ ResponseHeader: fixed16
         #print response
         load_time = time.time() - query_start
         total_page += load_time
-        print "Response time 4 : %.3f" % load_time
-
-
+        print "Response time 4: %.3f" % load_time
 
         # 5th Query
         query_start = time.time()
@@ -3455,9 +3513,7 @@ ResponseHeader: fixed16
         #print response
         load_time = time.time() - query_start
         total_page += load_time
-        print "Response time 5 : %.3f" % load_time
-
-
+        print "Response time 5: %.3f" % load_time
 
         # 6th Query
         query_start = time.time()
@@ -3492,8 +3548,7 @@ ResponseHeader: fixed16
         #print response
         load_time = time.time() - query_start
         total_page += load_time
-        print "Response time 6 : %.3f" % load_time
-
+        print "Response time 6: %.3f" % load_time
 
         # 7th Query
         query_start = time.time()
@@ -3529,15 +3584,135 @@ ResponseHeader: fixed16
         #print response
         load_time = time.time() - query_start
         total_page += load_time
-        print "Response time 7 : %.3f" % load_time
+        print "Response time 7: %.3f" % load_time
 
         print ""
-        print "Overall Queries time : %.3f" % total_page
+        print "Overall Queries time: %.3f" % total_page
 
-        
+    def test_thruk_search(self):
+        self.print_header()
+        now = time.time()
+        self.update_broker()
+        # 99 test_host_099
+        request = """GET comments
+Columns: author comment entry_time entry_type expires expire_time host_name id persistent service_description source type
+Filter: service_description !=
+Filter: service_description =
+Or: 2
+Filter: comment ~~ 99
+Filter: author ~~ 99
+Or: 2
+OutputFormat: csv
+"""
+        response, keepalive = self.livestatus_broker.livestatus.handle_request(request)
+        print "r1", response
+        self.assert_(response == """
+""")
+
+        request = """GET downtimes
+Columns: author comment end_time entry_time fixed host_name id start_time service_description triggered_by
+Filter: service_description !=
+Filter: service_description =
+Or: 2
+Filter: comment ~~ 99
+Filter: author ~~ 99
+Or: 2
+OutputFormat: csv
+"""
+        response, keepalive = self.livestatus_broker.livestatus.handle_request(request)
+        print "r1", response
+        self.assert_(response == """
+""")
+
+        request = """GET services
+Columns: host_has_been_checked host_name host_state
+Filter: description ~~ 99
+Filter: groups >= 99
+Filter: plugin_output ~~ 99
+Filter: long_plugin_output ~~ 99
+Filter: host_name ~~ 99
+Filter: host_alias ~~ 99
+Filter: host_address ~~ 99
+Filter: host_groups >= 99
+Filter: host_comments >= -1
+Filter: host_downtimes >= -1
+Filter: comments >= -1
+Filter: downtimes >= -1
+Or: 4
+Or: 9
+OutputFormat: csv
+"""
+        response, keepalive = self.livestatus_broker.livestatus.handle_request(request)
+        print "r1", response
+        # test_host_099 matches by name
+        # test_host_098 matches by address (test_host_098 has 127.0.0.99)
+        self.assert_(response == """0;test_host_098;0
+0;test_host_098;0
+0;test_host_098;0
+0;test_host_098;0
+0;test_host_098;0
+0;test_host_098;0
+0;test_host_098;0
+0;test_host_098;0
+0;test_host_098;0
+0;test_host_098;0
+0;test_host_098;0
+0;test_host_098;0
+0;test_host_098;0
+0;test_host_098;0
+0;test_host_098;0
+0;test_host_098;0
+0;test_host_098;0
+0;test_host_098;0
+0;test_host_098;0
+0;test_host_098;0
+0;test_host_099;0
+0;test_host_099;0
+0;test_host_099;0
+0;test_host_099;0
+0;test_host_099;0
+0;test_host_099;0
+0;test_host_099;0
+0;test_host_099;0
+0;test_host_099;0
+0;test_host_099;0
+0;test_host_099;0
+0;test_host_099;0
+0;test_host_099;0
+0;test_host_099;0
+0;test_host_099;0
+0;test_host_099;0
+0;test_host_099;0
+0;test_host_099;0
+0;test_host_099;0
+0;test_host_099;0
+""")
+
+    def test_display_name(self):
+        self.print_header()
+        now = time.time()
+        objlist = []
+        for host in self.sched.hosts:
+            objlist.append([host, 0, 'UP'])
+        for service in self.sched.services:
+            objlist.append([service, 0, 'OK'])
+        self.scheduler_loop(1, objlist)
+        self.update_broker()
+        request = """GET hosts
+Filter: name = test_router_0
+Columns: name display_name"""
+        response, keepalive = self.livestatus_broker.livestatus.handle_request(request)
+        print response
+        self.assert_(response == 'test_router_0;display_router_0\n')
+        request = """GET services
+Filter: host_name = test_host_000
+Filter: description = test_unknown_00
+Columns: description host_name display_name"""
+        response, keepalive = self.livestatus_broker.livestatus.handle_request(request)
+        print response
+        self.assert_(response == 'test_unknown_00;test_host_000;display_unknown_00\n')
 
 
-        
 
 class TestConfigComplex(TestConfig):
     def setUp(self):
@@ -3545,7 +3720,10 @@ class TestConfigComplex(TestConfig):
         self.testid = str(os.getpid() + random.randint(1, 1000))
         self.init_livestatus()
         print "Cleaning old broks?"
-        self.sched.fill_initial_broks()
+        self.sched.conf.skip_initial_broks = False
+        self.sched.brokers['Default-Broker'] = {'broks' : {}, 'has_full_broks' : False}
+        self.sched.fill_initial_broks('Default-Broker')
+
         self.update_broker()
         self.nagios_path = None
         self.livestatus_path = None
@@ -3555,19 +3733,17 @@ class TestConfigComplex(TestConfig):
         host = self.sched.hosts.find_by_name("test_host_0")
         host.__class__.use_aggressive_host_checking = 1
 
-
     def tearDown(self):
         self.stop_nagios()
         self.livestatus_broker.db.commit()
         self.livestatus_broker.db.close()
         if os.path.exists(self.livelogs):
             os.remove(self.livelogs)
-        if os.path.exists(self.livelogs+"-journal"):
-            os.remove(self.livelogs+"-journal")
+        if os.path.exists(self.livelogs + "-journal"):
+            os.remove(self.livelogs + "-journal")
         if os.path.exists(self.livestatus_broker.pnp_path):
             shutil.rmtree(self.livestatus_broker.pnp_path)
         self.livestatus_broker = None
-
 
     #  test_host_0  has parents test_router_0,test_router_1
     def test_thruk_parents(self):
@@ -3600,6 +3776,5 @@ if __name__ == '__main__':
     unittest.main()
     #cProfile.runctx( command, globals(), locals(), filename="/tmp/livestatus.profile" )
 
-    #allsuite = unittest.TestLoader.loadTestsFromModule(TestConfig) 
-    #unittest.TextTestRunner(verbosity=2).run(allsuite) 
-
+    #allsuite = unittest.TestLoader.loadTestsFromModule(TestConfig)
+    #unittest.TextTestRunner(verbosity=2).run(allsuite)

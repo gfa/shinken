@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-
-# Copyright (C) 2009-2011 :
+# -*- coding: utf-8 -*-
+#
+# Copyright (C) 2009-2012:
 #    Gabes Jean, naparuba@gmail.com
 #    Gerhard Lausser, Gerhard.Lausser@consol.de
 #    Gregory Starck, g.starck@gmail.com
@@ -31,7 +32,7 @@ Pyro = pyro.Pyro
 from shinken.log import logger
 
 
-""" TODO : Add some comment about this class for the doc"""
+""" TODO: Add some comment about this class for the doc"""
 class ArbiterLink(SatelliteLink):
     id = 0
     my_type = 'arbiter'
@@ -45,34 +46,37 @@ class ArbiterLink(SatelliteLink):
     def get_name(self):
         return self.arbiter_name
 
-
     def get_config(self):
         return self.con.get_config()
-
 
     # Check is required when prop are set:
     # contacts OR contactgroups is need
     def is_correct(self):
-        state = True #guilty or not? :)
+        state = True
         cls = self.__class__
 
         for prop, entry in cls.properties.items():
             if not hasattr(self, prop) and entry.required:
-                # This sould raise an error afterwards?
-                # If so, logger.log it !
-                print self.get_name(), " : I do not have", prop
-                state = False #Bad boy...
+                # This should raise an error afterwards?
+                # Log the issue
+                logger.warning("%s arbiterlink is missing %s property" % (self.get_name(), prop))
+                self.debug("%s arbiterlink is missing %s property" % (self.get_name(), prop))
+                state = False  # Bad boy...
         return state
 
 
-    # Look for ourself as an arbiter. Should be our fqdn name, or if not, our hostname one
-    def is_me(self):
-        logger.log("And arbiter is launched with the hostname:%s from an arbiter point of view of addr :%s" % (self.host_name, socket.getfqdn()), print_it=False)
-        return self.host_name == socket.getfqdn() or self.host_name == socket.gethostname()
+    # Look for ourself as an arbiter. If we search for a specific arbiter name, go forit
+    # If not look be our fqdn name, or if not, our hostname
+    def is_me(self, lookup_name):
+        logger.info("And arbiter is launched with the hostname:%s from an arbiter point of view of addr:%s" % (self.host_name, socket.getfqdn()))
+        if lookup_name:
+            return lookup_name == self.get_name()
+        else:
+            return self.host_name == socket.getfqdn() or self.host_name == socket.gethostname()
 
 
     def give_satellite_cfg(self):
-        return {'port' : self.port, 'address' : self.address, 'name' : self.arbiter_name}
+        return {'port': self.port, 'address': self.address, 'name': self.arbiter_name}
 
 
     def do_not_run(self):
@@ -81,12 +85,13 @@ class ArbiterLink(SatelliteLink):
         try:
             self.con.do_not_run()
             return True
-        except Pyro.errors.URIError , exp:
+        except Pyro.errors.URIError, exp:
             self.con = None
             return False
-        except Pyro.errors.ProtocolError , exp:
+        except Pyro.errors.ProtocolError, exp:
             self.con = None
             return False
+
 
     def get_satellite_list(self, daemon_type):
         if self.con is None:
@@ -94,12 +99,13 @@ class ArbiterLink(SatelliteLink):
         try:
             r = self.con.get_satellite_list(daemon_type)
             return r
-        except Pyro.errors.URIError , exp:
+        except Pyro.errors.URIError, exp:
             self.con = None
             return []
-        except Pyro.errors.ProtocolError , exp:
+        except Pyro.errors.ProtocolError, exp:
             self.con = None
             return []
+
 
     def get_satellite_status(self, daemon_type, name):
         if self.con is None:
@@ -107,10 +113,10 @@ class ArbiterLink(SatelliteLink):
         try:
             r = self.con.get_satellite_status(daemon_type, name)
             return r
-        except Pyro.errors.URIError , exp:
+        except Pyro.errors.URIError, exp:
             self.con = None
             return {}
-        except Pyro.errors.ProtocolError , exp:
+        except Pyro.errors.ProtocolError, exp:
             self.con = None
             return {}
 
@@ -121,14 +127,26 @@ class ArbiterLink(SatelliteLink):
         try:
             r = self.con.get_all_states()
             return r
-        except Pyro.errors.URIError , exp:
+        except Pyro.errors.URIError, exp:
             self.con = None
             return None
-        except Pyro.errors.ProtocolError , exp:
+        except Pyro.errors.ProtocolError, exp:
             self.con = None
             return None
 
 
+    def get_objects_properties(self, table, *properties):
+        if self.con is None:
+            self.create_connection()
+        try:
+            r = self.con.get_objects_properties(table, *properties)
+            return r
+        except Pyro.errors.URIError, exp:
+            self.con = None
+            return None
+        except Pyro.errors.ProtocolError, exp:
+            self.con = None
+            return None
 
 
 class ArbiterLinks(SatelliteLinks):
@@ -139,5 +157,3 @@ class ArbiterLinks(SatelliteLinks):
     # We must have a realm property, so we find our realm
     def linkify(self, modules):
         self.linkify_s_by_plug(modules)
-
-

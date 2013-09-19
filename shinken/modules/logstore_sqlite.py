@@ -1,5 +1,29 @@
-# import von modules/livestatus_logstore
+#!/usr/bin/python
 
+# -*- coding: utf-8 -*-
+
+# Copyright (C) 2009-2012:
+#    Gabes Jean, naparuba@gmail.com
+#    Gerhard Lausser, Gerhard.Lausser@consol.de
+#    Gregory Starck, g.starck@gmail.com
+#    Hartmut Goebel, h.goebel@goebel-consult.de
+#
+# This file is part of Shinken.
+#
+# Shinken is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Shinken is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with Shinken.  If not, see <http://www.gnu.org/licenses/>.
+
+# import von modules/livestatus_logstore
 
 """
 This class is for attaching a sqlite database to a livestatus broker module.
@@ -7,41 +31,42 @@ It is one possibility for an exchangeable storage for log broks
 """
 
 import os
+import sys
 import time
 import datetime
 import re
 from shinken.objects.service import Service
+from shinken.log import logger
 from livestatus_broker.livestatus_stack import LiveStatusStack
 from livestatus_broker.mapping import LOGCLASS_ALERT, LOGCLASS_PROGRAM, LOGCLASS_NOTIFICATION, LOGCLASS_PASSIVECHECK, LOGCLASS_COMMAND, LOGCLASS_STATE, LOGCLASS_INVALID, LOGOBJECT_INFO, LOGOBJECT_HOST, LOGOBJECT_SERVICE, Logline
 
 old_implementation = False
 try:
     import sqlite3
-except ImportError: # python 2.4 do not have it
+except ImportError:  # python 2.4 do not have it
     try:
-        import pysqlite2.dbapi2 as sqlite3 # but need the pysqlite2 install from http://code.google.com/p/pysqlite/downloads/list
-    except ImportError: # python 2.4 do not have it
-        import sqlite as sqlite3 # one last try
+        import pysqlite2.dbapi2 as sqlite3  # but need the pysqlite2 install from http://code.google.com/p/pysqlite/downloads/list
+    except ImportError:  # python 2.4 do not have it
+        import sqlite as sqlite3  # one last try
         old_implementation = True
-
-
 
 from shinken.basemodule import BaseModule
 from shinken.objects.module import Module
 
 properties = {
-    'daemons' : ['livestatus'],
-    'type' : 'logstore_sqlite',
-    'external' : False,
-    'phases' : ['running'],
+    'daemons': ['livestatus'],
+    'type': 'logstore_sqlite',
+    'external': False,
+    'phases': ['running'],
     }
 
 
-#called by the plugin manager
+# called by the plugin manager
 def get_instance(plugin):
-    print "Get an LogStore Sqlite module for plugin %s" % plugin.get_name()
+    logger.info("[Logstore SQLite] Get an LogStore Sqlite module for plugin %s" % plugin.get_name())
     instance = LiveStatusLogStoreSqlite(plugin)
     return instance
+
 
 def row_factory(cursor, row):
     """Handler for the sqlite fetch method."""
@@ -57,16 +82,19 @@ class LiveStatusLogStoreSqlite(BaseModule):
     def __init__(self, modconf):
         BaseModule.__init__(self, modconf)
         self.plugins = []
-        self.database_file = getattr(modconf, 'database_file', os.path.join(os.path.abspath('.'), 'var', 'livestatus.db'))
+        # Change. The var folder is not defined based upon '.', but upon ../var from the process name (shinken-broker)
+        # When the database_file variable, the default variable was calculated from '.'... Depending on where you were 
+        # when you ran the command the behavior changed.
+        self.database_file = getattr(modconf, 'database_file', os.path.join(os.path.abspath('.'), 'livestatus.db'))
         self.archive_path = getattr(modconf, 'archive_path', os.path.join(os.path.dirname(self.database_file), 'archives'))
         try:
             os.stat(self.archive_path)
         except:
             os.mkdir(self.archive_path)
         max_logs_age = getattr(modconf, 'max_logs_age', '365')
-        maxmatch = re.match(r'^(\d+)([dwm]*)$', max_logs_age)
+        maxmatch = re.match(r'^(\d+)([dwmy]*)$', max_logs_age)
         if maxmatch is None:
-            print 'Warning : wrong format for max_logs_age. Must be <number>[d|w|m|y] or <number> and not %s' % max_logs_age
+            logger.warning("[Logstore SQLite] Warning: wrong format for max_logs_age. Must be <number>[d|w|m|y] or <number> and not %s" % max_logs_age)
             return None
         else:
             if not maxmatch.group(2):
@@ -80,6 +108,7 @@ class LiveStatusLogStoreSqlite(BaseModule):
             elif maxmatch.group(2) == 'y':
                 self.max_logs_age = int(maxmatch.group(1)) * 365
         self.use_aggressive_sql = (getattr(modconf, 'use_aggressive_sql', '0') == '1')
+        self.read_only = (getattr(modconf, 'read_only', '0') == '1')
 
         # This stack is used to create a full-blown select-statement
         self.sql_filter_stack = LiveStatusSqlStack()
@@ -91,7 +120,6 @@ class LiveStatusLogStoreSqlite(BaseModule):
         time.sleep(1)
         Logline.lineno = 0
 
-
     def load(self, app):
         self.app = app
 
@@ -99,8 +127,8 @@ class LiveStatusLogStoreSqlite(BaseModule):
         self.old_implementation = old_implementation
 
     def open(self):
-        print "open LiveStatusLogStoreSqlite ok"
-        self.dbconn = sqlite3.connect(self.database_file)
+        logger.info("[Logstore SQLite] Open LiveStatusLogStoreSqlite ok : %s" % self.database_file)
+        self.dbconn = sqlite3.connect(self.database_file, check_same_thread=False)
         # Get no problem for utf8 insert
         self.dbconn.text_factory = str
         self.dbcursor = self.dbconn.cursor()
@@ -134,15 +162,16 @@ class LiveStatusLogStoreSqlite(BaseModule):
             except:
                 pass
 
-    def commit(self):
-        self.dbconn.commit()
-
     def prepare_log_db_table(self):
+        if self.read_only:
+            return
         # 'attempt', 'class', 'command_name', 'comment', 'contact_name', 'host_name', 'lineno', 'message',
-        # 'options', 'plugin_output', 'service_description', 'state', 'state_type', 'time', 'type',
+        # 'plugin_output', 'service_description', 'state', 'state_type', 'time', 'type',
         cmd = "CREATE TABLE IF NOT EXISTS logs(logobject INT, attempt INT, class INT, command_name VARCHAR(64), comment VARCHAR(256), contact_name VARCHAR(64), host_name VARCHAR(64), lineno INT, message VARCHAR(512), options VARCHAR(512), plugin_output VARCHAR(256), service_description VARCHAR(64), state INT, state_type VARCHAR(10), time INT, type VARCHAR(64))"
         self.execute(cmd)
         cmd = "CREATE INDEX IF NOT EXISTS logs_time ON logs (time)"
+        self.execute(cmd)
+        cmd = "CREATE INDEX IF NOT EXISTS logs_host_name ON logs (host_name)"
         self.execute(cmd)
         cmd = "PRAGMA journal_mode=truncate"
         self.execute(cmd)
@@ -158,13 +187,15 @@ class LiveStatusLogStoreSqlite(BaseModule):
         because in a distributed environment even after 00:00 (on the broker host)
         we might receive data from other hosts with a timestamp dating from yesterday.
         """
+        if self.read_only:
+            return
         now = time.time()
         if self.next_log_db_commit <= now:
             self.commit()
-            print "commit....."
+            logger.debug("[Logstore SQLite] commit.....")
             self.next_log_db_commit = now + 1
         if self.next_log_db_rotate <= now:
-            print "at %s we rotate the database file" % time.asctime(time.localtime(now))
+            logger.info("[Logstore SQLite] at %s we rotate the database file" % time.asctime(time.localtime(now)))
             # Take the current database file
             # Move the messages into daily files
             self.log_db_do_archive()
@@ -178,8 +209,7 @@ class LiveStatusLogStoreSqlite(BaseModule):
 
             # See you tomorrow
             self.next_log_db_rotate = time.mktime(nextrotation.timetuple())
-            print "next rotation at %s " % time.asctime(time.localtime(self.next_log_db_rotate))
-
+            logger.info("[Logstore SQLite] next rotation at %s " % time.asctime(time.localtime(self.next_log_db_rotate)))
 
     def log_db_historic_contents(self):
         """
@@ -192,7 +222,11 @@ class LiveStatusLogStoreSqlite(BaseModule):
             mintime = dbresult[0][0]
             maxtime = dbresult[0][1]
         except sqlite3.Error, e:
-            print "An error occurred:", e.args[0]
+            logger.error("[Logstore SQLite] An error occurred: %s" % str(e.args[0]))
+        except IndexError, e:
+            mintime = int(time.time())
+            maxtime = int(time.time())
+
         if mintime is None:
             mintime = int(time.time())
         if maxtime is None:
@@ -250,6 +284,8 @@ class LiveStatusLogStoreSqlite(BaseModule):
         In order to limit the datafile's sizes we flush logs dating from
         before today/00:00 to their own datafiles.
         """
+        if self.read_only:
+            return
         try:
             os.stat(self.archive_path)
         except:
@@ -265,18 +301,19 @@ class LiveStatusLogStoreSqlite(BaseModule):
                 #tmpconn.prepare_log_db_table()
                 #tmpconn.close()
 
-		dbmodconf = Module({'module_name' : 'LogStore',
-		    'module_type' : 'logstore_sqlite',
-		    'use_aggressive_sql' : '0',
-		    'database_file' : archive,
-                    'max_logs_age' : '0',
-		})
+                dbmodconf = Module({
+                    'module_name': 'LogStore',
+                    'module_type': 'logstore_sqlite',
+                    'use_aggressive_sql': '0',
+                    'database_file': archive,
+                    'max_logs_age': '0',
+                })
                 tmpconn = LiveStatusLogStoreSqlite(dbmodconf)
                 tmpconn.open()
                 tmpconn.close()
 
             self.commit()
-            print "move logs from %s - %s to database %s" % (time.asctime(time.localtime(starttime)), time.asctime(time.localtime(stoptime)), archive)
+            logger.info("[Logstore SQLite] move logs from %s - %s to database %s" % (time.asctime(time.localtime(starttime)), time.asctime(time.localtime(stoptime)), archive))
             cmd = "ATTACH DATABASE '%s' AS %s" % (archive, handle)
             self.execute_attach(cmd)
             cmd = "INSERT INTO %s.logs SELECT * FROM logs WHERE time >= %d AND time < %d" % (handle, starttime, stoptime)
@@ -290,7 +327,7 @@ class LiveStatusLogStoreSqlite(BaseModule):
             try:
                 self.execute('VACUUM')
             except sqlite3.DatabaseError, exp:
-                print "WARNING : it seems your database is corrupted. Please recreate it"
+                logger.error("[Logstore SQLite] WARNING: it seems your database is corrupted. Please recreate it")
             self.commit()
 
     def execute(self, cmd, values=None, row_factory=None):
@@ -330,7 +367,7 @@ class LiveStatusLogStoreSqlite(BaseModule):
             else:
                 self.dbcursor.execute(cmd, values)
         except sqlite3.Error, e:
-            print "execute error", e
+            logger.error("[Logstore SQLite] execute error %s" % str(e))
             raise LiveStatusLogStoreError(e)
 
     def execute_attach(self, cmd):
@@ -352,54 +389,59 @@ class LiveStatusLogStoreSqlite(BaseModule):
         else:
             self.dbcursor.execute(cmd)
 
-
     def commit(self):
-        self.dbconn.commit()
-
-
-    def manage_brok(self, brok):
-        """ Look for a manager function for a brok, and call it """
-        manage = getattr(self, 'manage_' + brok.type + '_brok', None)
-        if manage:
-            return manage(brok)
+        start = time.time()
+        while True:
+            try:
+                self.dbconn.commit()
+                break
+            except sqlite3.OperationalError:
+                # If we wait more than 60s in the loop, maybe we should exit
+                # than do an endless loop
+                if time.time() - start > 60:
+                    raise
+                time.sleep(.01)
 
     def manage_log_brok(self, b):
+        if self.read_only:
+            return
         data = b.data
         line = data['log']
+        if re.match("^\[[0-9]*\] [A-Z][a-z]*.:", line):
+            # Match log which NOT have to be stored
+            # print "Unexpected in manage_log_brok", line
+            return 
         try:
             logline = Logline(line=line)
             values = logline.as_tuple()
-        except Exception, exp:
-            print "Unexpected error:", exp
-        try:
             if logline.logclass != LOGCLASS_INVALID:
                 self.execute('INSERT INTO LOGS VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', values)
         except LiveStatusLogStoreError, exp:
-            print "An error occurred:", exp.args[0]
-            print "DATABASE ERROR!!!!!!!!!!!!!!!!!"
-        #FIXME need access to this#self.livestatus.count_event('log_message')
+            logger.error("[Logstore SQLite] An error occurred: %s", str(exp.args[0]))
+            logger.error("[Logstore SQLite] DATABASE ERROR!!!!!!!!!!!!!!!!!")
+        except Exception, exp:
+            logger.error("[Logstore SQLite] Unexpected in manage_log_brok: %s" % str(exp))
+        # FIXME need access to this #self.livestatus.count_event('log_message')
 
     def add_filter(self, operator, attribute, reference):
-	if attribute == 'time':
-	    self.sql_time_filter_stack.put_stack(self.make_sql_filter(operator, attribute, reference))
-            pass
-	self.sql_filter_stack.put_stack(self.make_sql_filter(operator, attribute, reference))
+        if attribute == 'time':
+            self.sql_time_filter_stack.put_stack(self.make_sql_filter(operator, attribute, reference))
+        self.sql_filter_stack.put_stack(self.make_sql_filter(operator, attribute, reference))
 
     def add_filter_and(self, andnum):
-	self.sql_filter_stack.and_elements(andnum)
+        self.sql_filter_stack.and_elements(andnum)
 
     def add_filter_or(self, ornum):
-	self.sql_filter_stack.or_elements(ornum)
+        self.sql_filter_stack.or_elements(ornum)
 
     def add_filter_not(self):
-	self.sql_filter_stack.not_elements()
-
+        self.sql_filter_stack.not_elements()
 
     def get_live_data_log(self):
         """Like get_live_data, but for log objects"""
         # finalize the filter stacks
-	#self.sql_time_filter_stack.and_elements(self.sql_time_filter_stack.qsize())
-	self.sql_filter_stack.and_elements(self.sql_filter_stack.qsize())
+        self.sql_time_filter_stack.and_elements(self.sql_time_filter_stack.qsize())
+        self.sql_filter_stack.and_elements(self.sql_filter_stack.qsize())
         if self.use_aggressive_sql:
             # Be aggressive, get preselected data from sqlite and do less
             # filtering in python. But: only a subset of Filter:-attributes
@@ -442,7 +484,6 @@ class LiveStatusLogStoreSqlite(BaseModule):
             dbresult.extend(selectresult)
         return dbresult
 
-
     def select_live_data_log(self, filter_clause, filter_values, handle, archive, fromtime, totime):
         dbresult = []
         try:
@@ -454,7 +495,7 @@ class LiveStatusLogStoreSqlite(BaseModule):
                 dbresult = self.execute('SELECT * FROM %s.logs WHERE %s' % (handle, filter_clause), filter_values, row_factory)
                 self.execute("DETACH DATABASE %s" % handle)
         except LiveStatusLogStoreError, e:
-            print "An error occurred:", e.args[0]
+            logger.error("[Logstore SQLite] An error occurred: %s" % str(e.args[0]))
         return dbresult
 
     def make_sql_filter(self, operator, attribute, reference):
@@ -468,53 +509,53 @@ class LiveStatusLogStoreSqlite(BaseModule):
             if reference == '':
                 return ['%s IS NULL' % attribute, ()]
             else:
-                return ['%s = ?' % attribute, (reference, )]
+                return ['%s = ?' % attribute, (reference,)]
 
         def match_filter():
             # sqlite matches case-insensitive by default. We make
             # no difference between case-sensitive and case-insensitive
             # here. The python filters will care for the correct
             # matching later.
-            return ['%s LIKE ?' % attribute, ('%'+reference+'%', )]
+            return ['%s LIKE ?' % attribute, ('%' + reference + '%',)]
 
         def eq_nocase_filter():
             if reference == '':
                 return ['%s IS NULL' % attribute, ()]
             else:
-                return ['%s = ?' % attribute.lower(), (reference.lower(), )]
+                return ['%s = ?' % attribute.lower(), (reference.lower(),)]
 
         def match_nocase_filter():
-            return ['%s LIKE ?' % attribute, ('%'+reference+'%', )]
+            return ['%s LIKE ?' % attribute, ('%' + reference + '%',)]
 
         def lt_filter():
-            return ['%s < ?' % attribute, (reference, )]
+            return ['%s < ?' % attribute, (reference,)]
 
         def gt_filter():
-            return ['%s > ?' % attribute, (reference, )]
+            return ['%s > ?' % attribute, (reference,)]
 
         def le_filter():
-            return ['%s <= ?' % attribute, (reference, )]
+            return ['%s <= ?' % attribute, (reference,)]
 
         def ge_filter():
-            return ['%s >= ?' % attribute, (reference, )]
+            return ['%s >= ?' % attribute, (reference,)]
 
         def ne_filter():
             if reference == '':
                 return ['%s IS NOT NULL' % attribute, ()]
             else:
-                return ['%s != ?' % attribute, (reference, )]
+                return ['%s != ?' % attribute, (reference,)]
 
         def not_match_filter():
-            return ['NOT %s LIKE ?' % attribute, ('%'+reference+'%', )]
+            return ['NOT %s LIKE ?' % attribute, ('%' + reference + '%',)]
 
         def ne_nocase_filter():
             if reference == '':
                 return ['NOT %s IS NULL' % attribute, ()]
             else:
-                return ['NOT %s = ?' % attribute.lower(), (reference.lower(), )]
+                return ['NOT %s = ?' % attribute.lower(), (reference.lower(),)]
 
         def not_match_nocase_filter():
-            return ['NOT %s LIKE ?' % attribute, ('%'+reference+'%', )]
+            return ['NOT %s LIKE ?' % attribute, ('%' + reference + '%',)]
 
         def no_filter():
             return ['1 = 1', ()]
@@ -547,8 +588,6 @@ class LiveStatusLogStoreSqlite(BaseModule):
             return not_match_nocase_filter
 
 
-
-
 class LiveStatusSqlStack(LiveStatusStack):
 
     def __init__(self, *args, **kw):
@@ -572,9 +611,9 @@ class LiveStatusSqlStack(LiveStatusStack):
             # Make a combined anded function
             # Put it on the stack
             and_clause = '(' + (' AND ').join([x()[0] for x in filters]) + ')'
-            and_values = reduce(lambda x, y: x+y, [ x()[1] for x in filters ])
-            and_filter = lambda : [and_clause, and_values]
-            #  print "and_elements", and_clause, and_values
+            and_values = reduce(lambda x, y: x + y, [x()[1] for x in filters])
+            and_filter = lambda: [and_clause, and_values]
+            logger.debug("[Logstore SQLite] and_elements %s, %s" % (and_clause, and_values))
             self.put_stack(and_filter)
 
     def or_elements(self, num):
@@ -583,15 +622,15 @@ class LiveStatusSqlStack(LiveStatusStack):
             filters = []
             for _ in range(num):
                 filters.append(self.get_stack())
-            or_clause = '(' + (' OR ').join([ x()[0] for x in filters ]) + ')'
-            or_values = reduce(lambda x, y: x+y, [ x()[1] for x in filters ])
-            or_filter = lambda : [or_clause, or_values]
-            #  print "or_elements", or_clause
+            or_clause = '(' + (' OR ').join([x()[0] for x in filters]) + ')'
+            or_values = reduce(lambda x, y: x + y, [x()[1] for x in filters])
+            or_filter = lambda: [or_clause, or_values]
+            logger.debug("[Logstore SQLite] or_elements %s" % str(or_clause))
             self.put_stack(or_filter)
 
     def get_stack(self):
         """Return the top element from the stack or a filter which is always true"""
         if self.qsize() == 0:
-            return lambda : ["1 = ?", [1]]
+            return lambda: ["1 = ?", [1]]
         else:
             return self.get()

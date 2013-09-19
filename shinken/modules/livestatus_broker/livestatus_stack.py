@@ -1,10 +1,12 @@
+#!/usr/bin/python
+
 # -*- coding: utf-8 -*-
-#
+
 # Copyright (C) 2009-2012:
-#     Gabes Jean, naparuba@gmail.com
-#     Gerhard Lausser, Gerhard.Lausser@consol.de
-#     Gregory Starck, g.starck@gmail.com
-#     Hartmut Goebel, h.goebel@goebel-consult.de
+#    Gabes Jean, naparuba@gmail.com
+#    Gerhard Lausser, Gerhard.Lausser@consol.de
+#    Gregory Starck, g.starck@gmail.com
+#    Hartmut Goebel, h.goebel@goebel-consult.de
 #
 # This file is part of Shinken.
 #
@@ -21,8 +23,8 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Shinken.  If not, see <http://www.gnu.org/licenses/>.
 
-
 import Queue
+from shinken.log import logger
 
 
 class MyLifoQueue(Queue.Queue):
@@ -51,6 +53,7 @@ class MyLifoQueue(Queue.Queue):
 class TopBaseLiveStatusStack(object):
     pass
 
+
 class LiveStatusStack(TopBaseLiveStatusStack):
     """A Lifo queue for filter functions.
 
@@ -72,9 +75,9 @@ class LiveStatusStack(TopBaseLiveStatusStack):
 
     def __xinit__(self, *args, **kw):
         self.type = 'lambda'
-        print "i am a", type(self)
-        print "my parents are", [c.__name__ for c in self.__class__.__bases__]
-        print "my first parent is", self.__class__.__bases__[0].__name__
+        logger.info("[Livestatus Stack] I am a %s" % type(self))
+        logger.info("[Livestatus Stack] My parents are %s" % str([c.__name__ for c in self.__class__.__bases__]))
+        logger.info("[Livestatus Stack] My first parent is %s", str(self.__class__.__bases__[0].__name__))
         if self.__class__.__name__ == 'LiveStatusStack':
             self.__class__.__bases__[0].__init__(self, *args, **kw)
 
@@ -90,6 +93,7 @@ class LiveStatusStack(TopBaseLiveStatusStack):
             filters = []
             for _ in range(num):
                 filters.append(self.get_stack())
+
             # Take from the stack:
             # Make a combined anded function
             # Put it on the stack
@@ -106,13 +110,13 @@ class LiveStatusStack(TopBaseLiveStatusStack):
                 return not failed
             self.put_stack(and_filter)
 
-
     def or_elements(self, num):
         """Take num filters from the stack, or them and put the result back"""
         if num > 1:
             filters = []
             for _ in range(num):
                 filters.append(self.get_stack())
+
             def or_filter(ref):
                 myfilters = filters
                 failed = True
@@ -126,14 +130,12 @@ class LiveStatusStack(TopBaseLiveStatusStack):
                 return not failed
             self.put_stack(or_filter)
 
-
     def get_stack(self):
         """Return the top element from the stack or a filter which is always true"""
         if self.qsize() == 0:
-            return lambda x : True
+            return lambda x: True
         else:
             return self.get()
-
 
     def put_stack(self, element):
         """Wrapper for a stack put operation which corresponds to get_stack"""
@@ -145,7 +147,7 @@ try:
     TopBaseLiveStatusStack.__bases__ = (Queue.LifoQueue, object)
     #LiveStatusStack.__bases__ += (Queue.LifoQueue, )
 except AttributeError:
-    # Ptyhon 2.4 and 2.5 do not have it.
+    # Python 2.4 and 2.5 do not have it.
     # Use our own implementation.
     TopBaseLiveStatusStack.__bases__ = (MyLifoQueue, object)
     #LiveStatusStack.__bases__ += (MyLifoQueue, )

@@ -1,10 +1,12 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2009-2012 :
+# Copyright (C) 2009-2012:
 #    Gabes Jean, naparuba@gmail.com
-#    Nicolas Dupeux, nicolas.dupeux@arkea.com
+#    Gerhard Lausser, Gerhard.Lausser@consol.de
+#    Gregory Starck, g.starck@gmail.com
+#    Hartmut Goebel, h.goebel@goebel-consult.de
 #
 # This file is part of Shinken.
 #
@@ -25,7 +27,6 @@
 # This Class is an NSCA Arbiter module
 # Here for the configuration phase AND running one
 
-
 import time
 import select
 import socket
@@ -34,22 +35,26 @@ import random
 
 from shinken.basemodule import BaseModule
 from shinken.external_command import ExternalCommand
+from shinken.log import logger
 
 properties = {
-    'daemons' : ['arbiter', 'receiver'],
-    'type' : 'nsca_server',
-    'external' : True,
-    'phases' : ['running'],
+    'daemons': ['arbiter', 'receiver'],
+    'type': 'nsca_server',
+    'external': True,
+    'phases': ['running'],
     }
+
 
 def decrypt_xor(data, key):
     keylen = len(key)
-    crypted = [chr(ord(data[i]) ^ ord(key[i % keylen])) for i in xrange(len(data))]
+    crypted = [chr(ord(data[i]) ^ ord(key[i % keylen]))
+            for i in xrange(len(data))]
     return ''.join(crypted)
 
-#called by the plugin manager to get a broker
+
 def get_instance(plugin):
-    print "Get a NSCA arbiter module for plugin %s" % plugin.get_name()
+    """ Return a module instance for the plugin manager """
+    logger.info("Get a NSCA arbiter module for plugin %s" % plugin.get_name())
 
     if hasattr(plugin, 'host'):
         if plugin.host == '*':
@@ -58,30 +63,47 @@ def get_instance(plugin):
             host = plugin.host
     else:
         host = '127.0.0.1'
+
     if hasattr(plugin, 'port'):
         port = int(plugin.port)
     else:
         port = 5667
+
     if hasattr(plugin, 'encryption_method'):
         encryption_method = int(plugin.encryption_method)
     else:
         encryption_method = 0
+
     if hasattr(plugin, 'password'):
         password = plugin.password
     else:
         password = ""
+
+    if password == "" and encryption_method != 0:
+        logger.error("[NSCA] No password specified whereas there is a encryption_method defined")
+        logger.warning("[NSCA] Setting password to dummy to avoid crash!")
+        password = "dummy"
+
     if hasattr(plugin, 'max_packet_age'):
-        max_packet_age = min(plugin.max_packet_age,900)
+        max_packet_age = min(plugin.max_packet_age, 900)
     else:
         max_packet_age = 30
+    
+    if hasattr(plugin, 'check_future_packet'):
+        check_future_packet = bool(plugin.check_future_packet)
+    else:
+        check_future_packet = True
 
-    instance = NSCA_arbiter(plugin, host, port, encryption_method, password, max_packet_age)
+
+    instance = NSCA_arbiter(plugin, host, port,
+            encryption_method, password, max_packet_age, check_future_packet)
     return instance
 
 
-#Just print some stuff
 class NSCA_arbiter(BaseModule):
-    def __init__(self, modconf, host, port, encryption_method, password, max_packet_age):
+    """Please Add a Docstring to describe the class here"""
+
+    def __init__(self, modconf, host, port, encryption_method, password, max_packet_age, check_future_packet):
         BaseModule.__init__(self, modconf)
         self.host = host
         self.port = port
@@ -89,39 +111,49 @@ class NSCA_arbiter(BaseModule):
         self.password = password
         self.rng = random.Random(password)
         self.max_packet_age = max_packet_age
+        self.check_future_packet = check_future_packet 
 
-    def send_init_packet(self, socket):
+    def send_init_packet(self, sock):
         '''
         Build an init packet
-         00-127  : IV
-         128-131 : unix timestamp
+         00-127: IV
+         128-131: unix timestamp
         '''
         iv = ''.join([chr(self.rng.randrange(256)) for i in xrange(128)])
         init_packet = struct.pack("!128sI", iv, int(time.time()))
-        socket.send(init_packet)
+        sock.send(init_packet)
         return iv
 
     def read_check_result(self, data, iv):
         '''
         Read the check result
-         00-01 : Version
-         02-05 : CRC32
-         06-09 : Timestamp
-         10-11 : Return code
-         12-75 : hostname
-         76-203 : service
-         204-715 : output of the plugin
-         716-720 : padding
+
+        The !hhIIh64s128s512sh is the description of the packet.
+        See Python doc for details. This is equivalent to the figure below
+
+        00-01      Version           02-03 Padding
+        04-07      CRC32
+        08-11      Timestamp
+        12-13      Return Code       14-15 Hostname
+        16-75      Hostname
+        76-77      Hostname           78-79 Service name
+        80-203     Service name
+        204-205 Service name      206-207 Service output
+        208-715 Service output
+        716-717 Service output    718-719 Padding
         '''
         if len(data) != 720:
             return None
 
         if self.encryption_method == 1:
-            data = decrypt_xor(data,self.password)
-            data = decrypt_xor(data,iv)
+            data = decrypt_xor(data, self.password)
+            data = decrypt_xor(data, iv)
 
-        (version, pad1, crc32, timestamp, rc, hostname_dirty, service_dirty, output_dirty, pad2) = struct.unpack("!hhIIh64s128s512sh",data)
-        hostname =  hostname_dirty.split("\0", 1)[0]
+        # version, pad1, crc32, timestamp, rc, hostname_dirty, service_dirty, output_dirty, pad2
+        # are the name of var if needed later
+        (_, _, _, timestamp, rc, hostname_dirty, service_dirty, output_dirty, _) = \
+            struct.unpack("!hhIIh64s128s512sh", data)
+        hostname = hostname_dirty.split("\0", 1)[0]
         service = service_dirty.split("\0", 1)[0]
         output = output_dirty.split("\0", 1)[0]
         return (timestamp, rc, hostname, service, output)
@@ -131,32 +163,38 @@ class NSCA_arbiter(BaseModule):
         Send a check result command to the arbiter
         '''
         if len(service) == 0:
-            extcmd = "[%lu] PROCESS_HOST_CHECK_RESULT;%s;%d;%s\n" % (timestamp,hostname,rc,output)
+            extcmd = "[%lu] PROCESS_HOST_CHECK_RESULT;%s;%d;%s\n" % \
+                (timestamp, hostname, rc, output)
         else:
-            extcmd = "[%lu] PROCESS_SERVICE_CHECK_RESULT;%s;%s;%d;%s\n" % (timestamp,hostname,service,rc,output)
+            extcmd = "[%lu] PROCESS_SERVICE_CHECK_RESULT;%s;%s;%d;%s\n" % \
+                (timestamp, hostname, service, rc, output)
 
         e = ExternalCommand(extcmd)
         self.from_q.put(e)
 
     def process_check_result(self, databuffer, IV):
-        (timestamp, rc, hostname, service, output)=self.read_check_result(databuffer,IV)
+        (timestamp, rc, hostname, service, output) = self.read_check_result(databuffer, IV)
         current_time = time.time()
         check_result_age = current_time - timestamp
-        if timestamp > current_time:
-            print "Dropping packet with future timestamp."
+        if timestamp > current_time and self.check_future_packet:
+            logger.info("[NSCA] Dropping packet with future timestamp.")
         elif check_result_age > self.max_packet_age:
-            print "Dropping packet with stale timestamp - packet was %s seconds old." % check_result_age
+            logger.info(
+                "[NSCA] Dropping packet with stale timestamp - packet was %s seconds old." % \
+                check_result_age)
         else:
-            self.post_command(timestamp,rc,hostname,service,output)
-
+            self.post_command(timestamp, rc, hostname, service, output)
 
     # When you are in "external" mode, that is the main loop of your process
     def main(self):
+        self.set_proctitle(self.name)
+
         self.set_exit_handler()
         backlog = 5
         size = 8192
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server.setblocking(0)
+        server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         server.bind((self.host, self.port))
         server.listen(backlog)
         input = [server]
@@ -164,21 +202,29 @@ class NSCA_arbiter(BaseModule):
         IVs = {}
 
         while not self.interrupted:
-            inputready,outputready,exceptready = select.select(input,[],[], 1)
+            # outputready and exceptready unused
+            inputready, _, _ = select.select(input, [], [], 1)
             for s in inputready:
                 if s == server:
                     # handle the server socket
-                    client, address = server.accept()
+                    # address unused
+                    client, _ = server.accept()
                     iv = self.send_init_packet(client)
                     IVs[client] = iv
                     input.append(client)
                 else:
                     # handle all other sockets
-                    data = s.recv(size)
+                    try:
+                        data = s.recv(size)
+                    except:
+                        continue
                     if len(data) == 0:
-                        # Closed socket
-                        del databuffer[s]
-                        del IVs[s]
+                        try:
+                            # Closed socket
+                            del databuffer[s]
+                            del IVs[s]
+                        except:
+                            pass
                         s.close()
                         input.remove(s)
                         continue
@@ -188,5 +234,5 @@ class NSCA_arbiter(BaseModule):
                         databuffer[s] = data
                     while len(databuffer[s]) >= 720:
                         # end-of-transmission or an empty line was received
-                        self.process_check_result(databuffer[s][0:720],IVs[s])
+                        self.process_check_result(databuffer[s][0:720], IVs[s])
                         databuffer[s] = databuffer[s][720:]

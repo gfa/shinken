@@ -1,5 +1,8 @@
-#!/usr/bin/env python
-# Copyright (C) 2009-2010 :
+#!/usr/bin/python
+
+# -*- coding: utf-8 -*-
+
+# Copyright (C) 2009-2012:
 #    Gabes Jean, naparuba@gmail.com
 #    Gerhard Lausser, Gerhard.Lausser@consol.de
 #    Gregory Starck, g.starck@gmail.com
@@ -20,10 +23,10 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Shinken.  If not, see <http://www.gnu.org/licenses/>.
 
-
 """
 Helper functions for some filtering, like for user based
 """
+
 
 # Get only user relevant items for the user
 def only_related_to(lst, user):
@@ -38,15 +41,15 @@ def only_related_to(lst, user):
         if user in i.contacts:
             r.add(i)
             continue
-        # TODO : add a notified_contact pass
-        
+        # TODO: add a notified_contact pass
+
         # Maybe it's a contact of a linked elements (source problems or impacts)
         is_find = False
         for s in i.source_problems:
             if user in s.contacts:
                 r.add(i)
                 is_find = True
-        # Ok skeep this object now
+        # Ok skip this object now
         if is_find:
             continue
         # Now impacts related maybe?
@@ -55,4 +58,3 @@ def only_related_to(lst, user):
                 r.add(i)
 
     return list(r)
-

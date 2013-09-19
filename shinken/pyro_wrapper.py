@@ -2,7 +2,7 @@
 
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2009-2011 :
+# Copyright (C) 2009-2012:
 #     Gabes Jean, naparuba@gmail.com
 #     Gerhard Lausser, Gerhard.Lausser@consol.de
 #     Gregory Starck, g.starck@gmail.com
@@ -23,47 +23,57 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Shinken.  If not, see <http://www.gnu.org/licenses/>.
 
-
 import select
 import errno
 import time
-
+import socket
+from log import logger
 
 # Try to import Pyro (3 or 4.1) and if not, Pyro4 (4.2 and 4.3)
 try:
     import Pyro
     import Pyro.core
-except ImportError: #ok, no Pyro3, maybe 4
+except ImportError:  # ok, no Pyro3, maybe 4
     import Pyro4 as Pyro
 
 
-
 """ This class is a wrapper for managing Pyro 3 and 4 version """
-class InvalidWorkDir(Exception): pass
-class PortNotFree(Exception): pass
+
+
+class InvalidWorkDir(Exception):
+    pass
+
+
+class PortNotFree(Exception):
+    pass
 
 PYRO_VERSION = 'UNKNOWN'
 
 
-#Try to see if we are Python 3 or 4
+# Try to see if we are Python 3 or 4
 try:
     Pyro.core.ObjBase
-    #Some one already go here, so we are in 4 if None
+    # Some one already go here, so we are in 4 if None
     if Pyro.core.ObjBase is None:
         raise AttributeError
 
     PYRO_VERSION = Pyro.constants.VERSION
     Pyro.errors.CommunicationError = Pyro.errors.ProtocolError
     Pyro.errors.TimeoutError = Pyro.errors.ProtocolError
-    
+
+
     class Pyro3Daemon(Pyro.core.Daemon):
         pyro_version = 3
         protocol = 'PYROLOC'
-        
+
         def __init__(self, host, port, use_ssl=False):
+            self.port = port
+            # Port = 0 means "I don't want pyro"
+            if self.port == 0:
+                return
             try:
                 Pyro.core.initServer()
-            except (OSError, IOError), e: # must be problem with workdir :
+            except (OSError, IOError), e:  # must be problem with workdir:
                 raise InvalidWorkDir(e)
             # Set the protocol as asked (ssl or not)
             if use_ssl:
@@ -71,15 +81,16 @@ try:
             else:
                 prtcol = 'PYRO'
 
-            print "Info : Initializing Pyro connection with host:%s port:%s ssl:%s" % (host, port, use_ssl)
+            logger.info("Initializing Pyro connection with host:%s port:%s ssl:%s" %
+                        (host, port, str(use_ssl)))
             # Now the real start
             try:
                 Pyro.core.Daemon.__init__(self, host=host, port=port, prtcol=prtcol, norange=True)
             except OSError, e:
-                # must be problem with workdir :
+                # must be problem with workdir:
                 raise InvalidWorkDir(e)
             except Pyro.errors.DaemonError, e:
-                msg = "Error : Sorry, the port %d is not free: %s" % (port, e)
+                msg = "Error: Sorry, the port %d is not free: %s" % (port, e)
                 raise PortNotFree(msg)
 
         def register(self, obj, name):
@@ -92,16 +103,23 @@ try:
                 pass
 
         def get_sockets(self):
-            return self.getServerSockets()
+            if self.port != 0:
+                return self.getServerSockets()
+            return []
 
         def handleRequests(self, s):
             try:
-                Pyro.core.Daemon.handleRequests(self)    
+                Pyro.core.Daemon.handleRequests(self)
             # Sometime Pyro send us xml pickling implementation (gnosis) is not available
             # and I don't know why... :(
             except NotImplementedError:
                 pass
-                
+            # Maybe it's just a protocol error, like someone with a telnet
+            # tying to talk with us, bypass this
+            except ProtocolError:
+                pass
+                logger.warning("Someone is talking to me in a strange language!")
+
 
     def create_uri(address, port, obj_name, use_ssl):
         if not use_ssl:
@@ -109,10 +127,12 @@ try:
         else:
             return "PYROLOCSSL://%s:%d/%s" % (address, port, obj_name)
 
+
     # Timeout way is also changed between 3 and 4
     # it's a method in 3, a property in 4
     def set_timeout(con, timeout):
         con._setTimeout(timeout)
+
 
     def getProxy(uri):
         return Pyro.core.getProxyForURI(uri)
@@ -122,13 +142,12 @@ try:
     def shutdown(con):
         con.shutdown(True)
 
-
     PyroClass = Pyro3Daemon
 
 
 except AttributeError, exp:
-    
-    PYRO_VERSION = Pyro.constants.VERSION    
+
+    PYRO_VERSION = Pyro.constants.VERSION
     # Ok, in Pyro 4, interface do not need to
     # inherit from ObjBase, just a dummy class is good
     Pyro.core.ObjBase = dict
@@ -137,19 +156,29 @@ except AttributeError, exp:
     Pyro.config.HMAC_KEY = "NOTSET"
 
     old_versions = ["4.1", "4.2", "4.3", "4.4"]
-    
-    # Hack for Pyro 4 : with it, there is
-    # no more way to send huge packet!
-    import socket
-    if hasattr(socket, 'MSG_WAITALL'):
-        del socket.MSG_WAITALL
+
+    # Version not supported for now, we have to work on it
+    bad_versions = []
+    last_known_working_version = "4.14"
+    msg_waitall_issue_versions = ["4.1", "4.2", "4.3", "4.4", "4.5", "4.6", "4.7", '4.8',
+                                  '4.9', '4.10', '4.11', '4.12', '4.13']
 
     class Pyro4Daemon(Pyro.core.Daemon):
         pyro_version = 4
         protocol = 'PYRO'
 
-        
         def __init__(self, host, port, use_ssl=False):
+            self.port = port
+            # Port = 0 means "I don't want pyro"
+            if self.port == 0:
+                return
+
+            # Some version with Pyro got problems with the socket.MSG_WAITALL
+            # It was "solved" in 4.14. But before this, just delete it
+            if PYRO_VERSION in msg_waitall_issue_versions:
+                if hasattr(socket, 'MSG_WAITALL'):
+                    del socket.MSG_WAITALL
+
             # Pyro 4 is by default a thread, should do select
             # (I hate threads!)
             # And of course the name changed since 4.5...
@@ -159,51 +188,63 @@ except AttributeError, exp:
             max_try = 35
             if PYRO_VERSION in old_versions:
                 Pyro.config.SERVERTYPE = "select"
+            elif PYRO_VERSION in bad_versions:
+                logger.error("Your pyro version (%s) is not supported. Please install version (%s) "
+                             % (PYRO_VERSION, last_known_working_version))
+                exit(1)
             else:
                 Pyro.config.SERVERTYPE = "multiplex"
                 # For Pyro >4.X hash
-                Pyro.config.SOCK_REUSE = True
-                max_try = 1
+                if hasattr(Pyro.config, 'SOCK_REUSE'):
+                    Pyro.config.SOCK_REUSE = True
+                    max_try = 1
             nb_try = 0
-            is_good = False
+            #is_good = False # not used
             # Ok, Pyro4 do not close sockets like it should,
             # so we got TIME_WAIT socket :(
             # so we allow to retry during 35 sec (30 sec is the default
             # timewait for close sockets)
             while nb_try < max_try:
                 nb_try += 1
-                print "Info : Initializing Pyro connection with host:%s port:%s ssl:%s" % (host, port, use_ssl)
+                logger.info("Initializing Pyro connection with host:%s port:%s ssl:%s" %
+                            (host, port, str(use_ssl)))
                 # And port already use now raise an exception
                 try:
                     Pyro.core.Daemon.__init__(self, host=host, port=port)
                     # Ok, we got our daemon, we can exit
                     break
                 except socket.error, exp:
-                    msg = "Error : Sorry, the port %d is not free : %s" % (port, str(exp))
+                    msg = "Error: Sorry, the port %d is not free: %s" % (port, str(exp))
                     # At 35 (or over), we are very not happy
                     if nb_try >= max_try:
                         raise PortNotFree(msg)
-                    print msg, "but we try another time in 1 sec"
+                    logger.error(msg + "but we try another time in 1 sec")
                     time.sleep(1)
                 except Exception, e:
-                    # must be a problem with pyro workdir :
+                    # must be a problem with pyro workdir:
                     raise InvalidWorkDir(e)
 
-
+        # Get the server socket but not if disabled
         def get_sockets(self):
+            if self.port == 0:
+                return []
             if PYRO_VERSION in old_versions:
                 return self.sockets()
             else:
                 return self.sockets
-    
-        
+
         def handleRequests(self, s):
-            if PYRO_VERSION in old_versions:
-                Pyro.core.Daemon.handleRequests(self, [s])
-            else:
-                Pyro.core.Daemon.events(self, [s])
-    
-    
+            try:
+                if PYRO_VERSION in old_versions:
+                    Pyro.core.Daemon.handleRequests(self, [s])
+                else:
+                    Pyro.core.Daemon.events(self, [s])
+            # Catch bad protocol attemps, like a telnet connexion
+            except ProtocolError:
+                pass
+                logger.warning("Someone is talking to me in a strange language!")
+
+
     def create_uri(address, port, obj_name, use_ssl=False):
         return "PYRO:%s@%s:%d" % (obj_name, address, port)
 
@@ -215,19 +256,21 @@ except AttributeError, exp:
     def getProxy(uri):
         return Pyro.core.Proxy(uri)
 
+
     # Shutdown in 4 do not take arg
     def shutdown(con):
         con.shutdown()
         con.close()
 
-
     PyroClass = Pyro4Daemon
 
 
-
 class ShinkenPyroDaemon(PyroClass):
-    """Please Add a Docstring to describe the class here"""
-    
+    """Class for wrapping select calls for Pyro"""
+    locationStr = '__NOTSET__'  # To by pass a bug in Pyro, this should be set in __init__, but
+                                # if we try to print an uninitialized object, it's not happy
+    objectsById = []            # Same here...
+
     def get_socks_activity(self, timeout):
         try:
             ins, _, _ = select.select(self.get_sockets(), [], [], timeout)
@@ -238,11 +281,8 @@ class ShinkenPyroDaemon(PyroClass):
             raise
         return ins
 
-
-
-
 # Common exceptions to be catch
-Pyro_exp_pack = (Pyro.errors.ProtocolError, Pyro.errors.URIError, \
-                    Pyro.errors.CommunicationError, \
-                    Pyro.errors.DaemonError, Pyro.errors.ConnectionClosedError, \
-                    Pyro.errors.TimeoutError, Pyro.errors.NamingError)
+Pyro_exp_pack = (Pyro.errors.ProtocolError, Pyro.errors.URIError,
+                 Pyro.errors.CommunicationError,
+                 Pyro.errors.DaemonError, Pyro.errors.ConnectionClosedError,
+                 Pyro.errors.TimeoutError, Pyro.errors.NamingError)

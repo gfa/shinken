@@ -1,14 +1,15 @@
 from shinken_test import *
 import datetime
 
-def set_to_midnight(dt): 
-    midnight = datetime.time(0) 
-    return datetime.datetime.combine(dt.date(), midnight) 
+
+def set_to_midnight(dt):
+    midnight = datetime.time(0)
+    return datetime.datetime.combine(dt.date(), midnight)
 
 
 class TestConfig(ShinkenTest):
     def update_broker(self, dodeepcopy=False):
-        #The brok should be manage in the good order
+        # The brok should be manage in the good order
         ids = self.sched.broks.keys()
         ids.sort()
         for brok_id in ids:
@@ -23,6 +24,7 @@ class TestConfig(ShinkenTest):
 
     pass
 
+
 class TestConfigBig(TestConfig):
     def setUp(self):
         start_setUp = time.time()
@@ -31,7 +33,9 @@ class TestConfigBig(TestConfig):
         self.init_livestatus()
         self.livestatus_broker.query_cache.enabled = True
         print "Cleaning old broks?"
-        self.sched.fill_initial_broks()
+        self.sched.brokers['Default-Broker'] = {'broks' : {}, 'has_full_broks' : False}
+        self.sched.fill_initial_broks('Default-Broker')
+
         self.update_broker()
         print "************* Overall Setup:", time.time() - start_setUp
         # add use_aggressive_host_checking so we can mix exit codes 1 and 2
@@ -44,8 +48,8 @@ class TestConfigBig(TestConfig):
         self.livestatus_broker.db.close()
         if os.path.exists(self.livelogs):
             os.remove(self.livelogs)
-        if os.path.exists(self.livelogs+"-journal"):
-            os.remove(self.livelogs+"-journal")
+        if os.path.exists(self.livelogs + "-journal"):
+            os.remove(self.livelogs + "-journal")
         for arch in os.listdir('tmp/archives'):
             os.remove('tmp/archives/' + arch)
         if os.path.exists(self.livestatus_broker.pnp_path):
@@ -57,8 +61,6 @@ class TestConfigBig(TestConfig):
         if os.path.exists('var/status.dat'):
             os.remove('var/status.dat')
         self.livestatus_broker = None
-
-
 
     def test_stats(self):
         self.print_header()
@@ -170,7 +172,7 @@ Stats: state = 3"""
         #                etime -  4 days
         #                       |---
         #                       query_start
-        #                      
+        #
         #                ............................................
         #                events in the log database ranging till now
         #
@@ -227,7 +229,7 @@ Stats: state = 3"""
                         [test_ok_00, 1, "WARN"],
                         [test_ok_01, 2, "CRIT"],
                     ])
-    
+
                 time.sleep(62)
                 if i % 9 == 0:
                     self.scheduler_loop(1, [
@@ -264,7 +266,6 @@ Stats: state = 3"""
         self.livestatus_broker.db.commit_and_rotate_log_db()
         numlogs = self.livestatus_broker.db.execute("SELECT count(*) FROM logs")
         print "numlogs is", numlogs
-
 
         # now we have a lot of events
         # find type = HOST ALERT for test_host_005
@@ -339,7 +340,7 @@ OutputFormat: json"""
         #time.time = fake_time_time
         #time.sleep = fake_time_sleep
 
-       
+
 
 if __name__ == '__main__':
     #import cProfile
@@ -349,5 +350,3 @@ if __name__ == '__main__':
 
     #allsuite = unittest.TestLoader.loadTestsFromModule(TestConfig)
     #unittest.TextTestRunner(verbosity=2).run(allsuite)
-
-

@@ -1,24 +1,31 @@
 #!/usr/bin/python
-#Copyright (C) 2009 Gabes Jean, naparuba@gmail.com
+
+# -*- coding: utf-8 -*-
+
+# Copyright (C) 2009-2012:
+#    Gabes Jean, naparuba@gmail.com
+#    Gerhard Lausser, Gerhard.Lausser@consol.de
+#    Gregory Starck, g.starck@gmail.com
+#    Hartmut Goebel, h.goebel@goebel-consult.de
 #
-#This file is part of Shinken.
+# This file is part of Shinken.
 #
-#Shinken is free software: you can redistribute it and/or modify
-#it under the terms of the GNU Affero General Public License as published by
-#the Free Software Foundation, either version 3 of the License, or
-#(at your option) any later version.
+# Shinken is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#Shinken is distributed in the hope that it will be useful,
-#but WITHOUT ANY WARRANTY; without even the implied warranty of
-#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#GNU Affero General Public License for more details.
+# Shinken is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
 #
-#You should have received a copy of the GNU Affero General Public License
-#along with Shinken.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Affero General Public License
+# along with Shinken.  If not, see <http://www.gnu.org/licenses/>.
 
 
-#This Class is an example of an Arbiter module
-#Here for the configuration phase AND running one
+# This Class is an example of an Arbiter module
+# Here for the configuration phase AND running one
 
 import socket
 
@@ -26,37 +33,46 @@ from IPy import IP
 from shinken.basemodule import BaseModule
 from shinken.log import logger
 
-#Just print some stuff
+
+# Just print some stuff
 class Ip_Tag_Arbiter(BaseModule):
-    def __init__(self, mod_conf, ip_range, prop, value, method):
-        BaseModule.__init__(self,  mod_conf)
+    def __init__(self, mod_conf, ip_range, prop, value, method, ignore_hosts=None):
+        BaseModule.__init__(self, mod_conf)
         self.ip_range = IP(ip_range)
         self.property = prop
         self.value = value
         self.method = method
+        if ignore_hosts:
+            self.ignore_hosts = ignore_hosts.split(', ')
+            logger.debug("[IP Tag] Ignoring hosts : %s" % self.ignore_hosts)
+        else:
+            self.ignore_hosts = []
 
-
-    #Called by Arbiter to say 'let's prepare yourself guy'
+    # Called by Arbiter to say 'let's prepare yourself guy'
     def init(self):
-        print "Initilisation of the ip range tagguer module"
-        
+        logger.info("[IP Tag] Initialization of the ip range tagger module")
 
     def hook_early_configuration(self, arb):
-        logger.log("[IpTag] in hook late config")
+        logger.info("[IpTag] in hook late config")
         for h in arb.conf.hosts:
             if not hasattr(h, 'address') and not hasattr(h, 'host_name'):
                 continue
+
+            if h.get_name() in self.ignore_hosts:
+                logger.debug("[IP Tag] Ignoring host %s" % h.get_name())
+                continue
+
             # The address to resolve
             addr = None
-            
-            #By default take the address, if not, take host_name
+
+            # By default take the address, if not, take host_name
             if not hasattr(h, 'address'):
                 addr = h.host_name
             else:
                 addr = h.address
-                
-            print "Looking for h", h.get_name()
-            print addr
+
+            logger.debug("[IP Tag] Looking for %s" % h.get_name())
+            logger.debug("[IP Tag] Address is %s" % str(addr))
             h_ip = None
             try:
                 IP(addr)
@@ -73,33 +89,35 @@ class Ip_Tag_Arbiter(BaseModule):
                     pass
 
             # Ok, maybe we succeed :)
-            print "Host ip is:", h_ip
+            logger.debug("[IP Tag] Host ip is: %s" % str(h_ip))
             # If we got an ip that match and the object do not already got
             # the property, tag it!
             if h_ip and h_ip in self.ip_range:
-                print "Is in the range"
-                # 2 cases : append or replace.
-                # append will join with the value if exist
+                logger.debug("[IP Tag] Is in the range")
+                # 4 cases: append , replace and set
+                # append will join with the value if exist (on the END)
+                # prepend will join with the value if exist (on the BEGINING)
                 # replace will replace it if NOT existing
+                # set put the value even if the property exists
                 if self.method == 'append':
                     orig_v = getattr(h, self.property, '')
-                    print "Orig_v", orig_v
+                    logger.debug("[IP Tag] Orig_v: %s" % str(orig_v))
                     new_v = ','.join([orig_v, self.value])
-                    print "Newv", new_v
+                    logger.debug("[IP Tag] Newv %s" % new_v)
                     setattr(h, self.property, new_v)
-                    # If it's a poller_tag, remember to also tag commands!
-                    if(self.property == 'poller_tag'):
-                        h.check_command.poller_tag = self.value
+
+                # Same but we put before
+                if self.method == 'prepend':
+                    orig_v = getattr(h, self.property, '')
+                    logger.debug("[File Tag] Orig_v: %s" % str(orig_v))
+                    new_v = ','.join([self.value, orig_v])
+                    logger.debug("[File Tag] Newv %s" % new_v)
+                    setattr(h, self.property, new_v)
 
                 if self.method == 'replace':
                     if not hasattr(h, self.property):
-
                         # Ok, set the value!
                         setattr(h, self.property, self.value)
-                        # If it's a poller_tag, remember to also tag commands!
-                        if(self.property == 'poller_tag'):
-                            h.check_command.poller_tag = self.value
-                    
-                
-                
-                                             
+
+                if self.method == 'set':
+                    setattr(h, self.property, self.value)

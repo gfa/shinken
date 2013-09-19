@@ -22,20 +22,20 @@
 }
 
 #right-container {
-right: 5px;
-background-position: center left;
+    right: 5px;
+    background-position: center left;
 
-position: absolute;
-top : 5px;
-background-color:white;
--moz-box-shadow:#555 2px 2px 8px;
--webkit-box-shadow:#555 2px 2px 8px;
--o-box-shadow:#555 2px 2px 8px;
+    position: absolute;
+    top : 45px;
+    background-color:white;
+    -moz-box-shadow:#555 2px 2px 8px;
+    -webkit-box-shadow:#555 2px 2px 8px;
+    -o-box-shadow:#555 2px 2px 8px;
 
 }
 
 
-/*Border :  Copyright ZURB, freely available for distribution under the MIT license. 
+/*Border :  Copyright ZURB, freely available for distribution under the MIT license.
   http://www.zurb.com/playground/awesome-overlays
  */
 .border {

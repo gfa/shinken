@@ -2,7 +2,7 @@
 
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2009-2011 :
+# Copyright (C) 2009-2012:
 #     Gabes Jean, naparuba@gmail.com
 #     Gerhard Lausser, Gerhard.Lausser@consol.de
 #     Gregory Starck, g.starck@gmail.com
@@ -24,24 +24,18 @@
 # along with Shinken.  If not, see <http://www.gnu.org/licenses/>.
 
 
-
-
-
-
 class Graph:
     """Graph is a class to make graph things like DFS checks or accessibility
     Why use an atomic bomb when a little hammer is enough?
-    
+
     """
-    
+
     def __init__(self):
         self.nodes = {}
-
 
     # Do not call twice...
     def add_node(self, node):
         self.nodes[node] = []
-
 
     # Just loop over nodes
     def add_nodes(self, nodes):
@@ -60,20 +54,19 @@ class Graph:
         except KeyError, exp:
             self.nodes[from_node] = [to_node]
 
-
     # Return all nodes that are in a loop. So if return [], no loop
     def loop_check(self):
         in_loop = []
-        #Add the tag for dfs check
+        # Add the tag for dfs check
         for node in self.nodes:
             node.dfs_loop_status = 'DFS_UNCHECKED'
 
-        #Now do the job
+        # Now do the job
         for node in self.nodes:
-            #Run the dfs only if the node has not been already done */
+            # Run the dfs only if the node has not been already done */
             if node.dfs_loop_status == 'DFS_UNCHECKED':
                 self.dfs_loop_search(node)
-            #If LOOP_INSIDE, must be returned
+            # If LOOP_INSIDE, must be returned
             if node.dfs_loop_status == 'DFS_LOOP_INSIDE':
                 in_loop.append(node)
 
@@ -83,14 +76,13 @@ class Graph:
 
         return in_loop
 
-
     # DFS_UNCHECKED default value
     # DFS_TEMPORARY_CHECKED check just one time
     # DFS_OK no problem for node and its children
     # DFS_NEAR_LOOP has trouble sons
     # DFS_LOOP_INSIDE is a part of a loop!
     def dfs_loop_search(self, root):
-        # Make the root temporary checkded
+        # Make the root temporary checked
         root.dfs_loop_status = 'DFS_TEMPORARY_CHECKED'
 
         # We are scanning the sons
@@ -121,11 +113,10 @@ class Graph:
         if root.dfs_loop_status == 'DFS_TEMPORARY_CHECKED':
             root.dfs_loop_status = 'DFS_OK'
 
-
-    # Get accessibility packs of the graph : in one pack,
+    # Get accessibility packs of the graph: in one pack,
     # element are related in a way. Between packs, there is no relation
     # at all.
-    # TODO : Make it work for directionnal graph too
+    # TODO: Make it work for directional graph too
     # Because for now, edge must be father->son AND son->father
     def get_accessibility_packs(self):
         packs = []
@@ -143,7 +134,6 @@ class Graph:
             del node.dfs_loop_status
 
         return packs
-
 
     # Return all my children, and all my grandchildren
     def dfs_get_all_childs(self, root):

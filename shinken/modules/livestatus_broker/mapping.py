@@ -1,10 +1,12 @@
+#!/usr/bin/python
+
 # -*- coding: utf-8 -*-
-#
+
 # Copyright (C) 2009-2012:
-#     Gabes Jean, naparuba@gmail.com
-#     Gerhard Lausser, Gerhard.Lausser@consol.de
-#     Gregory Starck, g.starck@gmail.com
-#     Hartmut Goebel, h.goebel@goebel-consult.de
+#    Gabes Jean, naparuba@gmail.com
+#    Gerhard Lausser, Gerhard.Lausser@consol.de
+#    Gregory Starck, g.starck@gmail.com
+#    Hartmut Goebel, h.goebel@goebel-consult.de
 #
 # This file is part of Shinken.
 #
@@ -21,8 +23,8 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Shinken.  If not, see <http://www.gnu.org/licenses/>.
 
-
 import os
+import re
 
 from shinken.bin import VERSION
 from shinken.macroresolver import MacroResolver
@@ -43,6 +45,7 @@ from shinken.reactionnerlink import ReactionnerLink
 from shinken.brokerlink import BrokerLink
 from shinken.receiverlink import ReceiverLink
 from shinken.pollerlink import PollerLink
+from shinken.log import logger
 from log_line import LOGCLASS_INFO, LOGCLASS_ALERT, LOGCLASS_PROGRAM, LOGCLASS_NOTIFICATION, LOGCLASS_PASSIVECHECK, LOGCLASS_COMMAND, LOGCLASS_STATE, LOGCLASS_INVALID, LOGCLASS_ALL, LOGOBJECT_INFO, LOGOBJECT_HOST, LOGOBJECT_SERVICE, LOGOBJECT_CONTACT, Logline, LoglineWrongFormat
 from shinken.external_command import MODATTR_NONE, MODATTR_NOTIFICATIONS_ENABLED, MODATTR_ACTIVE_CHECKS_ENABLED, MODATTR_PASSIVE_CHECKS_ENABLED, MODATTR_EVENT_HANDLER_ENABLED, MODATTR_FLAP_DETECTION_ENABLED, MODATTR_FAILURE_PREDICTION_ENABLED, MODATTR_PERFORMANCE_DATA_ENABLED, MODATTR_OBSESSIVE_HANDLER_ENABLED, MODATTR_EVENT_HANDLER_COMMAND, MODATTR_CHECK_COMMAND, MODATTR_NORMAL_CHECK_INTERVAL, MODATTR_RETRY_CHECK_INTERVAL, MODATTR_MAX_CHECK_ATTEMPTS, MODATTR_FRESHNESS_CHECKS_ENABLED, MODATTR_CHECK_TIMEPERIOD, MODATTR_CUSTOM_VARIABLE, MODATTR_NOTIFICATION_TIMEPERIOD
 
@@ -51,6 +54,7 @@ class Problem:
     def __init__(self, source, impacts):
         self.source = source
         self.impacts = impacts
+
 
 def modified_attributes_names(self):
     names_list = []
@@ -78,12 +82,13 @@ def modified_attributes_names(self):
             names_list.append(names[attr])
     return names_list
 
+
 def join_with_separators(request, *args):
     if request.response.outputformat == 'csv':
         try:
             return request.response.separators[3].join([str(arg) for arg in args])
         except Exception, e:
-            print "rumms", e
+            logger.error("[Livestatus Broker Mapping] Bang Error: %s" % e)
     elif request.response.outputformat == 'json' or request.response.outputformat == 'python':
         return args
     else:
@@ -118,7 +123,12 @@ def find_pnp_perfdata_xml(name, request):
     if request.pnp_path_readable:
         if '/' in name:
             # It is a service
-            if os.access(request.pnp_path + '/' + name + '.xml', os.R_OK):
+
+	    # replace space, colon, slash and backslash to be PNP compliant
+	    name = name.split('/', 1)
+	    name[1] = re.sub(r'[ :\/\\]', '_', name[1])
+
+            if os.access(request.pnp_path + '/' + '/'.join(name) + '.xml', os.R_OK):
                 return 1
         else:
             # It is a host
@@ -162,14 +172,13 @@ def get_livestatus_full_name(item, req):
             return item.host_name
         pass
 
-
 # description (optional): no need to explain this
 # prop (optional): the property of the object. If this is missing, the key is the property
 # type (mandatory): int, float, string, list
-# depythonize : use it if the property needs to be post-processed.
-# fulldepythonize : the same, but the postprocessor takes three arguments. property, object, request
-# delegate : get the property of a different object
-# as : use it together with delegate, if the property of the other object has another name
+# depythonize: use it if the property needs to be post-processed.
+# fulldepythonize: the same, but the postprocessor takes three arguments. property, object, request
+# delegate: get the property of a different object
+# as: use it together with delegate, if the property of the other object has another name
 
 # description
 # function: a lambda with 2 parameters (host/service/comment.., request)
@@ -216,7 +225,7 @@ livestatus_attribute_map = {
             'function': lambda item, req: item.alias,
         },
         'business_impact': {
-            'description': 'The importance we gave to this host between hte minimum 0 and the maximum 5',
+            'description': 'The importance we gave to this host between the minimum 0 and the maximum 5',
             'function': lambda item, req: item.business_impact,
             'datatype': int,
         },
@@ -285,11 +294,11 @@ livestatus_attribute_map = {
         },
         'contact_groups': {
             'description': 'A list of all contact groups this host is in',
-            'function': lambda item, req: [x for x in item.contact_groups],  # CONTROLME2
+            'function': lambda item, req: item.contact_groups.split(','),
             'datatype': list,
         },
         'criticity': {
-            'description': 'The importance we gave to this host between hte minimum 0 and the maximum 5',
+            'description': 'The importance we gave to this host between the minimum 0 and the maximum 5',
             'function': lambda item, req: item.business_impact,
             'datatype': int,
         },
@@ -320,7 +329,7 @@ livestatus_attribute_map = {
         },
         'display_name': {
             'description': 'Optional display name of the host - not used by Nagios\' web interface',
-            'function': lambda item, req: item.host_name,
+            'function': lambda item, req: item.display_name,
         },
         'downtimes': {
             'description': 'A list of the ids of all scheduled downtimes of this host',
@@ -333,7 +342,10 @@ livestatus_attribute_map = {
             'datatype': list,
             # 2|omdadmin|hdodo = id|author|comment
         },
-
+        'event_handler': {
+            'description': 'Nagios command used as event handler',
+            'function': lambda item, req: item.event_handler.get_name(),
+        },
         'event_handler_enabled': {
             'description': 'Whether event handling is enabled (0/1)',
             'function': lambda item, req: item.event_handler_enabled,
@@ -398,7 +410,7 @@ livestatus_attribute_map = {
         },
         'impacts': {
             'description': 'List of what the source impact (list of hosts and services)',
-            'function': lambda item, req: [get_livestatus_full_name(i, req) for i in item.impacts],  # REPAIRME MAYBE (separators in oython and csv)
+            'function': lambda item, req: [get_livestatus_full_name(i, req) for i in item.impacts],  # REPAIRME MAYBE (separators in python and csv)
             'datatype': list,
         },
         'in_check_period': {
@@ -502,12 +514,12 @@ livestatus_attribute_map = {
         },
         'modified_attributes': {
             'description': 'A bitmask specifying which attributes have been modified',
-            'function': lambda item, req: item.modified_attributes,  # CONTROLME 
+            'function': lambda item, req: item.modified_attributes,  # CONTROLME
             'datatype': int,
         },
         'modified_attributes_list': {
             'description': 'A list of all modified attributes',
-            'function': lambda item, req: modified_attributes_names(self),  # CONTROLME
+            'function': lambda item, req: modified_attributes_names(item),  # CONTROLME
             'datatype': list,
         },
         'name': {
@@ -637,10 +649,18 @@ livestatus_attribute_map = {
             'function': lambda item, req: find_pnp_perfdata_xml(item.get_name(), req),
             'datatype': int,
         },
+        'poller_tag': {
+            'description': 'Poller Tag',
+            'function': lambda item, req: item.poller_tag,
+        },  
         'process_performance_data': {
             'description': 'Whether processing of performance data is enabled (0/1)',
             'function': lambda item, req: item.process_perf_data,
             'datatype': bool,
+        },
+        'realm': {
+            'description': 'Realm',
+            'function': lambda item, req: item.realm,
         },
         'retry_interval': {
             'description': 'Number of basic interval lengths between checks when retrying after a soft error',
@@ -670,13 +690,13 @@ livestatus_attribute_map = {
         },
         'source_problems': {
             'description': 'The name of the source problems (host or service)',
-            'function': lambda item, req: [get_livestatus_full_name(i, req) for i in item.source_problems],  # REPAIRME MAYBE (separators in oython and csv)
+            'function': lambda item, req: [get_livestatus_full_name(i, req) for i in item.source_problems],  # REPAIRME MAYBE (separators in python and csv)
             'datatype': list,
         },
         'state': {
             'description': 'The current state of the host (0: up, 1: down, 2: unreachable)',
             'function': lambda item, req: item.state_id,
-            #'function' : i_am_state,
+            #'function': i_am_state,
             'datatype': int,
         },
         'state_type': {
@@ -749,7 +769,7 @@ livestatus_attribute_map = {
             'datatype': bool,
         },
         'business_impact': {
-            'description': 'The importance we gave to this service between hte minimum 0 and the maximum 5',
+            'description': 'The importance we gave to this service between the minimum 0 and the maximum 5',
             'function': lambda item, req: item.business_impact,
             'datatype': int,
         },
@@ -803,12 +823,11 @@ livestatus_attribute_map = {
         },
         'contact_groups': {
             'description': 'A list of all contact groups this service is in',
-            #'function': lambda item, req: [x for x in item.contact_groups],  # CONTROLME2
-            'function': lambda item, req: item.contact_groups,  # CONTROLME2 there is no list
+            'function': lambda item, req: item.contact_groups.split(','),
             'datatype': list,
         },
         'criticity': {
-            'description': 'The importance we gave to this service between hte minimum 0 and the maximum 5',
+            'description': 'The importance we gave to this service between the minimum 0 and the maximum 5',
             'function': lambda item, req: item.business_impact,
             'datatype': int,
         },
@@ -823,7 +842,7 @@ livestatus_attribute_map = {
             'datatype': int,
         },
         'custom_variables': {
-            'description': 'A dictorionary of the custom variables',
+            'description': 'A dictionary of the custom variables',
             'function': lambda item, req: [join_with_separators(req, k[1:], v) for k, v in item.customs.iteritems()],
             'datatype': list,
         },
@@ -843,7 +862,7 @@ livestatus_attribute_map = {
         },
         'display_name': {
             'description': 'An optional display name (not used by Nagios standard web pages)',
-            'function': lambda item, req: item.service_description,
+            'function': lambda item, req: item.display_name,
         },
         'downtimes': {
             'description': 'A list of all downtime ids of the service',
@@ -857,7 +876,7 @@ livestatus_attribute_map = {
         },
         'event_handler': {
             'description': 'Nagios command used as event handler',
-            'function': lambda item, req: "",  # REPAIRME
+            'function': lambda item, req: item.event_handler.get_name(),
         },
         'event_handler_enabled': {
             'description': 'Whether and event handler is activated for the service (0/1)',
@@ -1226,7 +1245,7 @@ livestatus_attribute_map = {
         },
         'impacts': {
             'description': 'List of what the source impact (list of hosts and services)',
-            'function': lambda item, req: [get_livestatus_full_name(i, req) for i in item.impacts],  # REPAIRME MAYBE (separators in oython and csv)
+            'function': lambda item, req: [get_livestatus_full_name(i, req) for i in item.impacts],  # REPAIRME MAYBE (separators in python and csv)
             'datatype': list,
         },
         'in_check_period': {
@@ -1420,6 +1439,10 @@ livestatus_attribute_map = {
             'description': 'Whether there is a PNP4Nagios graph present for this service (0/1)',
             'function': lambda item, req: find_pnp_perfdata_xml(item.get_full_name(), req),
             'datatype': int,
+        },
+        'poller_tag': {
+            'description': 'Poller Tag',
+            'function': lambda item, req: item.poller_tag,
         },
         'process_performance_data': {
             'description': 'Whether processing of performance data is enabled for the service (0/1)',
@@ -1768,7 +1791,7 @@ livestatus_attribute_map = {
             'function': lambda item, req: item.alias,
         },
         'in': {
-            'description': 'Wether we are currently in this period (0/1)',
+            'description': 'Whether we are currently in this period (0/1)',
             'function': lambda item, req: item.is_in,  # CONTROLME REPAIRME
             'datatype': int,
         },
@@ -1789,7 +1812,7 @@ livestatus_attribute_map = {
     },
     'SchedulerLink': {
         'address': {
-            'description': 'The ip or dns adress ofthe scheduler',
+            'description': 'The ip or dns address of the scheduler',
             'function': lambda item, req: item.address,  # REPAIRME
         },
         'alive': {
@@ -1819,7 +1842,7 @@ livestatus_attribute_map = {
     },
     'PollerLink': {
         'address': {
-            'description': 'The ip or dns adress of the poller',
+            'description': 'The ip or dns address of the poller',
             'function': lambda item, req: item.address,  # REPAIRME
         },
         'alive': {
@@ -1844,7 +1867,7 @@ livestatus_attribute_map = {
     },
     'ReactionnerLink': {
         'address': {
-            'description': 'The ip or dns adress of the reactionner',
+            'description': 'The ip or dns address of the reactionner',
             'function': lambda item, req: item.address,  # REPAIRME
         },
         'alive': {
@@ -1869,7 +1892,7 @@ livestatus_attribute_map = {
     },
     'BrokerLink': {
         'address': {
-            'description': 'The ip or dns adress of the broker',
+            'description': 'The ip or dns address of the broker',
             'function': lambda item, req: item.address,  # REPAIRME
         },
         'alive': {
@@ -2308,7 +2331,7 @@ livestatus_attribute_map = {
             'description': 'The number of the current notification',
         },
         'service_custom_variables': {
-            'description': 'A dictorionary of the custom variables',
+            'description': 'A dictionary of the custom variables',
         },
         'service_custom_variable_names': {
             'description': 'A list of the names of all custom variables of the service',
@@ -2917,7 +2940,7 @@ livestatus_attribute_map = {
             'description': 'A list of the values of all custom variable of the service',
         },
         'service_custom_variables': {
-            'description': 'A dictorionary of the custom variables',
+            'description': 'A dictionary of the custom variables',
         },
         'service_description': {
             'description': 'Description of the service (also used as key)',
@@ -3601,7 +3624,7 @@ livestatus_attribute_map = {
         },
         'program_start': {
             'description': 'The time of the last program start as UNIX timestamp',
-            'function': lambda item, req: 0,  # REPAIRME
+            'function': lambda item, req: item.program_start,
             'datatype': int,
         },
         'program_version': {
@@ -4096,7 +4119,7 @@ livestatus_attribute_map = {
             'description': 'A list of the names of all custom variables of the service',
         },
         'current_service_custom_variables': {
-            'description': 'A dictorionary of the custom variables',
+            'description': 'A dictionary of the custom variables',
         },
         'current_service_custom_variable_values': {
             'description': 'A list of the values of all custom variable of the service',
@@ -4284,7 +4307,8 @@ livestatus_attribute_map = {
         },
         'options': {
             'description': 'The part of the message after the \':\'',
-            'function': lambda item, req: item.options,
+            # >2.4 'function': lambda item, req: item.message.partition(":")[2].lstrip(),
+            'function': lambda item, req: item.message.split(":")[1].lstrip(),
         },
         'plugin_output': {
             'description': 'The output of the check, if any is associated with the message',
@@ -4337,9 +4361,8 @@ table_class_map = {
     'brokers': ('BrokerLink', BrokerLink),
     'problems': ('Problem', Problem),
     'columns': ('Config', Config),  # just a dummy
-    None: ('', type('commandclass', (object, ), {'lsm_columns': []})),
+    None: ('', type('commandclass', (object,), {'lsm_columns': []})),
 }
-
 
 """Build the new livestatus-methods and add delegate keys for certain attributes.
 
@@ -4366,46 +4389,53 @@ the object represented by log_host.
 def host_redirect_factory(attribute):
     """attribute already comes with lsm_"""
     return lambda item, req: getattr(item.host, attribute)(req)
-    
+
+
 def ref_redirect_factory(attribute):
     return lambda item, req: getattr(item.ref, attribute)(req)
-    
+
+
 def log_service_redirect_factory(attribute):
     return lambda item, req: getattr(item.log_service, attribute)(req)
-    
+
+
 def log_host_redirect_factory(attribute):
     return lambda item, req: getattr(item.log_host, attribute)(req)
+
 
 def log_contact_redirect_factory(attribute):
     return lambda item, req: getattr(item.log_contact, attribute)(req)
 
+
 def hostgroup_redirect_factory(attribute):
     return lambda item, req: getattr(item.hostgroup, attribute)(req)
-    
+
+
 def servicegroup_redirect_factory(attribute):
     return lambda item, req: getattr(item.servicegroup, attribute)(req)
-    
+
+
 def catchall_factory(name, req):
     def method(*args):
-        print "tried to handle unknown method " + name
+        logger.info("[Livestatus Broker Mapping] Tried to handle unknown method %s" % name)
         if args:
-            print "it had arguments: " + str(args)
+            logger.info("[Livestatus Broker Mapping] It had arguments: %s" % str(args))
     return method
-    
+
 
 #print "FINISHING THE ATTRIBUTE MAPPING>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 for objtype in ['Host', 'Service', 'Contact', 'Command', 'Timeperiod', 'Downtime', 'Comment', 'Hostgroup', 'Servicegroup', 'Contactgroup', 'SchedulerLink', 'PollerLink', 'ReactionnerLink', 'BrokerLink', 'Problem', 'Logline', 'Config']:
     cls = [t[1] for t in table_class_map.values() if t[0] == objtype][0]
     setattr(cls, 'livestatus_attributes', [])
     for attribute in livestatus_attribute_map[objtype]:
-        entry =  livestatus_attribute_map[objtype][attribute]
+        entry = livestatus_attribute_map[objtype][attribute]
         if 'function' in entry:
             setattr(cls, 'lsm_'+attribute, entry['function'])
             if 'datatype' in entry:
                 #getattr(cls, 'lsm_'+attribute).im_func.datatype = entry['datatype']
                 getattr(cls, 'lsm_'+attribute).im_func.datatype = entry['datatype']
             elif attribute.startswith('num_'):
-                # With this, we don't need to explicitely set int datatype for attributes like num_services_hard_state_ok
+                # With this, we don't need to explicitly set int datatype for attributes like num_services_hard_state_ok
                 getattr(cls, 'lsm_'+attribute).im_func.datatype = int
             else:
                 getattr(cls, 'lsm_'+attribute).im_func.datatype = str
@@ -4439,7 +4469,7 @@ for objtype in ['Host', 'Service', 'Contact', 'Command', 'Timeperiod', 'Downtime
             pass
             # let the lambda return a default value
             # setattr(cls, 'lsm_'+attribute, lambda item, req: 0)
-            # getattr(cls, 'lsm_'+attribute).im_func.datatype = ?
+            # getattr(cls, 'lsm_'+attribute).im_func.datatype =?
         # _Every_ attribute _must_ have a description
         getattr(cls, 'lsm_'+attribute).im_func.description = entry['description']
     if objtype == 'Host':
@@ -4495,15 +4525,12 @@ for objtype in ['Host', 'Service', 'Contact', 'Command', 'Timeperiod', 'Downtime
     cls.lsm_columns = []
     for attribute in sorted([x for x in livestatus_attribute_map[objtype]]):
         cls.lsm_columns.append(attribute)
-    
+
 #print "FINISHED THE ATTRIBUTE MAPPING<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-     
-
-
 
 def find_filter_converter(table, attribute, reverse=False):
     """Return a function which converts a string to the attribute's data type"""
-   
+
     tableclass = table_class_map[table][1]
     # attribute already has a lsm-prefix
     function = getattr(tableclass, attribute, None)
@@ -4530,4 +4557,3 @@ def find_filter_converter(table, attribute, reverse=False):
 def list_livestatus_attributes(table):
     tableclass = table_class_map[table][0]
     return sorted(livestatus_attribute_map[tableclass].keys())
-

@@ -1,33 +1,40 @@
 #!/usr/bin/python
-#Copyright (C) 2009 Gabes Jean, naparuba@gmail.com
+
+# -*- coding: utf-8 -*-
+
+# Copyright (C) 2009-2012:
+#    Gabes Jean, naparuba@gmail.com
+#    Gerhard Lausser, Gerhard.Lausser@consol.de
+#    Gregory Starck, g.starck@gmail.com
+#    Hartmut Goebel, h.goebel@goebel-consult.de
 #
-#This file is part of Shinken.
+# This file is part of Shinken.
 #
-#Shinken is free software: you can redistribute it and/or modify
-#it under the terms of the GNU Affero General Public License as published by
-#the Free Software Foundation, either version 3 of the License, or
-#(at your option) any later version.
+# Shinken is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#Shinken is distributed in the hope that it will be useful,
-#but WITHOUT ANY WARRANTY; without even the implied warranty of
-#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#GNU Affero General Public License for more details.
+# Shinken is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
 #
-#You should have received a copy of the GNU Affero General Public License
-#along with Shinken.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Affero General Public License
+# along with Shinken.  If not, see <http://www.gnu.org/licenses/>.
 
 
-#This Class is a plugin for the Shinken Broker. It is in charge
-#to brok information of the service status.dat file and generate
+# This Class is a plugin for the Shinken Broker. It is in charge
+# to brok information of the service status.dat file and generate
 # the objects.dat files too
 
-#And now classic include
+# And now classic include
 import time
 import sys
 import os
 import Queue
 
-#And now include from this global directory
+# And now include from this global directory
 from shinken.objects import *
 from shinken.objects import Host
 from shinken.objects import Hostgroup
@@ -37,15 +44,16 @@ from shinken.objects import Contact
 from shinken.objects import Contactgroup
 from shinken.objects import Timeperiod
 from shinken.objects import Command
-from shinken.objects import Config
-#And now include from this directory
+from shinken.objects.config import Config
+# And now include from this directory
 from status import StatusFile
 from objectscache import ObjectsCacheFile
 
 from shinken.basemodule import BaseModule
 
-#Class for the Merlindb Broker
-#Get broks and puts them in merlin database
+
+# Class for the Merlindb Broker
+# Get broks and puts them in merlin database
 class Status_dat_broker(BaseModule):
     def __init__(self, modconf, path, opath, update_interval):
         BaseModule.__init__(self, modconf)
@@ -53,17 +61,17 @@ class Status_dat_broker(BaseModule):
         self.opath = opath
         self.update_interval = update_interval
 
-        #Warning :
-        #self.properties will be add by the modulesmanager !!
+        # Warning:
+        # self.properties will be add by the modulesmanager!!
 
 
-    #Called by Broker so we can do init stuff
-    #TODO : add conf param to get pass with init
-    #Conf from arbiter!
+    # Called by Broker so we can do init stuff
+    # TODO: add conf param to get pass with init
+    # Conf from arbiter!
     def init(self):
         print "I am init"
 
-        #Our datas
+        # Our datas
         self.configs = {}
         self.hosts = {}
         self.services = {}
@@ -79,7 +87,6 @@ class Status_dat_broker(BaseModule):
 
         self.number_of_objects = 0
 
-
     def manage_program_status_brok(self, b):
         data = b.data
         c_id = data['instance_id']
@@ -90,48 +97,43 @@ class Status_dat_broker(BaseModule):
         #print "CFG:", c
         self.configs[c_id] = c
 
-
     def manage_clean_all_my_instance_id_brok(self, b):
         data = b.data
         instance_id = data['instance_id']
 
-        #print 'DBG: Cleann all my instance with brok :', b.id
+        #print 'DBG: Clean all my instance with brok:', b.id
 
-        #We clean all previous hosts and services from this instance_id
+        # We clean all previous hosts and services from this instance_id
         h_to_del = []
         for h in self.hosts.values():
-            if h.instance_id ==  instance_id:
+            if h.instance_id == instance_id:
                 h_to_del.append(h.id)
 
         for i in h_to_del:
             #print "Deleting previous host %d" % i
             del self.hosts[i]
 
-        #same for services
+        # same for services
         s_to_del = []
         for s in self.services.values():
-            if s.instance_id ==  instance_id:
+            if s.instance_id == instance_id:
                 s_to_del.append(s.id)
 
         for i in s_to_del:
             #print "Deleting previous service %d" % i
             del self.services[i]
 
-
-
     def manage_initial_host_status_brok(self, b):
         data = b.data
         h_id = data['id']
-
-        #print 'DBG: Creacting host with with brok :', b.id
+        #print 'DBG: Creating host with with brok:', b.id
         #print "Creating host:", h_id, b.__dict__
-
 
         h = Host({})
         for prop in data:
             setattr(h, prop, data[prop])
 
-        #add instance_id to the host, so we know in which scheduler he is
+        # add instance_id to the host, so we know in which scheduler he is
         h.instance_id = b.instance_id
 
         h.check_period = self.get_timeperiod(h.check_period)
@@ -139,7 +141,7 @@ class Status_dat_broker(BaseModule):
 
         h.contacts = self.get_contacts(h.contacts)
 
-        #Escalations is not use for status_dat
+        # Escalations is not use for status_dat
         del h.escalations
 
         #print "H:", h
@@ -148,7 +150,6 @@ class Status_dat_broker(BaseModule):
             dtc.ref = h
         self.hosts[h_id] = h
         self.number_of_objects += 1
-
 
     def manage_initial_hostgroup_status_brok(self, b):
         data = b.data
@@ -167,7 +168,6 @@ class Status_dat_broker(BaseModule):
         self.hostgroups[hg_id] = hg
         self.number_of_objects += 1
 
-
     def manage_initial_service_status_brok(self, b):
         data = b.data
         s_id = data['id']
@@ -175,7 +175,7 @@ class Status_dat_broker(BaseModule):
         s = Service({})
         self.update_element(s, data)
 
-        #add instance_id to the host, so we know in which scheduler he is
+        # add instance_id to the host, so we know in which scheduler he is
         s.instance_id = b.instance_id
 
         s.check_period = self.get_timeperiod(s.check_period)
@@ -191,8 +191,6 @@ class Status_dat_broker(BaseModule):
             dtc.ref = s
         self.services[s_id] = s
         self.number_of_objects += 1
-
-
 
     def manage_initial_servicegroup_status_brok(self, b):
         data = b.data
@@ -211,7 +209,6 @@ class Status_dat_broker(BaseModule):
         self.servicegroups[sg_id] = sg
         self.number_of_objects += 1
 
-
     def manage_initial_contact_status_brok(self, b):
         data = b.data
         c_id = data['id']
@@ -219,11 +216,9 @@ class Status_dat_broker(BaseModule):
         c = Contact({})
         self.update_element(c, data)
 
-
         #print "C:", c
         self.contacts[c_id] = c
         self.number_of_objects += 1
-
 
     def manage_initial_contactgroup_status_brok(self, b):
         data = b.data
@@ -242,7 +237,6 @@ class Status_dat_broker(BaseModule):
         self.contactgroups[cg_id] = cg
         self.number_of_objects += 1
 
-
     def manage_initial_timeperiod_status_brok(self, b):
         data = b.data
         tp_id = data['id']
@@ -252,7 +246,6 @@ class Status_dat_broker(BaseModule):
         #print "TP:", tp
         self.timeperiods[tp_id] = tp
         self.number_of_objects += 1
-
 
     def manage_initial_command_status_brok(self, b):
         data = b.data
@@ -264,8 +257,7 @@ class Status_dat_broker(BaseModule):
         self.commands[c_id] = c
         self.number_of_objects += 1
 
-
-    #A service check have just arrived, we UPDATE data info with this
+    # A service check have just arrived, we UPDATE data info with this
     def manage_service_check_result_brok(self, b):
         data = b.data
         s = self.find_service(data['host_name'], data['service_description'])
@@ -274,16 +266,15 @@ class Status_dat_broker(BaseModule):
             #print "S:", s
 
 
-    #A service check update have just arrived, we UPDATE data info with this
+    # A service check update have just arrived, we UPDATE data info with this
     def manage_service_next_schedule_brok(self, b):
         self.manage_service_check_result_brok(b)
 
-
-    #In fact, an update of a service is like a check return
+    # In fact, an update of a service is like a check return
     def manage_update_service_status_brok(self, b):
         self.manage_service_check_result_brok(b)
         data = b.data
-        #In the status, we've got duplicated item, we must relink thems
+        # In the status, we've got duplicated item, we must relink them
         s = self.find_service(data['host_name'], data['service_description'])
         if s is not None:
             s.check_period = self.get_timeperiod(s.check_period)
@@ -293,8 +284,6 @@ class Status_dat_broker(BaseModule):
             # We need to rebuild Downtime and Comment relationship
             for dtc in s.downtimes + s.comments:
                 dtc.ref = s
-
-
 
     def manage_host_check_result_brok(self, b):
         data = b.data
@@ -308,50 +297,44 @@ class Status_dat_broker(BaseModule):
     def manage_host_next_schedule_brok(self, b):
         self.manage_host_check_result_brok(b)
 
-
-    #In fact, an update of a host is like a check return
+    # In fact, an update of a host is like a check return
     def manage_update_host_status_brok(self, b):
         self.manage_host_check_result_brok(b)
         data = b.data
-        #In the status, we've got duplicated item, we must relink thems
+        # In the status, we've got duplicated item, we must relink them
         h = self.find_host(data['host_name'])
         if h is not None:
             h.check_period = self.get_timeperiod(h.check_period)
             h.notification_period = self.get_timeperiod(h.notification_period)
             h.contacts = self.get_contacts(h.contacts)
-            #Escalations is not use for status_dat
+            # Escalations is not use for status_dat
             del h.escalations
             # We need to rebuild Downtime and Comment relationship
             for dtc in h.downtimes + h.comments:
                 dtc.ref = h
 
-
-
-
-    #The contacts must not be duplicated
+    # The contacts must not be duplicated
     def get_contacts(self, cs):
         r = []
         for c in cs:
             if c is not None:
-                find_c = self.find_contact(c.get_name())
+                find_c = self.find_contact(c)
                 if find_c is not None:
                     r.append(find_c)
                 else:
-                    print "Error : search for a contact %s that do not exists!" % c.get_name()
+                    print "Error: search for a contact %s that do not exists!" % c.get_name()
         return r
 
-
-    #The timeperiods must not be duplicated
+    # The timeperiods must not be duplicated
     def get_timeperiod(self, t):
         if t is not None:
-            find_t = self.find_timeperiod(t.get_name())
+            find_t = self.find_timeperiod(t)
             if find_t is not None:
                 return find_t
             else:
-                print "Error : search for a timeperiod %s that do not exists!" % t.get_name()
+                print "Error: search for a timeperiod %s that do not exists!" % t.get_name()
         else:
             return None
-
 
     def find_host(self, host_name):
         for h in self.hosts.values():
@@ -359,13 +342,11 @@ class Status_dat_broker(BaseModule):
                 return h
         return None
 
-
     def find_service(self, host_name, service_description):
         for s in self.services.values():
             if s.host_name == host_name and s.service_description == service_description:
                 return s
         return None
-
 
     def find_timeperiod(self, timeperiod_name):
         for t in self.timeperiods.values():
@@ -373,13 +354,11 @@ class Status_dat_broker(BaseModule):
                 return t
         return None
 
-
     def find_contact(self, contact_name):
         for c in self.contacts.values():
             if c.contact_name == contact_name:
                 return c
         return None
-
 
     def update_element(self, e, data):
         #print "........%s........" % type(e)
@@ -390,8 +369,8 @@ class Status_dat_broker(BaseModule):
             #    print "%-20s\t%s\t->\t%s" % (prop, "-", data[prop])
             setattr(e, prop, data[prop])
 
-
     def main(self):
+        self.set_proctitle(self.name)
         self.set_exit_handler()
         last_generation = time.time()
         objects_cache_written = False
@@ -401,6 +380,8 @@ class Status_dat_broker(BaseModule):
             try:
                 l = self.to_q.get(True, 5)
                 for b in l:
+                    # un-serialize the brok before use it
+                    b.prepare()
                     self.manage_brok(b)
             except IOError, e:
                 if e.errno != os.errno.EINTR:
@@ -414,9 +395,9 @@ class Status_dat_broker(BaseModule):
                 #hp=hpy()
                 #print hp.heap()
                 if not objects_cache_written or self.number_of_objects > number_of_objects_written:
-                    #with really big configurations it can take longer than
-                    #status_update_interval to send all objects to this broker
-                    #if more objects are received, write objects.cache again
+                    # with really big configurations it can take longer than
+                    # status_update_interval to send all objects to this broker
+                    # if more objects are received, write objects.cache again
                     print "Generating objects file!"
                     self.objects_cache.create_or_update()
                     number_of_objects_written = self.number_of_objects
@@ -424,8 +405,8 @@ class Status_dat_broker(BaseModule):
 
                 print "Generating status file!"
                 r = self.status.create_or_update()
-                #if we get an error (an exception in fact) we bail out
+                # if we get an error (an exception in fact) we bail out
                 if r is not None:
-                    print "[status_dat] Error :", r
+                    print "[status_dat] Error:", r
                     break
                 last_generation = time.time()

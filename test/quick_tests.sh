@@ -1,49 +1,50 @@
 #!/bin/bash
-#Copyright (C) 2009-2010 :
-#    Gabes Jean, naparuba@gmail.com
-#    Gerhard Lausser, Gerhard.Lausser@consol.de
+# Copyright (C) 2009-2010:
+#     Gabes Jean, naparuba@gmail.com
+#     Gerhard Lausser, Gerhard.Lausser@consol.de
 #
-#This file is part of Shinken.
+# This file is part of Shinken.
 #
-#Shinken is free software: you can redistribute it and/or modify
-#it under the terms of the GNU Affero General Public License as published by
-#the Free Software Foundation, either version 3 of the License, or
-#(at your option) any later version.
+# Shinken is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#Shinken is distributed in the hope that it will be useful,
-#but WITHOUT ANY WARRANTY; without even the implied warranty of
-#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#GNU Affero General Public License for more details.
+# Shinken is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
 #
-#You should have received a copy of the GNU Affero General Public License
-#along with Shinken.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Affero General Public License
+# along with Shinken.  If not, see <http://www.gnu.org/licenses/>.
 
 
 DIR=$(cd $(dirname "$0"); pwd)
 cd $DIR
-echo `pwd`
+echo "$PWD"
 
-#delete the resul of nosetest, for coverage
+# delete the result of nosetest, for coverage
 rm -f nosetests.xml
 rm -f coverage.xml
 rm -f .coverage
 
 function launch_and_assert {
     SCRIPT=$1
-#    nosetests -v -s --with-xunit --with-coverage ./$SCRIPT
+    #nosetests -v -s --with-xunit --with-coverage ./$SCRIPT
     python ./$SCRIPT
-    if [ $? != 0 ]
-	then
-	echo "Error : the test $SCRIPT failed"
+    if [ $? != 0 ] ; then
+	echo "Error: the test $SCRIPT failed"
 	exit 2
     fi
 }
 
-#Launching only quick tests for quick regression check
-#for ii in `ls -1 test_*py`; do echo "Launching Test $ii" && python $ii; done
+# Launching only quick tests for quick regression check
+launch_and_assert test_logging.py
+launch_and_assert test_properties_defaults.py
 launch_and_assert test_system_time_change.py
 launch_and_assert test_services.py
 launch_and_assert test_hosts.py
+launch_and_assert test_timeperiods.py
 launch_and_assert test_host_missing_adress.py
 launch_and_assert test_not_hostname.py
 launch_and_assert test_bad_contact_call.py
@@ -52,7 +53,6 @@ launch_and_assert test_config.py
 launch_and_assert test_dependencies.py
 launch_and_assert test_npcdmod.py
 launch_and_assert test_problem_impact.py
-launch_and_assert test_timeperiods.py
 launch_and_assert test_command.py
 launch_and_assert test_module_simplelog.py
 launch_and_assert test_module_service_perfdata.py
@@ -126,7 +126,6 @@ launch_and_assert test_module_on_module.py
 launch_and_assert test_disable_active_checks.py
 launch_and_assert test_no_event_handler_during_downtime.py
 launch_and_assert test_inheritance_and_plus.py
-launch_and_assert test_livestatus_db.py
 launch_and_assert test_parse_perfdata.py
 launch_and_assert test_service_template_inheritance.py
 launch_and_assert test_module_ip_tag.py
@@ -141,13 +140,37 @@ launch_and_assert test_objects_and_notifways.py
 launch_and_assert test_freshness.py
 launch_and_assert test_star_in_hostgroups.py
 launch_and_assert test_protect_esclamation_point.py
+launch_and_assert test_module_passwd_ui.py
+launch_and_assert test_css_in_command.py
+launch_and_assert test_servicedependency_implicit_hostgroup.py
+launch_and_assert test_pack_hash_memory.py
+launch_and_assert test_triggers.py
+launch_and_assert test_update_output_ext_command.py
+launch_and_assert test_livestatus_allowedhosts.py
+launch_and_assert test_hostgroup_with_space.py
+launch_and_assert test_conf_in_symlinks.py
+launch_and_assert test_uknown_event_handler.py
+launch_and_assert test_servicedependency_complexes.py
+launch_and_assert test_timeout.py
+launch_and_assert test_python_crash_with_recursive_bp_rules.py
+launch_and_assert test_missing_timeperiod.py
+launch_and_assert test_module_trending.py
+launch_and_assert test_multiple_not_hostgroups.py
+launch_and_assert test_checkmodulations.py
+launch_and_assert test_macromodulations.py
+launch_and_assert test_module_file_tag.py
+launch_and_assert test_livestatus_db.py
+launch_and_assert test_contactgroups_plus_inheritance.py
 
 launch_and_assert test_maintenance_period.py
-#Live status is a bit longer than the previous, so we put it at the end.
+# Live status is a bit longer than the previous, so we put it at the end.
 launch_and_assert test_livestatus.py
 
 # Can failed on non prepared box
 launch_and_assert test_bad_start.py
+
+
+
 
 # And create the coverage file
 coverage xml --omit=/usr/lib

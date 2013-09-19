@@ -2,7 +2,7 @@
 
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2009-2011 :
+# Copyright (C) 2009-2012:
 #     Gabes Jean, naparuba@gmail.com
 #     Gerhard Lausser, Gerhard.Lausser@consol.de
 #     Gregory Starck, g.starck@gmail.com
@@ -23,16 +23,15 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Shinken.  If not, see <http://www.gnu.org/licenses/>.
 
-
 import os
 import time
 
-from shinken.util import to_int, to_bool, safe_print
+from shinken.util import to_int, to_bool
 from shinken.downtime import Downtime
 from shinken.contactdowntime import ContactDowntime
 from shinken.comment import Comment
 from shinken.commandcall import CommandCall
-from shinken.log import logger
+from shinken.log import logger, console_logger
 from shinken.pollerlink import PollerLink
 
 MODATTR_NONE = 0
@@ -56,211 +55,220 @@ MODATTR_NOTIFICATION_TIMEPERIOD = 65536
 
 
 
-""" TODO : Add some comment about this class for the doc"""
+""" TODO: Add some comment about this class for the doc"""
 class ExternalCommand:
     my_type = 'externalcommand'
+
     def __init__(self, cmd_line):
         self.cmd_line = cmd_line
 
 
-""" TODO : Add some comment about this class for the doc"""
+""" TODO: Add some comment about this class for the doc"""
 class ExternalCommandManager:
 
     commands = {
-        'CHANGE_CONTACT_MODSATTR' : {'global' : True, 'args' : ['contact', None]},
-        'CHANGE_CONTACT_MODHATTR' : {'global' : True, 'args' : ['contact', None]},
-        'CHANGE_CONTACT_MODATTR' : {'global' : True, 'args' : ['contact', None]},
-        'CHANGE_CONTACT_HOST_NOTIFICATION_TIMEPERIOD' : {'global' : True, 'args' : ['contact', 'time_period']},
-        'ADD_SVC_COMMENT'  : {'global' : False, 'args' : ['service', 'to_bool', 'author', None]},
-        'ADD_HOST_COMMENT' : {'global' : False, 'args' : ['host', 'to_bool', 'author', None]},
-        'ACKNOWLEDGE_SVC_PROBLEM' : {'global' : False, 'args' : ['service' , 'to_int', 'to_bool', 'to_bool', 'author', None]},
-        'ACKNOWLEDGE_HOST_PROBLEM' : {'global' : False, 'args' : ['host', 'to_int', 'to_bool', 'to_bool', 'author', None]},
-        'ACKNOWLEDGE_SVC_PROBLEM_EXPIRE' : {'global' : False, 'args' : ['service' , 'to_int', 'to_bool', 'to_bool', 'to_int', 'author', None]},
-        'ACKNOWLEDGE_HOST_PROBLEM_EXPIRE' : {'global' : False, 'args' : ['host', 'to_int', 'to_bool', 'to_bool', 'to_int', 'author', None]},
-        'CHANGE_CONTACT_SVC_NOTIFICATION_TIMEPERIOD' : {'global' : True, 'args' : ['contact', 'time_period']},
-        'CHANGE_CUSTOM_CONTACT_VAR' : {'global' : True, 'args' : ['contact', None,None]},
-        'CHANGE_CUSTOM_HOST_VAR' : {'global' : False, 'args' : ['host', None,None]},
-        'CHANGE_CUSTOM_SVC_VAR' : {'global' : False, 'args' : ['service', None,None]},
-        'CHANGE_GLOBAL_HOST_EVENT_HANDLER' : {'global' : True, 'args' : ['command']},
-        'CHANGE_GLOBAL_SVC_EVENT_HANDLER' : {'global' : True, 'args' : ['command']},
-        'CHANGE_HOST_CHECK_COMMAND' : {'global' : False, 'args' : ['host', 'command']},
-        'CHANGE_HOST_CHECK_TIMEPERIOD' : {'global' : False, 'args' : ['host', 'time_period']},
-        'CHANGE_HOST_EVENT_HANDLER' : {'global' : False, 'args' : ['host', 'command']},
-        'CHANGE_HOST_MODATTR' : {'global' : False, 'args' : ['host', 'to_int']},
-        'CHANGE_MAX_HOST_CHECK_ATTEMPTS': {'global' : False, 'args' : ['host', 'to_int']},
-        'CHANGE_MAX_SVC_CHECK_ATTEMPTS' : {'global' : False, 'args' : ['service', 'to_int']},
-        'CHANGE_NORMAL_HOST_CHECK_INTERVAL' : {'global' : False, 'args' : ['host', 'to_int']},
-        'CHANGE_NORMAL_SVC_CHECK_INTERVAL' : {'global' : False, 'args' : ['service', 'to_int']},
-        'CHANGE_RETRY_HOST_CHECK_INTERVAL' : {'global' : False, 'args' : ['service', 'to_int']},
-        'CHANGE_RETRY_SVC_CHECK_INTERVAL' : {'global' : False, 'args' : ['service', 'to_int']},
-        'CHANGE_SVC_CHECK_COMMAND' : {'global' : False, 'args' : ['service', 'command']},
-        'CHANGE_SVC_CHECK_TIMEPERIOD' : {'global' : False, 'args' : ['service', 'time_period']},
-        'CHANGE_SVC_EVENT_HANDLER' : {'global' : False, 'args' : ['service', 'command']},
-        'CHANGE_SVC_MODATTR' : {'global' : False, 'args' : ['service', 'to_int']},
-        'CHANGE_SVC_NOTIFICATION_TIMEPERIOD' : {'global' : False, 'args' : ['service', 'time_period']},
-        'DELAY_HOST_NOTIFICATION' : {'global' : False, 'args' : ['host', 'to_int']},
-        'DELAY_SVC_NOTIFICATION' : {'global' : False, 'args' : ['service', 'to_int']},
-        'DEL_ALL_HOST_COMMENTS' : {'global' : False, 'args' : ['host']},
-        'DEL_ALL_HOST_DOWNTIMES' : {'global' : False, 'args' : ['host']},
-        'DEL_ALL_SVC_COMMENTS' : {'global' : False, 'args' : ['service']},
-        'DEL_ALL_SVC_DOWNTIMES' : {'global' : False, 'args' : ['service']},
-        'DEL_CONTACT_DOWNTIME' : {'global' : True, 'args' : ['to_int']},
-        'DEL_HOST_COMMENT' : {'global' : True, 'args' : ['to_int']},
-        'DEL_HOST_DOWNTIME' : {'global' : True, 'args' : ['to_int']},
-        'DEL_SVC_COMMENT' : {'global' : True, 'args' : ['to_int']},
-        'DEL_SVC_DOWNTIME' : {'global' : True, 'args' : ['to_int']},
-        'DISABLE_ALL_NOTIFICATIONS_BEYOND_HOST' : {'global' : False, 'args' : ['host']},
-        'DISABLE_CONTACTGROUP_HOST_NOTIFICATIONS' : {'global' : True, 'args' : ['contact_group']},
-        'DISABLE_CONTACTGROUP_SVC_NOTIFICATIONS' : {'global' : True, 'args' : ['contact_group']},
-        'DISABLE_CONTACT_HOST_NOTIFICATIONS' : {'global' : True, 'args' : ['contact']},
-        'DISABLE_CONTACT_SVC_NOTIFICATIONS' : {'global' : True, 'args' : ['contact']},
-        'DISABLE_EVENT_HANDLERS' : {'global' : True, 'args' : []},
-        'DISABLE_FAILURE_PREDICTION' : {'global' : True, 'args' : []},
-        'DISABLE_FLAP_DETECTION' : {'global' : True, 'args' : []},
-        'DISABLE_HOSTGROUP_HOST_CHECKS' : {'global' : True, 'args' : ['host_group']},
-        'DISABLE_HOSTGROUP_HOST_NOTIFICATIONS' : {'global' : True, 'args' : ['host_group']},
-        'DISABLE_HOSTGROUP_PASSIVE_HOST_CHECKS' : {'global' : True, 'args' : ['host_group']},
-        'DISABLE_HOSTGROUP_PASSIVE_SVC_CHECKS' : {'global' : True, 'args' : ['host_group']},
-        'DISABLE_HOSTGROUP_SVC_CHECKS' : {'global' : True, 'args' : ['host_group']},
-        'DISABLE_HOSTGROUP_SVC_NOTIFICATIONS' : {'global' : True, 'args' : ['host_group']},
-        'DISABLE_HOST_AND_CHILD_NOTIFICATIONS' : {'global' : False, 'args' : ['host']},
-        'DISABLE_HOST_CHECK' : {'global' : False, 'args' : ['host']},
-        'DISABLE_HOST_EVENT_HANDLER' : {'global' : False, 'args' : ['host']},
-        'DISABLE_HOST_FLAP_DETECTION' : {'global' : False, 'args' : ['host']},
-        'DISABLE_HOST_FRESHNESS_CHECKS' : {'global' : True, 'args' : []},
-        'DISABLE_HOST_NOTIFICATIONS' : {'global' : False, 'args' : ['host']},
-        'DISABLE_HOST_SVC_CHECKS' : {'global' : False, 'args' : ['host']},
-        'DISABLE_HOST_SVC_NOTIFICATIONS' : {'global' : False, 'args' : ['host']},
-        'DISABLE_NOTIFICATIONS' : {'global' : True, 'args' : []},
-        'DISABLE_PASSIVE_HOST_CHECKS' : {'global' : False, 'args' : ['host']},
-        'DISABLE_PASSIVE_SVC_CHECKS' : {'global' : False, 'args' : ['service']},
-        'DISABLE_PERFORMANCE_DATA' : {'global' : True, 'args' : []},
-        'DISABLE_SERVICEGROUP_HOST_CHECKS' : {'global' : True, 'args' : ['service_group']},
-        'DISABLE_SERVICEGROUP_HOST_NOTIFICATIONS' : {'global' : True, 'args' : ['service_group']},
-        'DISABLE_SERVICEGROUP_PASSIVE_HOST_CHECKS' : {'global' : True, 'args' : ['service_group']},
-        'DISABLE_SERVICEGROUP_PASSIVE_SVC_CHECKS' : {'global' : True, 'args' : ['service_group']},
-        'DISABLE_SERVICEGROUP_SVC_CHECKS' : {'global' : True, 'args' : ['service_group']},
-        'DISABLE_SERVICEGROUP_SVC_NOTIFICATIONS' : {'global' : True, 'args' : ['service_group']},
-        'DISABLE_SERVICE_FLAP_DETECTION' : {'global' : False, 'args' : ['service']},
-        'DISABLE_SERVICE_FRESHNESS_CHECKS' : {'global' : True, 'args' : []},
-        'DISABLE_SVC_CHECK' : {'global' : False, 'args' : ['service']},
-        'DISABLE_SVC_EVENT_HANDLER' : {'global' : False, 'args' : ['service']},
-        'DISABLE_SVC_FLAP_DETECTION' : {'global' : False, 'args' : ['service']},
-        'DISABLE_SVC_NOTIFICATIONS' : {'global' : False, 'args' : ['service']},
-        'ENABLE_ALL_NOTIFICATIONS_BEYOND_HOST' : {'global' : False, 'args' : ['host']},
-        'ENABLE_CONTACTGROUP_HOST_NOTIFICATIONS' : {'global' : True, 'args' : ['contact_group']},
-        'ENABLE_CONTACTGROUP_SVC_NOTIFICATIONS' : {'global' : True, 'args' : ['contact_group']},
-        'ENABLE_CONTACT_HOST_NOTIFICATIONS' : {'global' : True, 'args' : ['contact']},
-        'ENABLE_CONTACT_SVC_NOTIFICATIONS' : {'global' : True, 'args' : ['contact']},
-        'ENABLE_EVENT_HANDLERS' : {'global' : True, 'args' : []},
-        'ENABLE_FAILURE_PREDICTION' : {'global' : True, 'args' : []},
-        'ENABLE_FLAP_DETECTION' : {'global' : True, 'args' : []},
-        'ENABLE_HOSTGROUP_HOST_CHECKS' : {'global' : True, 'args' : ['host_group']},
-        'ENABLE_HOSTGROUP_HOST_NOTIFICATIONS' : {'global' : True, 'args' : ['host_group']},
-        'ENABLE_HOSTGROUP_PASSIVE_HOST_CHECKS' : {'global' : True, 'args' : ['host_group']},
-        'ENABLE_HOSTGROUP_PASSIVE_SVC_CHECKS' : {'global' : True, 'args' : ['host_group']},
-        'ENABLE_HOSTGROUP_SVC_CHECKS' : {'global' : True, 'args' : ['host_group']},
-        'ENABLE_HOSTGROUP_SVC_NOTIFICATIONS' : {'global' : True, 'args' : ['host_group']},
-        'ENABLE_HOST_AND_CHILD_NOTIFICATIONS' : {'global' : False, 'args' : ['host']},
-        'ENABLE_HOST_CHECK' : {'global' : False, 'args' : ['host']},
-        'ENABLE_HOST_EVENT_HANDLER' : {'global' : False, 'args' : ['host']},
-        'ENABLE_HOST_FLAP_DETECTION' : {'global' : False, 'args' : ['host']},
-        'ENABLE_HOST_FRESHNESS_CHECKS' : {'global' : True, 'args' : []},
-        'ENABLE_HOST_NOTIFICATIONS' : {'global' : False, 'args' : ['host']},
-        'ENABLE_HOST_SVC_CHECKS' : {'global' : False, 'args' : ['host']},
-        'ENABLE_HOST_SVC_NOTIFICATIONS' : {'global' : False, 'args' : ['host']},
-        'ENABLE_NOTIFICATIONS' : {'global' : True, 'args' : []},
-        'ENABLE_PASSIVE_HOST_CHECKS' : {'global' : False, 'args' : ['host']},
-        'ENABLE_PASSIVE_SVC_CHECKS' : {'global' : False, 'args' : ['service']},
-        'ENABLE_PERFORMANCE_DATA' : {'global' : True, 'args' : []},
-        'ENABLE_SERVICEGROUP_HOST_CHECKS' : {'global' : True, 'args' : ['service_group']},
-        'ENABLE_SERVICEGROUP_HOST_NOTIFICATIONS' : {'global' : True, 'args' : ['service_group']},
-        'ENABLE_SERVICEGROUP_PASSIVE_HOST_CHECKS' : {'global' : True, 'args' : ['service_group']},
-        'ENABLE_SERVICEGROUP_PASSIVE_SVC_CHECKS' : {'global' : True, 'args' : ['service_group']},
-        'ENABLE_SERVICEGROUP_SVC_CHECKS' : {'global' : True, 'args' : ['service_group']},
-        'ENABLE_SERVICEGROUP_SVC_NOTIFICATIONS' : {'global' : True, 'args' : ['service_group']},
-        'ENABLE_SERVICE_FRESHNESS_CHECKS' : {'global' : True, 'args' : []},
-        'ENABLE_SVC_CHECK': {'global' : False, 'args' : ['service']},
-        'ENABLE_SVC_EVENT_HANDLER' : {'global' : False, 'args' : ['service']},
-        'ENABLE_SVC_FLAP_DETECTION' : {'global' : False, 'args' : ['service']},
-        'ENABLE_SVC_NOTIFICATIONS' : {'global' : False, 'args' : ['service']},
-        'PROCESS_FILE' : {'global' : True, 'args' : [None, 'to_bool']},
-        'PROCESS_HOST_CHECK_RESULT' : {'global' : False, 'args' : ['host', 'to_int', None]},
-        'PROCESS_SERVICE_CHECK_RESULT' : {'global' : False, 'args' : ['service', 'to_int', None]},
-        'READ_STATE_INFORMATION' : {'global' : True, 'args' : []},
-        'REMOVE_HOST_ACKNOWLEDGEMENT' : {'global' : False, 'args' : ['host']},
-        'REMOVE_SVC_ACKNOWLEDGEMENT' : {'global' : False, 'args' : ['service']},
-        'RESTART_PROGRAM' : {'global' : True, 'args' : []},
-        'SAVE_STATE_INFORMATION' : {'global' : True, 'args' : []},
-        'SCHEDULE_AND_PROPAGATE_HOST_DOWNTIME' : {'global' : False, 'args' : ['host', 'to_int', 'to_int', 'to_bool', 'to_int', 'to_int', 'author',None]},
-        'SCHEDULE_AND_PROPAGATE_TRIGGERED_HOST_DOWNTIME' : {'global' : False, 'args' : ['host', 'to_int', 'to_int', 'to_bool', 'to_int', 'to_int', 'author', None]},
-        'SCHEDULE_CONTACT_DOWNTIME' : {'global' : True, 'args' : ['contact', 'to_int', 'to_int', 'author', None]},
-        'SCHEDULE_FORCED_HOST_CHECK' : {'global' : False, 'args' : ['host', 'to_int']},
-        'SCHEDULE_FORCED_HOST_SVC_CHECKS' : {'global' : False, 'args' : ['host', 'to_int']},
-        'SCHEDULE_FORCED_SVC_CHECK' : {'global' : False, 'args' : ['service', 'to_int']},
-        'SCHEDULE_HOSTGROUP_HOST_DOWNTIME' : {'global' : True, 'args' : ['host_group', 'to_int', 'to_int', 'to_bool', 'to_int', 'to_int', 'author',None]},
-        'SCHEDULE_HOSTGROUP_SVC_DOWNTIME' : {'global' : True, 'args' : ['host_group', 'to_int', 'to_int', 'to_bool', 'to_int', 'to_int', 'author',None]},
-        'SCHEDULE_HOST_CHECK' : {'global' : False, 'args' : ['host', 'to_int']},
-        'SCHEDULE_HOST_DOWNTIME' : {'global' : False, 'args' : ['host', 'to_int', 'to_int', 'to_bool', 'to_int', 'to_int', 'author', None]},
-        'SCHEDULE_HOST_SVC_CHECKS' : {'global' : False, 'args' : ['host', 'to_int']},
-        'SCHEDULE_HOST_SVC_DOWNTIME' : {'global' : False, 'args' : ['host', 'to_int', 'to_int', 'to_bool', 'to_int', 'to_int', 'author', None]},
-        'SCHEDULE_SERVICEGROUP_HOST_DOWNTIME' : {'global' : True, 'args' : ['service_group', 'to_int', 'to_int', 'to_bool', 'to_int', 'to_int', 'author', None]},
-        'SCHEDULE_SERVICEGROUP_SVC_DOWNTIME' : {'global' : True, 'args' : ['service_group', 'to_int', 'to_int', 'to_bool', 'to_int', 'to_int', 'author', None]},
-        'SCHEDULE_SVC_CHECK' : {'global' : False, 'args' : ['service', 'to_int']},
-        'SCHEDULE_SVC_DOWNTIME' : {'global' : False, 'args' : ['service', 'to_int', 'to_int', 'to_bool', 'to_int', 'to_int', 'author', None]},
-        'SEND_CUSTOM_HOST_NOTIFICATION' : {'global' : False, 'args' : ['host', 'to_int', 'author', None]},
-        'SEND_CUSTOM_SVC_NOTIFICATION' : {'global' : False, 'args' : ['service', 'to_int', 'author', None]},
-        'SET_HOST_NOTIFICATION_NUMBER' : {'global' : False, 'args' : ['host', 'to_int']},
-        'SET_SVC_NOTIFICATION_NUMBER' : {'global' : False, 'args' : ['service', 'to_int']},
-        'SHUTDOWN_PROGRAM' : {'global' : True, 'args' : []},
-        'START_ACCEPTING_PASSIVE_HOST_CHECKS' : {'global' : True, 'args' : []},
-        'START_ACCEPTING_PASSIVE_SVC_CHECKS' : {'global' : True, 'args' : []},
-        'START_EXECUTING_HOST_CHECKS' : {'global' : True, 'args' : []},
-        'START_EXECUTING_SVC_CHECKS' : {'global' : True, 'args' : []},
-        'START_OBSESSING_OVER_HOST' : {'global' : False, 'args' : ['host']},
-        'START_OBSESSING_OVER_HOST_CHECKS' : {'global' : True, 'args' : []},
-        'START_OBSESSING_OVER_SVC' : {'global' : False, 'args' : ['service']},
-        'START_OBSESSING_OVER_SVC_CHECKS' : {'global' : True, 'args' : []},
-        'STOP_ACCEPTING_PASSIVE_HOST_CHECKS' : {'global' : True, 'args' : []},
-        'STOP_ACCEPTING_PASSIVE_SVC_CHECKS' : {'global' : True, 'args' : []},
-        'STOP_EXECUTING_HOST_CHECKS' : {'global' : True, 'args' : []},
-        'STOP_EXECUTING_SVC_CHECKS' : {'global' : True, 'args' : []},
-        'STOP_OBSESSING_OVER_HOST' : {'global' : False, 'args' : ['host']},
-        'STOP_OBSESSING_OVER_HOST_CHECKS' : {'global' : True, 'args' : []},
-        'STOP_OBSESSING_OVER_SVC' : {'global' : False, 'args' : ['service']},
-        'STOP_OBSESSING_OVER_SVC_CHECKS' : {'global' : True, 'args' : []},
-        'LAUNCH_SVC_EVENT_HANDLER' : {'global' : False, 'args' : ['service']},
-        'LAUNCH_HOST_EVENT_HANDLER' : {'global' : False, 'args' : ['host']},
+        'CHANGE_CONTACT_MODSATTR': {'global': True, 'args': ['contact', None]},
+        'CHANGE_CONTACT_MODHATTR': {'global': True, 'args': ['contact', None]},
+        'CHANGE_CONTACT_MODATTR': {'global': True, 'args': ['contact', None]},
+        'CHANGE_CONTACT_HOST_NOTIFICATION_TIMEPERIOD': {'global': True, 'args': ['contact', 'time_period']},
+        'ADD_SVC_COMMENT': {'global': False, 'args': ['service', 'to_bool', 'author', None]},
+        'ADD_HOST_COMMENT': {'global': False, 'args': ['host', 'to_bool', 'author', None]},
+        'ACKNOWLEDGE_SVC_PROBLEM': {'global': False, 'args': ['service', 'to_int', 'to_bool', 'to_bool', 'author', None]},
+        'ACKNOWLEDGE_HOST_PROBLEM': {'global': False, 'args': ['host', 'to_int', 'to_bool', 'to_bool', 'author', None]},
+        'ACKNOWLEDGE_SVC_PROBLEM_EXPIRE': {'global': False, 'args': ['service', 'to_int', 'to_bool', 'to_bool', 'to_int', 'author', None]},
+        'ACKNOWLEDGE_HOST_PROBLEM_EXPIRE': {'global': False, 'args': ['host', 'to_int', 'to_bool', 'to_bool', 'to_int', 'author', None]},
+        'CHANGE_CONTACT_SVC_NOTIFICATION_TIMEPERIOD': {'global': True, 'args': ['contact', 'time_period']},
+        'CHANGE_CUSTOM_CONTACT_VAR': {'global': True, 'args': ['contact', None, None]},
+        'CHANGE_CUSTOM_HOST_VAR': {'global': False, 'args': ['host', None, None]},
+        'CHANGE_CUSTOM_SVC_VAR': {'global': False, 'args': ['service', None, None]},
+        'CHANGE_GLOBAL_HOST_EVENT_HANDLER': {'global': True, 'args': ['command']},
+        'CHANGE_GLOBAL_SVC_EVENT_HANDLER': {'global': True, 'args': ['command']},
+        'CHANGE_HOST_CHECK_COMMAND': {'global': False, 'args': ['host', 'command']},
+        'CHANGE_HOST_CHECK_TIMEPERIOD': {'global': False, 'args': ['host', 'time_period']},
+        'CHANGE_HOST_EVENT_HANDLER': {'global': False, 'args': ['host', 'command']},
+        'CHANGE_HOST_MODATTR': {'global': False, 'args': ['host', 'to_int']},
+        'CHANGE_MAX_HOST_CHECK_ATTEMPTS': {'global': False, 'args': ['host', 'to_int']},
+        'CHANGE_MAX_SVC_CHECK_ATTEMPTS': {'global': False, 'args': ['service', 'to_int']},
+        'CHANGE_NORMAL_HOST_CHECK_INTERVAL': {'global': False, 'args': ['host', 'to_int']},
+        'CHANGE_NORMAL_SVC_CHECK_INTERVAL': {'global': False, 'args': ['service', 'to_int']},
+        'CHANGE_RETRY_HOST_CHECK_INTERVAL': {'global': False, 'args': ['service', 'to_int']},
+        'CHANGE_RETRY_SVC_CHECK_INTERVAL': {'global': False, 'args': ['service', 'to_int']},
+        'CHANGE_SVC_CHECK_COMMAND': {'global': False, 'args': ['service', 'command']},
+        'CHANGE_SVC_CHECK_TIMEPERIOD': {'global': False, 'args': ['service', 'time_period']},
+        'CHANGE_SVC_EVENT_HANDLER': {'global': False, 'args': ['service', 'command']},
+        'CHANGE_SVC_MODATTR': {'global': False, 'args': ['service', 'to_int']},
+        'CHANGE_SVC_NOTIFICATION_TIMEPERIOD': {'global': False, 'args': ['service', 'time_period']},
+        'DELAY_HOST_NOTIFICATION': {'global': False, 'args': ['host', 'to_int']},
+        'DELAY_SVC_NOTIFICATION': {'global': False, 'args': ['service', 'to_int']},
+        'DEL_ALL_HOST_COMMENTS': {'global': False, 'args': ['host']},
+        'DEL_ALL_HOST_DOWNTIMES': {'global': False, 'args': ['host']},
+        'DEL_ALL_SVC_COMMENTS': {'global': False, 'args': ['service']},
+        'DEL_ALL_SVC_DOWNTIMES': {'global': False, 'args': ['service']},
+        'DEL_CONTACT_DOWNTIME': {'global': True, 'args': ['to_int']},
+        'DEL_HOST_COMMENT': {'global': True, 'args': ['to_int']},
+        'DEL_HOST_DOWNTIME': {'global': True, 'args': ['to_int']},
+        'DEL_SVC_COMMENT': {'global': True, 'args': ['to_int']},
+        'DEL_SVC_DOWNTIME': {'global': True, 'args': ['to_int']},
+        'DISABLE_ALL_NOTIFICATIONS_BEYOND_HOST': {'global': False, 'args': ['host']},
+        'DISABLE_CONTACTGROUP_HOST_NOTIFICATIONS': {'global': True, 'args': ['contact_group']},
+        'DISABLE_CONTACTGROUP_SVC_NOTIFICATIONS': {'global': True, 'args': ['contact_group']},
+        'DISABLE_CONTACT_HOST_NOTIFICATIONS': {'global': True, 'args': ['contact']},
+        'DISABLE_CONTACT_SVC_NOTIFICATIONS': {'global': True, 'args': ['contact']},
+        'DISABLE_EVENT_HANDLERS': {'global': True, 'args': []},
+        'DISABLE_FAILURE_PREDICTION': {'global': True, 'args': []},
+        'DISABLE_FLAP_DETECTION': {'global': True, 'args': []},
+        'DISABLE_HOSTGROUP_HOST_CHECKS': {'global': True, 'args': ['host_group']},
+        'DISABLE_HOSTGROUP_HOST_NOTIFICATIONS': {'global': True, 'args': ['host_group']},
+        'DISABLE_HOSTGROUP_PASSIVE_HOST_CHECKS': {'global': True, 'args': ['host_group']},
+        'DISABLE_HOSTGROUP_PASSIVE_SVC_CHECKS': {'global': True, 'args': ['host_group']},
+        'DISABLE_HOSTGROUP_SVC_CHECKS': {'global': True, 'args': ['host_group']},
+        'DISABLE_HOSTGROUP_SVC_NOTIFICATIONS': {'global': True, 'args': ['host_group']},
+        'DISABLE_HOST_AND_CHILD_NOTIFICATIONS': {'global': False, 'args': ['host']},
+        'DISABLE_HOST_CHECK': {'global': False, 'args': ['host']},
+        'DISABLE_HOST_EVENT_HANDLER': {'global': False, 'args': ['host']},
+        'DISABLE_HOST_FLAP_DETECTION': {'global': False, 'args': ['host']},
+        'DISABLE_HOST_FRESHNESS_CHECKS': {'global': True, 'args': []},
+        'DISABLE_HOST_NOTIFICATIONS': {'global': False, 'args': ['host']},
+        'DISABLE_HOST_SVC_CHECKS': {'global': False, 'args': ['host']},
+        'DISABLE_HOST_SVC_NOTIFICATIONS': {'global': False, 'args': ['host']},
+        'DISABLE_NOTIFICATIONS': {'global': True, 'args': []},
+        'DISABLE_PASSIVE_HOST_CHECKS': {'global': False, 'args': ['host']},
+        'DISABLE_PASSIVE_SVC_CHECKS': {'global': False, 'args': ['service']},
+        'DISABLE_PERFORMANCE_DATA': {'global': True, 'args': []},
+        'DISABLE_SERVICEGROUP_HOST_CHECKS': {'global': True, 'args': ['service_group']},
+        'DISABLE_SERVICEGROUP_HOST_NOTIFICATIONS': {'global': True, 'args': ['service_group']},
+        'DISABLE_SERVICEGROUP_PASSIVE_HOST_CHECKS': {'global': True, 'args': ['service_group']},
+        'DISABLE_SERVICEGROUP_PASSIVE_SVC_CHECKS': {'global': True, 'args': ['service_group']},
+        'DISABLE_SERVICEGROUP_SVC_CHECKS': {'global': True, 'args': ['service_group']},
+        'DISABLE_SERVICEGROUP_SVC_NOTIFICATIONS': {'global': True, 'args': ['service_group']},
+        'DISABLE_SERVICE_FLAP_DETECTION': {'global': False, 'args': ['service']},
+        'DISABLE_SERVICE_FRESHNESS_CHECKS': {'global': True, 'args': []},
+        'DISABLE_SVC_CHECK': {'global': False, 'args': ['service']},
+        'DISABLE_SVC_EVENT_HANDLER': {'global': False, 'args': ['service']},
+        'DISABLE_SVC_FLAP_DETECTION': {'global': False, 'args': ['service']},
+        'DISABLE_SVC_NOTIFICATIONS': {'global': False, 'args': ['service']},
+        'ENABLE_ALL_NOTIFICATIONS_BEYOND_HOST': {'global': False, 'args': ['host']},
+        'ENABLE_CONTACTGROUP_HOST_NOTIFICATIONS': {'global': True, 'args': ['contact_group']},
+        'ENABLE_CONTACTGROUP_SVC_NOTIFICATIONS': {'global': True, 'args': ['contact_group']},
+        'ENABLE_CONTACT_HOST_NOTIFICATIONS': {'global': True, 'args': ['contact']},
+        'ENABLE_CONTACT_SVC_NOTIFICATIONS': {'global': True, 'args': ['contact']},
+        'ENABLE_EVENT_HANDLERS': {'global': True, 'args': []},
+        'ENABLE_FAILURE_PREDICTION': {'global': True, 'args': []},
+        'ENABLE_FLAP_DETECTION': {'global': True, 'args': []},
+        'ENABLE_HOSTGROUP_HOST_CHECKS': {'global': True, 'args': ['host_group']},
+        'ENABLE_HOSTGROUP_HOST_NOTIFICATIONS': {'global': True, 'args': ['host_group']},
+        'ENABLE_HOSTGROUP_PASSIVE_HOST_CHECKS': {'global': True, 'args': ['host_group']},
+        'ENABLE_HOSTGROUP_PASSIVE_SVC_CHECKS': {'global': True, 'args': ['host_group']},
+        'ENABLE_HOSTGROUP_SVC_CHECKS': {'global': True, 'args': ['host_group']},
+        'ENABLE_HOSTGROUP_SVC_NOTIFICATIONS': {'global': True, 'args': ['host_group']},
+        'ENABLE_HOST_AND_CHILD_NOTIFICATIONS': {'global': False, 'args': ['host']},
+        'ENABLE_HOST_CHECK': {'global': False, 'args': ['host']},
+        'ENABLE_HOST_EVENT_HANDLER': {'global': False, 'args': ['host']},
+        'ENABLE_HOST_FLAP_DETECTION': {'global': False, 'args': ['host']},
+        'ENABLE_HOST_FRESHNESS_CHECKS': {'global': True, 'args': []},
+        'ENABLE_HOST_NOTIFICATIONS': {'global': False, 'args': ['host']},
+        'ENABLE_HOST_SVC_CHECKS': {'global': False, 'args': ['host']},
+        'ENABLE_HOST_SVC_NOTIFICATIONS': {'global': False, 'args': ['host']},
+        'ENABLE_NOTIFICATIONS': {'global': True, 'args': []},
+        'ENABLE_PASSIVE_HOST_CHECKS': {'global': False, 'args': ['host']},
+        'ENABLE_PASSIVE_SVC_CHECKS': {'global': False, 'args': ['service']},
+        'ENABLE_PERFORMANCE_DATA': {'global': True, 'args': []},
+        'ENABLE_SERVICEGROUP_HOST_CHECKS': {'global': True, 'args': ['service_group']},
+        'ENABLE_SERVICEGROUP_HOST_NOTIFICATIONS': {'global': True, 'args': ['service_group']},
+        'ENABLE_SERVICEGROUP_PASSIVE_HOST_CHECKS': {'global': True, 'args': ['service_group']},
+        'ENABLE_SERVICEGROUP_PASSIVE_SVC_CHECKS': {'global': True, 'args': ['service_group']},
+        'ENABLE_SERVICEGROUP_SVC_CHECKS': {'global': True, 'args': ['service_group']},
+        'ENABLE_SERVICEGROUP_SVC_NOTIFICATIONS': {'global': True, 'args': ['service_group']},
+        'ENABLE_SERVICE_FRESHNESS_CHECKS': {'global': True, 'args': []},
+        'ENABLE_SVC_CHECK': {'global': False, 'args': ['service']},
+        'ENABLE_SVC_EVENT_HANDLER': {'global': False, 'args': ['service']},
+        'ENABLE_SVC_FLAP_DETECTION': {'global': False, 'args': ['service']},
+        'ENABLE_SVC_NOTIFICATIONS': {'global': False, 'args': ['service']},
+        'PROCESS_FILE': {'global': True, 'args': [None, 'to_bool']},
+        'PROCESS_HOST_CHECK_RESULT': {'global': False, 'args': ['host', 'to_int', None]},
+        'PROCESS_HOST_OUTPUT': {'global': False, 'args': ['host', None]},
+        'PROCESS_SERVICE_CHECK_RESULT': {'global': False, 'args': ['service', 'to_int', None]},
+        'PROCESS_SERVICE_OUTPUT': {'global': False, 'args': ['service', None]},
+        'READ_STATE_INFORMATION': {'global': True, 'args': []},
+        'REMOVE_HOST_ACKNOWLEDGEMENT': {'global': False, 'args': ['host']},
+        'REMOVE_SVC_ACKNOWLEDGEMENT': {'global': False, 'args': ['service']},
+        'RESTART_PROGRAM': {'global': True, 'args': []},
+        'SAVE_STATE_INFORMATION': {'global': True, 'args': []},
+        'SCHEDULE_AND_PROPAGATE_HOST_DOWNTIME': {'global': False, 'args': ['host', 'to_int', 'to_int', 'to_bool', 'to_int', 'to_int', 'author', None]},
+        'SCHEDULE_AND_PROPAGATE_TRIGGERED_HOST_DOWNTIME': {'global': False, 'args': ['host', 'to_int', 'to_int', 'to_bool', 'to_int', 'to_int', 'author', None]},
+        'SCHEDULE_CONTACT_DOWNTIME': {'global': True, 'args': ['contact', 'to_int', 'to_int', 'author', None]},
+        'SCHEDULE_FORCED_HOST_CHECK': {'global': False, 'args': ['host', 'to_int']},
+        'SCHEDULE_FORCED_HOST_SVC_CHECKS': {'global': False, 'args': ['host', 'to_int']},
+        'SCHEDULE_FORCED_SVC_CHECK': {'global': False, 'args': ['service', 'to_int']},
+        'SCHEDULE_HOSTGROUP_HOST_DOWNTIME': {'global': True, 'args': ['host_group', 'to_int', 'to_int', 'to_bool', 'to_int', 'to_int', 'author', None]},
+        'SCHEDULE_HOSTGROUP_SVC_DOWNTIME': {'global': True, 'args': ['host_group', 'to_int', 'to_int', 'to_bool', 'to_int', 'to_int', 'author', None]},
+        'SCHEDULE_HOST_CHECK': {'global': False, 'args': ['host', 'to_int']},
+        'SCHEDULE_HOST_DOWNTIME': {'global': False, 'args': ['host', 'to_int', 'to_int', 'to_bool', 'to_int', 'to_int', 'author', None]},
+        'SCHEDULE_HOST_SVC_CHECKS': {'global': False, 'args': ['host', 'to_int']},
+        'SCHEDULE_HOST_SVC_DOWNTIME': {'global': False, 'args': ['host', 'to_int', 'to_int', 'to_bool', 'to_int', 'to_int', 'author', None]},
+        'SCHEDULE_SERVICEGROUP_HOST_DOWNTIME': {'global': True, 'args': ['service_group', 'to_int', 'to_int', 'to_bool', 'to_int', 'to_int', 'author', None]},
+        'SCHEDULE_SERVICEGROUP_SVC_DOWNTIME': {'global': True, 'args': ['service_group', 'to_int', 'to_int', 'to_bool', 'to_int', 'to_int', 'author', None]},
+        'SCHEDULE_SVC_CHECK': {'global': False, 'args': ['service', 'to_int']},
+        'SCHEDULE_SVC_DOWNTIME': {'global': False, 'args': ['service', 'to_int', 'to_int', 'to_bool', 'to_int', 'to_int', 'author', None]},
+        'SEND_CUSTOM_HOST_NOTIFICATION': {'global': False, 'args': ['host', 'to_int', 'author', None]},
+        'SEND_CUSTOM_SVC_NOTIFICATION': {'global': False, 'args': ['service', 'to_int', 'author', None]},
+        'SET_HOST_NOTIFICATION_NUMBER': {'global': False, 'args': ['host', 'to_int']},
+        'SET_SVC_NOTIFICATION_NUMBER': {'global': False, 'args': ['service', 'to_int']},
+        'SHUTDOWN_PROGRAM': {'global': True, 'args': []},
+        'START_ACCEPTING_PASSIVE_HOST_CHECKS': {'global': True, 'args': []},
+        'START_ACCEPTING_PASSIVE_SVC_CHECKS': {'global': True, 'args': []},
+        'START_EXECUTING_HOST_CHECKS': {'global': True, 'args': []},
+        'START_EXECUTING_SVC_CHECKS': {'global': True, 'args': []},
+        'START_OBSESSING_OVER_HOST': {'global': False, 'args': ['host']},
+        'START_OBSESSING_OVER_HOST_CHECKS': {'global': True, 'args': []},
+        'START_OBSESSING_OVER_SVC': {'global': False, 'args': ['service']},
+        'START_OBSESSING_OVER_SVC_CHECKS': {'global': True, 'args': []},
+        'STOP_ACCEPTING_PASSIVE_HOST_CHECKS': {'global': True, 'args': []},
+        'STOP_ACCEPTING_PASSIVE_SVC_CHECKS': {'global': True, 'args': []},
+        'STOP_EXECUTING_HOST_CHECKS': {'global': True, 'args': []},
+        'STOP_EXECUTING_SVC_CHECKS': {'global': True, 'args': []},
+        'STOP_OBSESSING_OVER_HOST': {'global': False, 'args': ['host']},
+        'STOP_OBSESSING_OVER_HOST_CHECKS': {'global': True, 'args': []},
+        'STOP_OBSESSING_OVER_SVC': {'global': False, 'args': ['service']},
+        'STOP_OBSESSING_OVER_SVC_CHECKS': {'global': True, 'args': []},
+        'LAUNCH_SVC_EVENT_HANDLER': {'global': False, 'args': ['service']},
+        'LAUNCH_HOST_EVENT_HANDLER': {'global': False, 'args': ['host']},
         # Now internal calls
-        'ADD_SIMPLE_HOST_DEPENDENCY' : {'global' : False, 'args' : ['host', 'host']},
-        'DEL_HOST_DEPENDENCY' : {'global' : False, 'args' : ['host', 'host']},
-        'ADD_SIMPLE_POLLER' : {'global' : True, 'internal' : True, 'args' : [None, None, None, None]},
+        'ADD_SIMPLE_HOST_DEPENDENCY': {'global': False, 'args': ['host', 'host']},
+        'DEL_HOST_DEPENDENCY': {'global': False, 'args': ['host', 'host']},
+        'ADD_SIMPLE_POLLER': {'global': True, 'internal': True, 'args': [None, None, None, None]},
     }
-
 
     def __init__(self, conf, mode):
         self.mode = mode
-        self.conf = conf
-        self.hosts = conf.hosts
-        self.services = conf.services
-        self.contacts = conf.contacts
-        self.hostgroups = conf.hostgroups
-        self.commands = conf.commands
-        self.servicegroups = conf.servicegroups
-        self.contactgroups = conf.contactgroups
-        self.timeperiods = conf.timeperiods
-        self.pipe_path = conf.command_file
+        if conf:
+            self.conf = conf
+            self.hosts = conf.hosts
+            self.services = conf.services
+            self.contacts = conf.contacts
+            self.hostgroups = conf.hostgroups
+            self.commands = conf.commands
+            self.servicegroups = conf.servicegroups
+            self.contactgroups = conf.contactgroups
+            self.timeperiods = conf.timeperiods
+            self.pipe_path = conf.command_file
+        
         self.fifo = None
         self.cmd_fragments = ''
         if self.mode == 'dispatcher':
             self.confs = conf.confs
-
+        # Will change for each command read, so if a command need it,
+        # it can get it
+        self.current_timestamp = 0
 
     def load_scheduler(self, scheduler):
         self.sched = scheduler
 
     def load_arbiter(self, arbiter):
         self.arbiter = arbiter
+
+    def load_receiver(self, receiver):
+        self.receiver = receiver
 
 
     def open(self):
@@ -271,11 +279,11 @@ class ExternalCommandManager:
 
             if not os.path.exists(self.pipe_path):
                 os.umask(0)
-                try :
+                try:
                     os.mkfifo(self.pipe_path, 0660)
                     open(self.pipe_path, 'w+', os.O_NONBLOCK)
-                except OSError , exp:
-                    print "Error : pipe creation failed (",self.pipe_path,')', exp
+                except OSError, exp:
+                    self.error("Pipe creation failed (%s): %s" % (self.pipe_path, str(exp)))
                     return None
         self.fifo = os.open(self.pipe_path, os.O_NONBLOCK)
         return self.fifo
@@ -308,22 +316,27 @@ class ExternalCommandManager:
         try:
             command = excmd.cmd_line
         except AttributeError, exp:
-            print "DBG: resolve_command:: error with command", excmd, exp
+            logger.debug("resolve_command:: error with command %s: %s" % (excmd, exp))
             return
 
         # Strip and get utf8 only strings
         command = command.strip()
 
-        #Only log if we are in the Arbiter
+        # Only log if we are in the Arbiter
         if self.mode == 'dispatcher' and self.conf.log_external_commands:
-            logger.log('EXTERNAL COMMAND: '+command.rstrip())
-        r = self.get_command_and_args(command)
+            logger.info('EXTERNAL COMMAND: ' + command.rstrip())
+        r = self.get_command_and_args(command, excmd)
+
+        # If we are a receiver, bail out here
+        if self.mode == 'receiver':
+            return
+        
         if r is not None:
             is_global = r['global']
             if not is_global:
                 c_name = r['c_name']
                 args = r['args']
-                print "Got commands", c_name, args
+                logger.debug("Got commands %s %s" % (c_name, str(args)))
                 f = getattr(self, c_name)
                 apply(f, args)
             else:
@@ -331,63 +344,88 @@ class ExternalCommandManager:
                 self.dispatch_global_command(command)
 
 
-
     # Ok the command is not for every one, so we search
     # by the hostname which scheduler have the host. Then send
     # the command
-    def search_host_and_dispatch(self, host_name, command):
-        safe_print("Calling search_host_and_dispatch", 'for', host_name)
+    def search_host_and_dispatch(self, host_name, command, extcmd):
+        logger.debug("Calling search_host_and_dispatch for %s" % host_name)
+
+        # If we are a receiver, just look in the receiver 
+        if self.mode == 'receiver':
+            logger.info("Receiver looking a scheduler for the external command %s %s" % (host_name, command))
+            sched = self.receiver.get_sched_from_hname(host_name)
+            logger.debug("Receiver found a scheduler: %s" % (sched))
+            if sched:
+                logger.info("Receiver pushing external command to scheduler %s" % (sched))
+                sched['external_commands'].append(extcmd)
+            return
+        
         host_found = False
         for cfg in self.confs.values():
             if cfg.hosts.find_by_name(host_name) is not None:
-                safe_print("Host", host_name, "found in a configuration")
-                if cfg.is_assigned :
+                logger.debug("Host %s found in a configuration" % host_name)
+                if cfg.is_assigned:
                     host_found = True
                     sched = cfg.assigned_to
-                    safe_print("Sending command to the scheduler", sched.get_name())
+                    logger.debug("Sending command to the scheduler %s" % sched.get_name())
                     #sched.run_external_command(command)
                     sched.external_commands.append(command)
                     break
                 else:
-                    print "Problem: a configuration is found, but is not assigned!"
+                    logger.warning("Problem: a configuration is found, but is not assigned!")
+
         if not host_found:
-                logger.log("Warning:  Passive check result was received for host '%s', but the host could not be found!" % host_name)
-                #print "Sorry but the host", host_name, "was not found"
+            logger.warning("Passive check result was received for host '%s', but the host could not be found!" % host_name)
+            #print "Sorry but the host", host_name, "was not found"
 
 
     # The command is global, so sent it to every schedulers
     def dispatch_global_command(self, command):
-        for sched in self.conf.schedulerlinks:
-            safe_print("Sending a command", command, 'to scheduler', sched)
-            if sched.alive:                
+        for sched in self.conf.schedulers:
+            logger.debug("Sending a command '%s' to scheduler %s" % (command, sched))
+            if sched.alive:
                 #sched.run_external_command(command)
                 sched.external_commands.append(command)
 
 
-    # We need to get the first part, the command name
-    def get_command_and_args(self, command):
+    # We need to get the first part, the command name, and the reference ext command object
+    def get_command_and_args(self, command, extcmd=None):
         #safe_print("Trying to resolve", command)
         command = command.rstrip()
-        elts = command.split(';') # danger!!! passive checkresults with perfdata
+        elts = command.split(';')  # danger!!! passive checkresults with perfdata
         part1 = elts[0]
 
         elts2 = part1.split(' ')
         #print "Elts2:", elts2
         if len(elts2) != 2:
-            safe_print("Malformed command", command)
+            logger.debug("Malformed command '%s'" % command)
             return None
+        ts = elts2[0]
+        # Now we will get the timestamps as [123456]
+        if not ts.startswith('[') or not ts.endswith(']'):
+            logger.debug("Malformed command '%s'" % command)
+            return None
+        # Ok we remove the [ ]
+        ts = ts[1:-1]
+        try:  # is an int or not?
+            self.current_timestamp = int(ts)
+        except ValueError:
+            logger.debug("Malformed command '%s'" % command)
+            return None
+
+        # Now get the command
         c_name = elts2[1]
 
         #safe_print("Get command name", c_name)
         if c_name not in ExternalCommandManager.commands:
-            print "This command is not recognized, sorry"
+            logger.debug("Command '%s' is not recognized, sorry" % c_name)
             return None
 
         # Split again based on the number of args we expect. We cannot split
         # on every ; because this character may appear in the perfdata of
         # passive check results.
         entry = ExternalCommandManager.commands[c_name]
-        
+
         # Look if the command is purely internal or not
         internal = False
         if 'internal' in entry and entry['internal']:
@@ -396,14 +434,13 @@ class ExternalCommandManager:
         numargs = len(entry['args'])
         if numargs and 'service' in entry['args']:
             numargs += 1
-        elts = command.split(';', numargs) 
+        elts = command.split(';', numargs)
 
-        print self.mode, entry['global']
+        logger.debug("mode= %s, global= %s" % (self.mode, str(entry['global'])))
         if self.mode == 'dispatcher' and entry['global']:
             if not internal:
-                print "This command is a global one, we resent it to all schedulers"
-                return {'global' : True, 'cmd' : command}
-        
+                logger.debug("Command '%s' is a global one, we resent it to all schedulers" % c_name)
+                return {'global': True, 'cmd': command}
 
         #print "Is global?", c_name, entry['global']
         #print "Mode:", self.mode
@@ -415,20 +452,20 @@ class ExternalCommandManager:
         tmp_host = ''
         try:
             for elt in elts[1:]:
-                #safe_print("Searching for a new arg:", elt, i)
+                logger.debug("Searching for a new arg: %s (%d)" % (elt, i))
                 val = elt.strip()
-                if val[-1] == '\n':
+                if val.endswith('\n'):
                     val = val[:-1]
 
-                #safe_print("For command arg", val)
+                logger.debug("For command arg: %s" % val)
 
                 if not in_service:
                     type_searched = entry['args'][i-1]
                     #safe_print("Search for a arg", type_searched)
 
                     if type_searched == 'host':
-                        if self.mode == 'dispatcher':
-                            self.search_host_and_dispatch(val, command)
+                        if self.mode == 'dispatcher' or self.mode == 'receiver':
+                            self.search_host_and_dispatch(val, command, extcmd)
                             return None
                         h = self.hosts.find_by_name(val)
                         if h is not None:
@@ -458,7 +495,7 @@ class ExternalCommandManager:
                         if c is not None:
                             # the find will be redone by
                             # the commandCall creation, but != None
-                            # is usefull so a bad command will be catch
+                            # is useful so a bad command will be caught
                             args.append(val)
 
                     elif type_searched == 'host_group':
@@ -485,7 +522,7 @@ class ExternalCommandManager:
                         if tmp_host[-1] == '\n':
                             tmp_host = tmp_host[:-1]
                         if self.mode == 'dispatcher':
-                            self.search_host_and_dispatch(tmp_host, command)
+                            self.search_host_and_dispatch(tmp_host, command, extcmd)
                             return None
 
                     i += 1
@@ -494,34 +531,37 @@ class ExternalCommandManager:
                     srv_name = elt
                     if srv_name[-1] == '\n':
                         srv_name = srv_name[:-1]
+                    # If we are in a receiver, bailout now.
+                    if self.mode == 'receiver':
+                        self.search_host_and_dispatch(tmp_host, command, extcmd)
+                        return None
+
                     #safe_print("Got service full", tmp_host, srv_name)
                     s = self.services.find_srv_by_name_and_hostname(tmp_host, srv_name)
                     if s is not None:
                         args.append(s)
-                    else: #error, must be logged
-                        logger.log("Warning: a command was received for service '%s' on host '%s', but the service could not be found!" % (srv_name, tmp_host))
+                    else:  # error, must be logged
+                        logger.warning("A command was received for service '%s' on host '%s', but the service could not be found!" % (srv_name, tmp_host))
 
         except IndexError:
-            safe_print("Sorry, the arguments are not corrects")
+            logger.debug("Sorry, the arguments are not corrects")
             return None
-        safe_print('Finally got ARGS:', args)
+        #safe_print('Finally got ARGS:', args)
         if len(args) == len(entry['args']):
             #safe_print("OK, we can call the command", c_name, "with", args)
-            return {'global' : False, 'c_name' : c_name, 'args' : args}
+            return {'global': False, 'c_name': c_name, 'args': args}
             #f = getattr(self, c_name)
             #apply(f, args)
         else:
-            safe_print("Sorry, the arguments are not corrects", args)
+            logger.debug("Sorry, the arguments are not corrects (%s)" % str(args))
             return None
 
-
-
     # CHANGE_CONTACT_MODSATTR;<contact_name>;<value>
-    def CHANGE_CONTACT_MODSATTR(self, contact, value): # TODO
+    def CHANGE_CONTACT_MODSATTR(self, contact, value):  # TODO
         contact.modified_service_attributes = long(value)
 
     # CHANGE_CONTACT_MODHATTR;<contact_name>;<value>
-    def CHANGE_CONTACT_MODHATTR(self, contact, value): # TODO
+    def CHANGE_CONTACT_MODHATTR(self, contact, value):  # TODO
         contact.modified_host_attributes = long(value)
 
     # CHANGE_CONTACT_MODATTR;<contact_name>;<value>
@@ -534,33 +574,33 @@ class ExternalCommandManager:
         contact.host_notification_period = notification_timeperiod
         self.sched.get_and_register_status_brok(contact)
 
-    #ADD_SVC_COMMENT;<host_name>;<service_description>;<persistent>;<author>;<comment>
+    # ADD_SVC_COMMENT;<host_name>;<service_description>;<persistent>;<author>;<comment>
     def ADD_SVC_COMMENT(self, service, persistent, author, comment):
         c = Comment(service, persistent, author, comment, 2, 1, 1, False, 0)
         service.add_comment(c)
         self.sched.add(c)
 
-    #ADD_HOST_COMMENT;<host_name>;<persistent>;<author>;<comment>
+    # ADD_HOST_COMMENT;<host_name>;<persistent>;<author>;<comment>
     def ADD_HOST_COMMENT(self, host, persistent, author, comment):
         c = Comment(host, persistent, author, comment, 1, 1, 1, False, 0)
         host.add_comment(c)
         self.sched.add(c)
 
-    #ACKNOWLEDGE_SVC_PROBLEM;<host_name>;<service_description>;<sticky>;<notify>;<persistent>;<author>;<comment>
+    # ACKNOWLEDGE_SVC_PROBLEM;<host_name>;<service_description>;<sticky>;<notify>;<persistent>;<author>;<comment>
     def ACKNOWLEDGE_SVC_PROBLEM(self, service, sticky, notify, persistent, author, comment):
         service.acknowledge_problem(sticky, notify, persistent, author, comment)
 
-    #ACKNOWLEDGE_HOST_PROBLEM;<host_name>;<sticky>;<notify>;<persistent>;<author>;<comment>
-    #TODO : add a better ACK management
+    # ACKNOWLEDGE_HOST_PROBLEM;<host_name>;<sticky>;<notify>;<persistent>;<author>;<comment>
+    # TODO: add a better ACK management
     def ACKNOWLEDGE_HOST_PROBLEM(self, host, sticky, notify, persistent, author, comment):
         host.acknowledge_problem(sticky, notify, persistent, author, comment)
 
-    #ACKNOWLEDGE_SVC_PROBLEM_EXPIRE;<host_name>;<service_description>;<sticky>;<notify>;<persistent>;<end_time>;<author>;<comment>
+    # ACKNOWLEDGE_SVC_PROBLEM_EXPIRE;<host_name>;<service_description>;<sticky>;<notify>;<persistent>;<end_time>;<author>;<comment>
     def ACKNOWLEDGE_SVC_PROBLEM_EXPIRE(self, service, sticky, notify, persistent, end_time, author, comment):
         service.acknowledge_problem(sticky, notify, persistent, author, comment, end_time=end_time)
 
-    #ACKNOWLEDGE_HOST_PROBLEM_EXPIRE;<host_name>;<sticky>;<notify>;<persistent>;<end_time>;<author>;<comment>
-    #TODO : add a better ACK management
+    # ACKNOWLEDGE_HOST_PROBLEM_EXPIRE;<host_name>;<sticky>;<notify>;<persistent>;<end_time>;<author>;<comment>
+    # TODO: add a better ACK management
     def ACKNOWLEDGE_HOST_PROBLEM_EXPIRE(self, host, sticky, notify, persistent, end_time, author, comment):
         host.acknowledge_problem(sticky, notify, persistent, author, comment, end_time=end_time)
 
@@ -602,10 +642,10 @@ class ExternalCommandManager:
         self.sched.get_and_register_status_brok(host)
 
     # CHANGE_HOST_CHECK_TIMEPERIOD;<host_name>;<timeperiod>
-    def CHANGE_HOST_CHECK_TIMEPERIOD(self, host, timeperiod): # TODO is timeperiod a string or a Timeperiod object?
+    def CHANGE_HOST_CHECK_TIMEPERIOD(self, host, timeperiod):  # TODO is timeperiod a string or a Timeperiod object?
         host.modified_attributes |= MODATTR_CHECK_TIMEPERIOD
         host.check_period = timeperiod
-        self.sched.get_and_register_status_brok(service)
+        self.sched.get_and_register_status_brok(host)
 
     # CHANGE_HOST_EVENT_HANDLER;<host_name>;<event_handler_command>
     def CHANGE_HOST_EVENT_HANDLER(self, host, event_handler_command):
@@ -645,7 +685,7 @@ class ExternalCommandManager:
         self.sched.get_and_register_status_brok(host)
 
     # CHANGE_NORMAL_SVC_CHECK_INTERVAL;<host_name>;<service_description>;<check_interval>
-    def CHANGE_NORMAL_HOST_CHECK_INTERVAL(self, service, check_interval):
+    def CHANGE_NORMAL_SVC_CHECK_INTERVAL(self, service, check_interval):
         service.modified_attributes |= MODATTR_NORMAL_CHECK_INTERVAL
         old_interval = service.check_interval
         service.check_interval = check_interval
@@ -730,7 +770,6 @@ class ExternalCommandManager:
         if downtime_id in self.sched.contact_downtimes:
             self.sched.contact_downtimes[downtime_id].cancel()
 
-
     # DEL_HOST_COMMENT;<comment_id>
     def DEL_HOST_COMMENT(self, comment_id):
         if comment_id in self.sched.comments:
@@ -775,9 +814,9 @@ class ExternalCommandManager:
     # DISABLE_CONTACT_SVC_NOTIFICATIONS;<contact_name>
     def DISABLE_CONTACT_SVC_NOTIFICATIONS(self, contact):
         if contact.service_notifications_enabled:
-             contact.modified_attributes |= MODATTR_NOTIFICATIONS_ENABLED
-             contact.service_notifications_enabled = False
-             self.sched.get_and_register_status_brok(contact)
+            contact.modified_attributes |= MODATTR_NOTIFICATIONS_ENABLED
+            contact.service_notifications_enabled = False
+            self.sched.get_and_register_status_brok(contact)
 
     # DISABLE_EVENT_HANDLERS
     def DISABLE_EVENT_HANDLERS(self):
@@ -802,6 +841,17 @@ class ExternalCommandManager:
             self.conf.enable_flap_detection = False
             self.conf.explode_global_conf()
             self.sched.get_and_register_update_program_status_brok()
+            # Is need, disable flap state for hosts and services
+            for service in self.conf.services:
+                if service.is_flapping:
+                    service.is_flapping = False
+                    service.flapping_changes = []
+                    self.sched.get_and_register_status_brok(service)
+            for host in self.conf.hosts:
+                if host.is_flapping:
+                    host.is_flapping = False
+                    host.flapping_changes = []
+                    self.sched.get_and_register_status_brok(host)
 
     # DISABLE_HOSTGROUP_HOST_CHECKS;<hostgroup_name>
     def DISABLE_HOSTGROUP_HOST_CHECKS(self, hostgroup):
@@ -859,14 +909,19 @@ class ExternalCommandManager:
         if host.flap_detection_enabled:
             host.modified_attributes |= MODATTR_FLAP_DETECTION_ENABLED
             host.flap_detection_enabled = False
+            # Maybe the host was flapping, if so, stop flapping
+            if host.is_flapping:
+                host.is_flapping = False
+                host.flapping_changes = []
             self.sched.get_and_register_status_brok(host)
 
     # DISABLE_HOST_FRESHNESS_CHECKS
-    def DISABLE_HOST_FRESHNESS_CHECKS(self, host):
-        if host.check_freshness:
-            host.modified_attributes |= MODATTR_FRESHNESS_CHECKS_ENABLED
-            host.check_freshness = False
-            self.sched.get_and_register_status_brok(host)
+    def DISABLE_HOST_FRESHNESS_CHECKS(self):
+        if self.conf.check_host_freshness:
+            self.conf.modified_attributes |= MODATTR_FRESHNESS_CHECKS_ENABLED
+            self.conf.check_host_freshness = False
+            self.conf.explode_global_conf()
+            self.sched.get_and_register_update_program_status_brok()
 
     # DISABLE_HOST_NOTIFICATIONS;<host_name>
     def DISABLE_HOST_NOTIFICATIONS(self, host):
@@ -951,6 +1006,10 @@ class ExternalCommandManager:
         if service.flap_detection_enabled:
             service.modified_attributes |= MODATTR_FLAP_DETECTION_ENABLED
             service.flap_detection_enabled = False
+            # Maybe the service was flapping, if so, stop flapping
+            if service.is_flapping:
+                service.is_flapping = False
+                service.flapping_changes = []
             self.sched.get_and_register_status_brok(service)
 
     # DISABLE_SERVICE_FRESHNESS_CHECKS
@@ -977,10 +1036,7 @@ class ExternalCommandManager:
 
     # DISABLE_SVC_FLAP_DETECTION;<host_name>;<service_description>
     def DISABLE_SVC_FLAP_DETECTION(self, service):
-        if service.flap_detection_enabled:
-            service.modified_attributes |= MODATTR_FLAP_DETECTION_ENABLED
-            service.flap_detection_enabled = False
-            self.sched.get_and_register_status_brok(service)
+        self.DISABLE_SERVICE_FLAP_DETECTION(service)
 
     # DISABLE_SVC_NOTIFICATIONS;<host_name>;<service_description>
     def DISABLE_SVC_NOTIFICATIONS(self, service):
@@ -1101,10 +1157,11 @@ class ExternalCommandManager:
 
     # ENABLE_HOST_FRESHNESS_CHECKS
     def ENABLE_HOST_FRESHNESS_CHECKS(self):
-        if not host.check_freshness:
-            host.modified_attributes |= MODATTR_FRESHNESS_CHECKS_ENABLED
-            host.check_freshness = True
-            self.sched.get_and_register_status_brok(host)
+        if not self.conf.check_host_freshness:
+            self.conf.modified_attributes |= MODATTR_FRESHNESS_CHECKS_ENABLED
+            self.conf.check_host_freshness = True
+            self.conf.explode_global_conf()
+            self.sched.get_and_register_update_program_status_brok()
 
     # ENABLE_HOST_NOTIFICATIONS;<host_name>
     def ENABLE_HOST_NOTIFICATIONS(self, host):
@@ -1224,52 +1281,84 @@ class ExternalCommandManager:
     def PROCESS_FILE(self, file_name, delete):
         pass
 
-    # TODO : say that check is PASSIVE
+    # TODO: say that check is PASSIVE
     # PROCESS_HOST_CHECK_RESULT;<host_name>;<status_code>;<plugin_output>
     def PROCESS_HOST_CHECK_RESULT(self, host, status_code, plugin_output):
         #raise a PASSIVE check only if needed
         if self.conf.log_passive_checks:
-            logger.log('PASSIVE HOST CHECK: %s;%d;%s' % (host.get_name(), status_code, plugin_output))
+            console_logger.info('PASSIVE HOST CHECK: %s;%d;%s'
+                                % (host.get_name().decode('utf8', 'ignore'), status_code, plugin_output.decode('utf8', 'ignore')))
         now = time.time()
         cls = host.__class__
         # If globally disable OR locally, do not launch
         if cls.accept_passive_checks and host.passive_checks_enabled:
+            # Maybe the check is just too old, if so, bail out!
+            if self.current_timestamp < host.last_chk:
+                return
+
             i = host.launch_check(now, force=True)
-            for chk in host.actions:
+            c = None
+            for chk in host.checks_in_progress:
                 if chk.id == i:
                     c = chk
+            # Should not be possible to not find the check, but if so, don't crash
+            if not c:
+                console_logger.error('Passive host check failed. Cannot find the check id %s' % i)
+                return
             # Now we 'transform the check into a result'
             # So exit_status, output and status is eaten by the host
             c.exit_status = status_code
             c.get_outputs(plugin_output, host.max_plugins_output_length)
             c.status = 'waitconsume'
-            c.check_time = now
+            c.check_time = self.current_timestamp  # we are using the external command timestamps
+            # Set the corresponding host's check_type to passive=1
+            c.set_type_passive()
             self.sched.nb_check_received += 1
             # Ok now this result will be read by scheduler the next loop
 
+    # PROCESS_HOST_OUTPUT;<host_name>;<plugin_output>
+    def PROCESS_HOST_OUTPUT(self, host, plugin_output):
+        self.PROCESS_HOST_CHECK_RESULT(host, host.state_id, plugin_output)
 
     # PROCESS_SERVICE_CHECK_RESULT;<host_name>;<service_description>;<return_code>;<plugin_output>
     def PROCESS_SERVICE_CHECK_RESULT(self, service, return_code, plugin_output):
         # raise a PASSIVE check only if needed
         if self.conf.log_passive_checks:
-            logger.log('PASSIVE SERVICE CHECK: %s;%s;%d;%s' % (service.host.get_name(), service.get_name(), return_code, plugin_output))
+            console_logger.info('PASSIVE SERVICE CHECK: %s;%s;%d;%s'
+                                % (service.host.get_name().decode('utf8', 'ignore'), service.get_name().decode('utf8', 'ignore'),
+                                   return_code, plugin_output.decode('utf8', 'ignore')))
         now = time.time()
         cls = service.__class__
         # If globally disable OR locally, do not launch
         if cls.accept_passive_checks and service.passive_checks_enabled:
+            # Maybe the check is just too old, if so, bail out!
+            if self.current_timestamp < service.last_chk:
+                return
+
+            c = None
             i = service.launch_check(now, force=True)
-            for chk in service.actions:
+            for chk in service.checks_in_progress:
                 if chk.id == i:
                     c = chk
+            # Should not be possible to not find the check, but if so, don't crash
+            if not c:
+                console_logger.error('Passive service check failed. Cannot find the check id %s' % i)
+                return                
             # Now we 'transform the check into a result'
             # So exit_status, output and status is eaten by the service
             c.exit_status = return_code
             c.get_outputs(plugin_output, service.max_plugins_output_length)
             c.status = 'waitconsume'
-            c.check_time = now
+            c.check_time = self.current_timestamp  # we are using the external command timestamps
+            # Set the corresponding service's check_type to passive=1
+            c.set_type_passive()
             self.sched.nb_check_received += 1
-            #Ok now this result will be reap by scheduler the next loop
+            # Ok now this result will be reap by scheduler the next loop
 
+
+    # PROCESS_SERVICE_CHECK_RESULT;<host_name>;<service_description>;<plugin_output>
+    def PROCESS_SERVICE_OUTPUT(self, service, plugin_output):
+        self.PROCESS_SERVICE_CHECK_RESULT(service, service.state_id, plugin_output)
 
     # READ_STATE_INFORMATION
     def READ_STATE_INFORMATION(self):
@@ -1370,7 +1459,7 @@ class ExternalCommandManager:
         service.schedule(force=False, force_time=check_time)
         self.sched.get_and_register_status_brok(service)
 
-    # SCHEDULE_SVC_DOWNTIME;<host_name>;<service_desription><start_time>;<end_time>;<fixed>;<trigger_id>;<duration>;<author>;<comment>
+    # SCHEDULE_SVC_DOWNTIME;<host_name>;<service_description><start_time>;<end_time>;<fixed>;<trigger_id>;<duration>;<author>;<comment>
     def SCHEDULE_SVC_DOWNTIME(self, service, start_time, end_time, fixed, trigger_id, duration, author, comment):
         dt = Downtime(service, start_time, end_time, fixed, trigger_id, duration, author, comment)
         service.add_downtime(dt)
@@ -1523,22 +1612,19 @@ class ExternalCommandManager:
             self.conf.explode_global_conf()
             self.sched.get_and_register_update_program_status_brok()
 
-
     ### Now the shinken specific ones
     # LAUNCH_SVC_EVENT_HANDLER;<host_name>;<service_description>
     def LAUNCH_SVC_EVENT_HANDLER(self, service):
         service.get_event_handlers(externalcmd=True)
 
-
     # LAUNCH_SVC_EVENT_HANDLER;<host_name>;<service_description>
     def LAUNCH_HOST_EVENT_HANDLER(self, host):
         host.get_event_handlers(externalcmd=True)
 
-
     # ADD_SIMPLE_HOST_DEPENDENCY;<host_name>;<host_name>
     def ADD_SIMPLE_HOST_DEPENDENCY(self, son, father):
         if not son.is_linked_with_host(father):
-            print "Doing simple link between", son.get_name(), 'and', father.get_name()
+            logger.debug("Doing simple link between %s and %s" % (son.get_name(), father.get_name()))
             # Flag them so the modules will know that a topology change
             # happened
             son.topology_change = True
@@ -1548,12 +1634,11 @@ class ExternalCommandManager:
             son.add_host_act_dependency(father, ['w', 'u', 'd'], None, True)
             self.sched.get_and_register_status_brok(son)
             self.sched.get_and_register_status_brok(father)
-        
 
     # ADD_SIMPLE_HOST_DEPENDENCY;<host_name>;<host_name>
     def DEL_HOST_DEPENDENCY(self, son, father):
         if son.is_linked_with_host(father):
-            print "removing simple link between", son.get_name(), 'and', father.get_name()
+            logger.debug("Removing simple link between %s and %s" % (son.get_name(), father.get_name()))
             # Flag them so the modules will know that a topology change
             # happened
             son.topology_change = True
@@ -1563,25 +1648,25 @@ class ExternalCommandManager:
             self.sched.get_and_register_status_brok(son)
             self.sched.get_and_register_status_brok(father)
 
-
     # ADD_SIMPLE_POLLER;realm_name;poller_name;address;port
     def ADD_SIMPLE_POLLER(self, realm_name, poller_name, address, port):
-        print "I need to add the poller", realm_name, poller_name, address, port
+        logger.debug("I need to add the poller (%s, %s, %s, %s)" % (realm_name, poller_name, address, port))
 
         # First we look for the realm
         r = self.conf.realms.find_by_name(realm_name)
         if r is None:
-            print "Sorry, the realm %s is unknown" % realm_name
+            logger.debug("Sorry, the realm %s is unknown" % realm_name)
             return
-        print "We found the realm", r
-        # TODO : backport this in the config class?
+
+        logger.debug("We found the realm: %s" % str(r))
+        # TODO: backport this in the config class?
         # We create the PollerLink object
-        t = {'poller_name' : poller_name, 'address' : address, 'port' : port}
+        t = {'poller_name': poller_name, 'address': address, 'port': port}
         p = PollerLink(t)
         p.fill_default()
         p.pythonize()
         p.prepare_for_conf()
-        parameters = {'max_plugins_output_length' : self.conf.max_plugins_output_length}
+        parameters = {'max_plugins_output_length': self.conf.max_plugins_output_length}
         p.add_global_conf_parameters(parameters)
         self.arbiter.conf.pollers[p.id] = p
         self.arbiter.dispatcher.elements.append(p)
@@ -1589,8 +1674,8 @@ class ExternalCommandManager:
         r.pollers.append(p)
         r.count_pollers()
         r.fill_potential_pollers()
-        print "Poller %s added" % poller_name
-        print "Potential", r.get_potential_satellites_by_type('poller')
+        logger.debug("Poller %s added" % poller_name)
+        logger.debug("Potential %s" % str(r.get_potential_satellites_by_type('poller')))
 
 
 if __name__ == '__main__':
@@ -1604,6 +1689,6 @@ if __name__ == '__main__':
         os.umask(0)
         os.mkfifo(FIFO_PATH, 0660)
         my_fifo = open(FIFO_PATH, 'w+')
-        print "my_fifo:", my_fifo
+        logger.debug("my_fifo: %s" % (my_fifo))
 
-    print open(FIFO_PATH, 'r').readline()
+    logger.debug(open(FIFO_PATH, 'r').readline())

@@ -2,7 +2,7 @@
 
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2009-2011 :
+# Copyright (C) 2009-2012:
 #     Gabes Jean, naparuba@gmail.com
 #     Gerhard Lausser, Gerhard.Lausser@consol.de
 #     Gregory Starck, g.starck@gmail.com
@@ -23,25 +23,29 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Shinken.  If not, see <http://www.gnu.org/licenses/>.
 
-
 from Queue import Empty
 
-# In android, we sould use threads, not process
+# In android, we should use threads, not process
 is_android = True
 try:
-   import android
+    import android
 except ImportError:
-   is_android = False
+    is_android = False
 
 if not is_android:
-   from multiprocessing import Process, Queue
+    from multiprocessing import Process, Queue
 else:
-   from Queue import Queue
-   from threading import Thread as Process
+    from Queue import Queue
+    from threading import Thread as Process
 
 import time
 import sys
 import signal
+import traceback
+import cStringIO
+
+
+from log import logger
 
 
 class Worker:
@@ -53,38 +57,39 @@ class Worker:
 
     """
 
-    id = 0#None
+    id = 0  # None
     _process = None
     _mortal = None
     _idletime = None
     _timeout = None
     _c = None
-    def __init__(self, id, s, returns_queue, processes_by_worker, mortal=True, timeout=300, max_plugins_output_length=8192, target=None):
+
+    def __init__(self, id, s, returns_queue, processes_by_worker, mortal=True, timeout=300, max_plugins_output_length=8192, target=None, loaded_into='unknown'):
         self.id = self.__class__.id
         self.__class__.id += 1
 
         self._mortal = mortal
         self._idletime = 0
         self._timeout = timeout
+        self.s = None
         self.processes_by_worker = processes_by_worker
-        self.input_queue = s
-        self._c = Queue() # Private Control queue for the Worker
+        self._c = Queue()  # Private Control queue for the Worker
         # By default, take our own code
         if target is None:
-            target=self.work
+            target = self.work
         self._process = Process(target=target, args=(s, returns_queue, self._c))
         self.returns_queue = returns_queue
         self.max_plugins_output_length = max_plugins_output_length
         self.i_am_dying = False
-
+        # Keep a trace where the worker is launch from (poller or reactionner?)
+        self.loaded_into = loaded_into
+        
 
     def is_mortal(self):
         return self._mortal
 
-
     def start(self):
         self._process.start()
-
 
     # Kill the background process
     # AND close correctly the queues (input and output)
@@ -96,41 +101,33 @@ class Worker:
         # Is we are with a Manager() way
         # there should be not such functions
         if hasattr(self._c, 'close'):
-           self._c.close()
-           self._c.join_thread()
-        if hasattr(self.input_queue, 'close'):
-           self.input_queue.close()
-           self.input_queue.join_thread()
-
+            self._c.close()
+            self._c.join_thread()
+        if hasattr(self.s, 'close'):
+            self.s.close()
+            self.s.join_thread()
 
     def join(self, timeout=None):
         self._process.join(timeout)
 
-
     def is_alive(self):
         return self._process.is_alive()
-
 
     def is_killable(self):
         return self._mortal and self._idletime > self._timeout
 
-
     def add_idletime(self, time):
         self._idletime = self._idletime + time
-
 
     def reset_idle(self):
         self._idletime = 0
 
-
     def send_message(self, msg):
         self._c.put(msg)
-
 
     # A zombie is immortal, so kill not be kill anymore
     def set_zombie(self):
         self._mortal = False
-
 
     # Get new checks if less than nb_checks_max
     # If no new checks got and no check in queue,
@@ -144,7 +141,7 @@ class Worker:
                 if msg is not None:
                     self.checks.append(msg.get_data())
                 #print "I", self.id, "I've got a message!"
-        except Empty , exp:
+        except Empty, exp:
             if len(self.checks) == 0:
                 self._idletime = self._idletime + 1
                 time.sleep(1)
@@ -153,21 +150,19 @@ class Worker:
         except IOError, exp:
             return
 
-
     # Launch checks that are in status
     # REF: doc/shinken-action-queues.png (4)
     def launch_new_checks(self):
-        #queue
+        # queue
         for chk in self.checks:
             if chk.status == 'queue':
                 self._idletime = 0
                 r = chk.execute()
                 # Maybe we got a true big problem in the
-                # action lanching
+                # action launching
                 if r == 'toomanyopenfiles':
                     # We should die as soon as we return all checks
                     self.i_am_dying = True
-
 
     # Check the status of checks
     # if done, return message finished :)
@@ -186,11 +181,11 @@ class Worker:
                 # We answer to the master
                 #msg = Message(id=self.id, type='Result', data=action)
                 try:
-                   self.returns_queue.put(action)
-
-                except IOError , exp:
-                    print "[%d]Exiting: %s" % (self.id, exp)
+                    self.returns_queue.put(action)
+                except IOError, exp:
+                    logger.error("[%d] Exiting: %s" % (self.id, exp))
                     sys.exit(2)
+
         # Little sleep
         self.wait_time = wait_time
 
@@ -199,7 +194,6 @@ class Worker:
 
         # Little sleep
         time.sleep(wait_time)
-
 
     # Check if our system time change. If so, change our
     def check_for_system_time_change(self):
@@ -216,16 +210,34 @@ class Worker:
             return 0
 
 
+    # Wrapper function for work in order to catch the exception
+    # to see the real work, look at do_work
+    def work(self, s, returns_queue, c):
+        try:
+            self.do_work(s, returns_queue, c)
+        # Catch any exception, try to print it and exit anyway
+        except Exception, exp:
+            output = cStringIO.StringIO()
+            traceback.print_exc(file=output)
+            logger.error("Worker '%d' exit with an unmanaged exception : %s" % (self.id, output.getvalue()))
+            output.close()
+            # Ok I die now
+            raise
+
+
     # id = id of the worker
     # s = Global Queue Master->Slave
     # m = Queue Slave->Master
     # return_queue = queue managed by manager
     # c = Control Queue for the worker
-    def work(self, s, returns_queue, c):
+    def do_work(self, s, returns_queue, c):
         ## restore default signal handler for the workers:
         # but on android, we are a thread, so don't do it
         if not is_android:
-           signal.signal(signal.SIGTERM, signal.SIG_DFL)
+            signal.signal(signal.SIGTERM, signal.SIG_DFL)
+
+        self.set_proctitle()
+
         timeout = 1.0
         self.checks = []
         self.returns_queue = returns_queue
@@ -250,21 +262,21 @@ class Worker:
             try:
                 cmsg = c.get(block=False)
                 if cmsg.get_type() == 'Die':
-                    print "Info : [%d]Dad say we are dying..." % self.id
+                    logger.debug("[%d] Dad say we are dying..." % self.id)
                     break
-            except :
+            except:
                 pass
 
             if self._mortal == True and self._idletime > 2 * self._timeout:
-                print "Warning : [%d]Timeout, Harakiri" % self.id
+                logger.warning("[%d] Timeout, Harakiri" % self.id)
                 # The master must be dead and we are lonely, we must die
                 break
 
-            # Look if we are dying, and if we finishe all current checks
+            # Look if we are dying, and if we finish all current checks
             # if so, we really die, our master poller will launch a new
-            # worker because we were too weack to manage our job :(
+            # worker because we were too weak to manage our job :(
             if len(self.checks) == 0 and self.i_am_dying:
-                print "Warning : [%d] I DIE because I cannot do my job as I should (too many open files?)... forgot me please." % self.id
+                logger.warning("[%d] I DIE because I cannot do my job as I should (too many open files?)... forgot me please." % self.id)
                 break
 
             # Manage a possible time change (our avant will be change with the diff)
@@ -274,3 +286,11 @@ class Worker:
             timeout -= time.time() - begin
             if timeout < 0:
                 timeout = 1.0
+
+    def set_proctitle(self):
+        try:
+            from setproctitle import setproctitle
+            setproctitle("shinken-%s worker" % self.loaded_into)
+        except:
+            pass
+

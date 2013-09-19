@@ -1,4 +1,4 @@
-# Copyright (C) 2009-2011 :
+# Copyright (C) 2009-2011:
 #    Gabes Jean, naparuba@gmail.com
 #    Gerhard Lausser, Gerhard.Lausser@consol.de
 #    Gregory Starck, g.starck@gmail.com
@@ -41,7 +41,7 @@ LOG=$LOG$
 # Please update $ETC$ instead of this one.
 SHINKENCFG="$ETC/nagios.cfg"
 
-# We got 2 configs because tools like Centreon don't generate all 
+# We got 2 configs because tools like Centreon don't generate all
 # configuration (only the shinken.cfg part)
 SHINKENSPECIFICCFG="$ETC/shinken-specific.cfg"
 
@@ -124,9 +124,25 @@ RECEIVERPID="$RUN/receiverd.pid"
 RECEIVERDEBUGFILE="$LOG/receiver-debug.log"
 
 
+
+### SKONF PART ###
+# location of the skonf daemon configuration
+SKONFCFG="$ETC/skonf.cfg"
+
+# The command to launch
+SKONFDAEMON=$BIN/shinken-skonf
+
+# The SKONF PID
+SKONFPID="$RUN/skonfd.pid"
+
+SKONFDEBUGFILE="$LOG/skonf-debug.log"
+
+
+
 # nicelevel to run shinken daemon with
 NICENESS=5
 
 # user/group for the var/run rights
 SHINKENUSER=shinken
 SHINKENGROUP=shinken
+HOME=`grep ^$SHINKENUSER: /etc/passwd | cut -d: -f 6`

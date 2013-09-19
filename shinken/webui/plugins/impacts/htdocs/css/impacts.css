@@ -1,11 +1,34 @@
-
+/**
+* Copyright (C) 2009-2012:
+*    Gabes Jean, naparuba@gmail.com
+*    Gerhard Lausser, Gerhard.Lausser@consol.de
+*    Gregory Starck, g.starck@gmail.com
+*    Hartmut Goebel, h.goebel@goebel-consult.de
+*    Andreas Karfusehr, andreas@karfusehr.de
+*
+* This file is part of Shinken.
+*
+* Shinken is free software: you can redistribute it and/or modify
+* it under the terms of the GNU Affero General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* Shinken is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU Affero General Public License for more details.
+*
+* You should have received a copy of the GNU Affero General Public License
+* along with Shinken.  If not, see <http://www.gnu.org/licenses/>.
+*
+**/
 
 /* The panel that will contain all problem panels*/
 .problems-panels {
     position: fixed;
     left: 450px;
     right: 0;
-    top: 85px;
+    top: 65px;
     /*width: 100%;*/
 	margin-left: 0;
 }
@@ -14,24 +37,26 @@
 
 /* problem impact panel */
 .problems-panel {
-    height: 600px; 
+    min-height: 600px;
     width: 550px;
-    background: white;
+    background: #FAFAFA;
     position: relative;
-    /* by default it's hidden*/
-    left: -450px;
-    top: 5px;
+    left: -450px; /* by default it's hidden*/
+    /*top: 5px;*/
     z-index: 3;
     /*max-width: 575px;
     min-width: 600px;*/
-    border-top-right-radius: 6px;
+/*    border-top-right-radius: 6px;
     border-bottom-right-radius: 6px;
-    box-shadow: 0 3px 3px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 3px 3px rgba(0, 0, 0, 0.4);*/
+    border-top: 1px solid #EBEBEB;
+    border-right: 1px solid #EBEBEB;
+    border-left: 1px solid #EBEBEB;
     display: none;
     overflow: hidden;
     opacity : 0;
     padding: 10px 20px;
-    width: 75%;
+    width: 94%;
 }
 
 
@@ -41,7 +66,9 @@
     float: left;
     display: inline-block;
     border-radius: 6px;
-    box-shadow: 0 2px 2px rgba(0, 0, 0, .3);
+/*    box-shadow: 0 2px 2px rgba(0, 0, 0, .3);*/
+    border-left: solid 1px #EBEBEB;
+    border-right: solid 1px #EBEBEB;
     position: relative;
     background: white;
     height: 100%;
@@ -59,7 +86,7 @@
     clear: both;
     display: block;
     outline: none;
-    padding: 10px 20px;
+    padding-left: 5px;
     font-size: 15px;
     position: relative;
     zoom: 1;
@@ -80,9 +107,13 @@
     background-image: url("images/alpha_black.png");
 }
 
-.impact-active{
-    background-image: url("/static/images/right-black-arrow.png");
-    color: #FFF!important;
+.impact-active, .impact:hover {
+    background-color: #0088CC;
+    color: #FFFFFF !important;
+}
+
+.impact:hover span {
+    color: #FFFFFF !important;
 }
 
 /*p.impact-active {
@@ -91,16 +122,16 @@
         }
 */
 
-.impact-active .impact-state-text {
-    color: #FFF;
+.impact-active, .impact-active span, .impact-state-text {
+    color: #FFFFFF;
 }
 
 .impact-active .impact-duration{
-    color: #FFF;
+    color: #FFFFFF;
 }
 
 .impact-active .impact-name{
-    color: #FFF;
+    color: #FFFFFF;
 }
 
 /* One problem block*/
@@ -133,9 +164,8 @@
 /* The impact icon (so the service one or the host one) */
 .impact-icon {
     float: left;
-    height: 64px;
     overflow: hidden;
-    width: 64px;
+
     margin-top: 3px;
 }
 
@@ -167,7 +197,7 @@
     width: 20px;
     height: 20px;
     position: absolute;
-    margin-left: 50px;
+    margin-left: 45px;
     z-index: 1;
     outline: none;
     left: 20px;
@@ -179,7 +209,7 @@
     width: 20px;
     height: 20px;
     position: absolute;
-    margin-left: 62px;
+    margin-left: 59px;
     z-index: 1;
     outline: none;
     left: 20px;
@@ -189,7 +219,7 @@
     width: 20px;
     height: 20px;
     position: absolute;
-    margin-left: 74px;
+    margin-left: 71px;
     z-index: 1;
     outline: none;
     left: 20px;
@@ -235,7 +265,7 @@
 .impact-rows {
     position: relative;
     margin-top: 20px;
-    
+
     z-index: 1;
     outline: none;
 /*    left: 20px;*/
@@ -287,19 +317,13 @@
 
 /* Global container */
 #impact-container {
-/*    width: 92%;
-    margin-left: 4%;
-    margin-right: 4%;*/
-    /*min-width: 920px;
-    max-width: 1040px;*/
-    /*margin: 5px 40px;*/
     margin-top : 5px;
     position: relative;
     z-index: 1;
     border-radius: 5px;
     overflow: hidden;
     text-align: left;
-    background: #DDEEF6;
+/*    background: #F5F5F5;*/
 }
 
 
@@ -323,12 +347,12 @@
 }
 
 .pblink {
-cursor: pointer;
+    cursor: pointer;
 }
 
 
 /* OK/UP */
-.divstate0, .divhstate0, .sivstate0 a, .sivhstate0 a { 
+.divstate0, .divhstate0, .sivstate0 a, .sivhstate0 a {
   background-color: #0b3; color: #fff;
   border-top-right-radius: 6px;
   border-bottom-right-radius: 6px;
@@ -339,7 +363,7 @@ cursor: pointer;
     white-space: nowrap;
 }
 /* WARN */
-.divstate1, .divstate1 a { 
+.divstate1, .divstate1 a {
   background-color: #ff0; color: #000;
   border-top-right-radius: 6px;
   border-bottom-right-radius: 6px;
@@ -348,7 +372,7 @@ cursor: pointer;
 }
 
 /* CRIT/DOWN */
-.div state2, .divhstate1, .divstate2 a, .divhstate2 a { 
+.div state2, .divhstate1, .divstate2 a, .divhstate2 a {
   background-color: #FA5858; color: #fff;
   border-top-right-radius: 6px;
   border-bottom-right-radius: 6px;
@@ -357,7 +381,7 @@ cursor: pointer;
 }
 
 /* UNKNOWN / UNREACH */
-.divstate3, .divhstate2, .divstate3 a, .divhstate2 a { 
+.divstate3, .divhstate2, .divstate3 a, .divhstate2 a {
   background-color: #f80; color: #fff;
   border-top-right-radius: 6px;
   border-bottom-right-radius: 6px;
@@ -382,15 +406,6 @@ cursor: pointer;
     cursor: pointer;
     font-size: 13px;
 }
-
-
-
-
-
-
-
-
-
 
 /* Message box part */
 /* Message Boxes */
@@ -432,7 +447,7 @@ cursor: pointer;
     color: #FFFFFF;
 }
 
-.msgBoxContent{ 
+.msgBoxContent{
     float:left;
     max-width: 80%;
     font-size:12px;
@@ -453,27 +468,30 @@ cursor: pointer;
 }
 
 
-
-
-
-
-/* From Meatball css */
-/* branding
+/* 
 ----------------------------------------------- */
-h1#branding {
-    font-weight:normal;
-    font-size:3em;
-    text-align:left;
-    background:#005577;
-    padding:.7em 1em;
-    margin-bottom:0;
+
+#result-stats {
+    border-top: 1px solid #EBEBEB;
 }
 
-h4#page-heading {
-font-weight: normal;
-padding: .5em;
-margin: 0 0 10px 0;
-border-bottom: 1px solid #CCC;
-background: #EDF4F5;
-font-size: 19px;
+#result-stats p {
+    border-bottom: 1px solid #EBEBEB;
+    margin-bottom: 3px;
+    margin-left: 5px;
 }
+
+.impact-arrow {
+    font-size: 35px;
+    height: 60px;
+}
+
+.impact-arrow i{
+    line-height: 60px;
+    position: relative;
+    padding-top: 10px;
+}
+
+.desc {display: none;}
+
+.hover {display: inline !important;}

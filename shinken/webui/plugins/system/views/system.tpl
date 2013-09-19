@@ -3,71 +3,71 @@
 %from shinken.bin import VERSION
 %helper = app.helper
 
-%#  "Left Container Start"
-<div id="left_container" class="grid_2">
-	<div id="nav_left">
-		<ul>
-			<li><a href="/system">System</a></li>
-			%#<li><a href="/system/log">Log</a></li>
-		</ul>
-	</div>
+<div class="row-fluid">
+  <div class="span12">
+<!--     <h3><i class="icon-cogs"> General Informations </i></h3>
+    <div class="span4 well general-box">
+      <h4><i class="icon-cog"></i> Start Time</h4>
+      <span class="general">{{helper.print_duration(app.datamgr.get_program_start())}}</span>
+    </div>
+    <div class="span4 well general-box">
+      <h4><i class="icon-cog"></i> Version</h4>
+      <span class="general">Shinken {{VERSION}}</span>
+    </div> -->
+    <!--
+    <div class="row-fluid">
+      <div class="span6">Level 2</div>
+      <div class="span6">Level 2</div>
+    </div> -->
+
+    <div class="row-fluid">
+      <div class="span8">
+        <h3>Shinken Daemons</h3>
+        %types = [ ('scheduler', schedulers), ('poller', pollers), ('broker', brokers), ('reactionner', reactionners), ('receiver', receivers)]
+        %for (sat_type, sats) in types:
+        <h4><i class="icon-wrench"></i> {{sat_type.capitalize()}}</h4>
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>State</th>
+              <th>Alive</th>
+              <th>Attemts</th>
+              <th>Last Check</th>
+              <th>Realm</th>
+            </tr>
+          </thead>
+          <tbody>
+          %for s in sats:
+            <tr>
+              <td>{{s.get_name()}}</td>
+              <td><img style="width: 16px; height: 16px;" src="{{helper.get_icon_state(s)}}" /></td>
+              <td>{{s.alive}}</td>
+              <td>{{s.attempt}}/{{s.max_check_attempts}}</td>
+              <td title='{{helper.print_date(s.last_check)}}'>{{helper.print_duration(s.last_check, just_duration=True, x_elts=2)}}</td>
+              <td>{{s.realm}}</td>
+            </tr>
+          </tbody>
+          %end  
+        </table>
+        %end
+      </div>
+      <div class="span4">
+        <div class="well" style="margin-top: 65px;">
+          <!-- <img alt="" src="http://placehold.it/300x200"> -->
+          <div class="caption">
+            <h3 class="font-blue"><i class="icon-question-sign"></i> Information</h3>
+            <p><a href="http://www.shinken-monitoring.org/wiki/official/configuringshinken/configobjects/arbiter" class="" type="button">Arbiter:</a> The arbiter daemon reads the configuration, divides it into parts (N schedulers = N parts), and distributes them to the appropriate Shinken daemons.</p>
+            <p><a href="http://www.shinken-monitoring.org/wiki/official/configuringshinken/configobjects/scheduler">Scheduler:</a> The scheduler daemon manages the dispatching of checks and actions to the poller and reactionner daemons respectively.</p>
+            <p><a href="http://www.shinken-monitoring.org/wiki/official/configuringshinken/configobjects/poller">Poller:</a> The poller daemon launches check plugins as requested by schedulers. When the check is finished it returns the result to the schedulers.</p>
+            <p><a href="http://www.shinken-monitoring.org/wiki/official/configuringshinken/configobjects/reactionner">Reactionner:</a> The reactionner daemon issues notifications and launches event_handlers. </p>
+            <p><a href="http://www.shinken-monitoring.org/wiki/official/configuringshinken/configobjects/broker">Broker:</a> The broker daemon exports and manages data from schedulers. The broker uses modules exclusively to get the job done.</p>
+            <p>Receiver (<b>optional</b>): The receiver daemon receives passive check data and serves as a distributed command buffer.</p>
+            <hr>
+            <p><a href="http://www.shinken-monitoring.org/wiki/the_shinken_architecture" class="btn btn-success">Learn more »</a></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
-%#  "Left Container End"
-
-<div id="system_overview" class="grid_14 item">
-	<h2>System Overview</h2>
-	<!-- stats overview start -->
-		<table style="width: 100%">
-			<tbody>
-				<tr class="grid_16">
-					<th class="grid_4">Program Version</th>
-					<th class="grid_4">Program Start Time</th>
-				</tr>							
-				<tr class="grid_16">
-				  <td class="grid_4"> {{VERSION}}</td>
-				  <td title="{{helper.print_date(app.datamgr.get_program_start())}}" class="grid_4"> {{helper.print_duration(app.datamgr.get_program_start())}}</td>
-				</tr>							
-			</tbody>
-		</table> 
-	<!-- stats overview end -->
-</div>
-
-<!-- System Detail START -->
-
-<div id="system_detail" class="grid_14">
-	<ul>
-	%types = [ ('scheduler', schedulers), ('poller', pollers), ('broker', brokers), ('reactionner', reactionners), ('receiver', receivers)]
-	%for (sat_type, sats) in types:
-		<li class="grid_3">
-		<a  class="box_round_small">
-			<div class="modul_name box_halfround_small"><h3>{{sat_type.capitalize()}} :</h3></div>
-				%for s in sats:
-				<dl>
-				
-					<dt>State</dt>
-					<dd>	     
-	      				%if not s.alive:
-	      					<span class="pulse"></span>
-	      				%end
-	      				<img style="width: 16px; height : 16px;" src="{{helper.get_icon_state(s)}}" alt="stateicon"/>
-	      			</dd>
-					<dt>Name</dt>
-					<dd>{{s.get_name()}}</dd>
-					<dt>Alive</dt>
-					<dd>{{s.alive}}</dd>
-					<dt>Attempts</dt>
-					<dd>{{s.attempt}}/{{s.max_check_attempts}}</dd>
-					<dt>Last check</dt>
-					<dd title='{{helper.print_date(s.last_check)}}'>{{helper.print_duration(s.last_check, just_duration=True, x_elts=2)}}</dd>
-					<dt>Realm</dt>
-					<dd>{{s.realm}}</dd>
-				
-				</dl>
-				%# end of this satellite type
- 				%end
-		</a>
-		</li>
-	%# end of this satellite type
- 	%end
-	</ul>
-</div>	

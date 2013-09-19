@@ -2,7 +2,7 @@
 
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2009-2011 :
+# Copyright (C) 2009-2012:
 #     Gabes Jean, naparuba@gmail.com
 #     Gerhard Lausser, Gerhard.Lausser@consol.de
 #     Gregory Starck, g.starck@gmail.com
@@ -23,7 +23,6 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Shinken.  If not, see <http://www.gnu.org/licenses/>.
 
-
 import time
 import math
 
@@ -32,42 +31,43 @@ import math
 #        load = n + exp*(load - n)
 #        return (load, exp)
 
-
-
 class Load:
     """This class is for having a easy Load calculation
     without having to send value at regular interval
-    (but it's more efficient if you do this :) ) and without 
+    (but it's more efficient if you do this :) ) and without
     having a list or other stuff. It's just an object, an update and a get
-    You can define m : the average for m minutes. The val is
+    You can define m: the average for m minutes. The val is
     the initial value. It's better if it's 0 but you can choose.
 
     """
-    
+
     def __init__(self, m=1, initial_value=0):
-        self.exp = 0 # first exp
-        self.m = m # Number of minute of the avg
-        self.last_update = 0 # last update of the value
-        self.val = initial_value # first value
+        self.exp = 0  # first exp
+        self.m = m  # Number of minute of the avg
+        self.last_update = 0  # last update of the value
+        self.val = initial_value  # first value
 
-
-    def update_load(self, new_val):
+    # 
+    def update_load(self, new_val, forced_interval=None):
         # The first call do not change the value, just tag
-        # the begining of last_update
-        if self.last_update == 0:
+        # the beginning of last_update
+        # IF  we force : bail out all time thing
+        if not forced_interval and self.last_update == 0:
             self.last_update = time.time()
             return
         now = time.time()
         try:
-            diff = now - self.last_update
-            self.exp = 1/math.exp(diff/ (self.m*60.0))
-            self.val = new_val + self.exp*(self.val - new_val)
+            if forced_interval:
+                diff = forced_interval
+            else:
+                diff = now - self.last_update
+            self.exp = 1 / math.exp(diff / (self.m * 60.0))
+            self.val = new_val + self.exp * (self.val - new_val)
             self.last_update = now
-        except OverflowError: #if the time change without notice, we overflow :(
+        except OverflowError:  # if the time change without notice, we overflow :(
             pass
-        except ZeroDivisionError: #do not care
+        except ZeroDivisionError:  # do not care
             pass
-
 
     def get_load(self):
         return self.val
