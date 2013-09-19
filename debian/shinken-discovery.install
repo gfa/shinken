@@ -1,5 +1,5 @@
 debian/tmp/usr/bin/shinken-discovery                                                           /usr/bin
 
 
-debian/tmp/usr/lib/python2.6/dist-packages/shinken/discovery/*.py                              /usr/lib/python2.6/dist-packages/shinken/discovery/
+debian/tmp/usr/lib/python2.7/dist-packages/shinken/discovery/*.py                              /usr/lib/python2.7/dist-packages/shinken/discovery/
 

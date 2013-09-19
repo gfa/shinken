@@ -1,3 +1,9 @@
+shinken (1.4.0-1) UNRELEASED; urgency=low
+
+  * New upstream release 
+
+ -- gustavo panizzo <gfa@zumbi.com.ar>  Thu, 19 Sep 2013 15:27:02 -0300
+
 shinken (1.2.2-1~0prerelease5)  unstable; urgency=low
 
   * Make shinken start automatically
