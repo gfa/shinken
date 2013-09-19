@@ -80,7 +80,7 @@ def get_instance(plugin):
         password = ""
 
     if password == "" and encryption_method != 0:
-        logger.error("[NSCA] No password specified wheras there is a encryption_method defined")
+        logger.error("[NSCA] No password specified whereas there is a encryption_method defined")
         logger.warning("[NSCA] Setting password to dummy to avoid crash!")
         password = "dummy"
 
@@ -88,16 +88,22 @@ def get_instance(plugin):
         max_packet_age = min(plugin.max_packet_age, 900)
     else:
         max_packet_age = 30
+    
+    if hasattr(plugin, 'check_future_packet'):
+        check_future_packet = bool(plugin.check_future_packet)
+    else:
+        check_future_packet = True
+
 
     instance = NSCA_arbiter(plugin, host, port,
-            encryption_method, password, max_packet_age)
+            encryption_method, password, max_packet_age, check_future_packet)
     return instance
 
 
 class NSCA_arbiter(BaseModule):
     """Please Add a Docstring to describe the class here"""
 
-    def __init__(self, modconf, host, port, encryption_method, password, max_packet_age):
+    def __init__(self, modconf, host, port, encryption_method, password, max_packet_age, check_future_packet):
         BaseModule.__init__(self, modconf)
         self.host = host
         self.port = port
@@ -105,6 +111,7 @@ class NSCA_arbiter(BaseModule):
         self.password = password
         self.rng = random.Random(password)
         self.max_packet_age = max_packet_age
+        self.check_future_packet = check_future_packet 
 
     def send_init_packet(self, sock):
         '''
@@ -169,7 +176,7 @@ class NSCA_arbiter(BaseModule):
         (timestamp, rc, hostname, service, output) = self.read_check_result(databuffer, IV)
         current_time = time.time()
         check_result_age = current_time - timestamp
-        if timestamp > current_time:
+        if timestamp > current_time and self.check_future_packet:
             logger.info("[NSCA] Dropping packet with future timestamp.")
         elif check_result_age > self.max_packet_age:
             logger.info(
@@ -187,6 +194,7 @@ class NSCA_arbiter(BaseModule):
         size = 8192
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server.setblocking(0)
+        server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         server.bind((self.host, self.port))
         server.listen(backlog)
         input = [server]

@@ -10,6 +10,7 @@ To Nicolas Dupeux for patches, bug fixes, bug reports and the NSCA daemon
 To Gregory Starck for his patch about worker typo, and pyro hooks
 To David Guénault for the installer, patches, bug fixes, WebUI and more
 To David Hannequin for his bug reports and his packages :)
+To Jfbutkiewicz for his full windows management (installation and services!!)
 To Danijel Tasov for his repositiry cosmetics patch
 To Zoran Zaric for his help on website corrections and for help file typos
 To Gilles Seban for is bug report about commands that look like shells
@@ -80,3 +81,22 @@ To Jan Ulferts for his patch about env macros fix on notifications
 To Rémi Sauvat for his patch about dashboard automatic widget refresh
 To chris81 for his patch for graphite API URLs
 To maethor and scaminad for reporting IMAP/POPS missing port
+To Florent Houbart for this bug fix on LiveStatus+NagVis
+To olc and ppj for the arbiter spare bug report
+To Nicolas Pichon for his patch about Graphite and custom macro use
+To Thomas Cellerier for his patch about a ZeroMQ broker module.
+To Christoph Roeder for his patch about pnp xml file in livestatus
+To François Lafont for his patch about business impact macro
+To Spil-brensen for his patch about Scientific Linux in install script.
+To jbeltran for his bug report about GLPIDB
+To Joachim Schiele for his bug report about PNP version
+To flaf and Imrane.Dessai for their bug report about additive inheritance.
+To Johan Svensson for his bug report about poller worker crash not in logs, and for his patch about NRPE booster crash with bad SSL
+To Finn Christiansen for his bug report about function get_all_host_names_set missing since 1.2.4
+To Michael Lübben for his bug report about telnet crashing daemons
+To GILLARDEAU Thibaut for his bug report about the windows pack
+To Georges Racinet for his bugs reports about SSL
+To pepejey for his bug report about void password in ldap auth module. And NO THANKS to the Ldap protocol RFC guys :( 
+To Benoit Dunand-Laisin for his bug report about livestatus command management regression
+To Alexandre Veyrenc for his patch about Graphite management of perfdata with spare in names
+

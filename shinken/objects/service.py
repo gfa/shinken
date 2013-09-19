@@ -63,7 +63,7 @@ class Service(SchedulingItem):
     # properties defined by configuration
     # required: is required in conf
     # default: default value if no set in conf
-    # pythonize: function to call when transfort string to python object
+    # pythonize: function to call when transforming string to python object
     # fill_brok: if set, send to broker. there are two categories:
     #  full_status for initial and update status, check_result for check results
     # no_slots: do not take this property for __slots__
@@ -119,6 +119,10 @@ class Service(SchedulingItem):
         'business_impact_modulations':    StringProp(default=''),
         'escalations':             StringProp(default='', fill_brok=['full_status']),
         'maintenance_period':      StringProp(default='', brok_transformation=to_name_if_possible, fill_brok=['full_status']),
+        'time_to_orphanage':      IntegerProp(default="300", fill_brok=['full_status']),
+
+        # Easy Service dep definition
+        'service_dependencies':   ListProp(default=''), # TODO: find a way to brok it?
 
         # service generator
         'duplicate_foreach':       StringProp(default=''),
@@ -130,6 +134,19 @@ class Service(SchedulingItem):
         # Load some triggers
         'trigger':         StringProp(default=''),
         'trigger_name':    ListProp(default=''),
+
+        # Trending
+        'trending_policies':    ListProp(default='', fill_brok=['full_status']),
+
+        # Our check ways. By defualt void, but will filled by an inner if need
+        'checkmodulations':       ListProp(default='', fill_brok=['full_status']),
+        'macromodulations':       ListProp(default=''),
+
+        # Custom views
+        'custom_views'     :    ListProp(default='', fill_brok=['full_status']),
+
+        # UI aggregation
+        'aggregation'      :    StringProp(default='', fill_brok=['full_status']),
     })
 
     # properties used in the running state
@@ -167,7 +184,7 @@ class Service(SchedulingItem):
         'act_depend_of': ListProp(default=[]),
         # dependencies for checks raise, so BEFORE checks
         'chk_depend_of': ListProp(default=[]),
-        # elements that depend of me, so the reverse than just uppper
+        # elements that depend of me, so the reverse than just upper
         'act_depend_of_me': ListProp(default=[]),
         # elements that depend of me
         'chk_depend_of_me': ListProp(default=[]),
@@ -229,9 +246,6 @@ class Service(SchedulingItem):
         # if the state change, we know so we do not revert it
         'state_changed_since_impact': BoolProp(default=False),
 
-        # Easy Service dep definition
-        'service_dependencies': ListProp(default=''), # TODO: find a way to brok it?
-
         # BUSINESS CORRELATOR PART
         # Say if we are business based rule or not
         'got_business_rule': BoolProp(default=False, fill_brok=['full_status']),
@@ -241,7 +255,7 @@ class Service(SchedulingItem):
         # Here it's the elements we are depending on
         # so our parents as network relation, or a host
         # we are depending in a hostdependency
-        # or even if we are businesss based.
+        # or even if we are business based.
         'parent_dependencies': StringProp(default=set(), brok_transformation=to_svc_hst_distinct_lists, fill_brok=['full_status']),
         # Here it's the guys that depend on us. So it's the total
         # opposite of the parent_dependencies
@@ -301,7 +315,8 @@ class Service(SchedulingItem):
         'SERVICEACKCOMMENT':      'get_ack_comment',
         'SERVICEACTIONURL':       'action_url',
         'SERVICENOTESURL':        'notes_url',
-        'SERVICENOTES':           'notes'
+        'SERVICENOTES':           'notes',
+        'SERVICEBUSINESSIMPACT':  'business_impact'
     }
 
     # This tab is used to transform old parameters name into new ones
@@ -339,7 +354,7 @@ class Service(SchedulingItem):
     def get_groupnames(self):
         return ','.join([sg.get_name() for sg in self.servicegroups])
 
-    # Need the whole name for debugin purpose
+    # Need the whole name for debugging purpose
     def get_dbg_name(self):
         return "%s/%s" % (self.host.host_name, self.service_description)
 
@@ -365,8 +380,8 @@ class Service(SchedulingItem):
 
         source = getattr(self, 'imported_from', 'unknown')
 
-        desc = getattr(self, 'service_description', 'unamed')
-        hname = getattr(self, 'host_name', 'unamed')
+        desc = getattr(self, 'service_description', 'unnamed')
+        hname = getattr(self, 'host_name', 'unnamed')
 
         special_properties = ('check_period', 'notification_interval', 'host_name',
                               'hostgroup_name', 'notification_period')
@@ -374,7 +389,7 @@ class Service(SchedulingItem):
         for prop, entry in cls.properties.items():
             if prop not in special_properties:
                 if not hasattr(self, prop) and entry.required:
-                    logger.error("The service %s on host '%s' do not have %s" % (desc, hname, prop))
+                    logger.error("The service %s on host '%s' does not have %s" % (desc, hname, prop))
                     state = False  # Bad boy...
 
         # Then look if we have some errors in the conf
@@ -394,7 +409,7 @@ class Service(SchedulingItem):
 
         # Ok now we manage special cases...
         if self.notifications_enabled and self.contacts == []:
-            logger.warning("The service '%s' in the host '%s' do not have contacts nor contact_groups in '%s'" % (desc, hname, source))
+            logger.warning("The service '%s' in the host '%s' does not have contacts nor contact_groups in '%s'" % (desc, hname, source))
 
         # Set display_name if need
         if getattr(self, 'display_name', '') == '':
@@ -424,14 +439,14 @@ class Service(SchedulingItem):
             logger.info("%s: I've got no notification_interval but I've got notifications enabled" % self.get_name())
             state = False
         if self.host is None:
-            logger.info("The service '%s' got a unknown host_name '%s'." % (desc, self.host_name))
+            logger.info("The service '%s' got an unknown host_name '%s'." % (desc, self.host_name))
             state = False
         if not hasattr(self, 'check_period'):
             self.check_period = None
         if hasattr(self, 'service_description'):
             for c in cls.illegal_object_name_chars:
                 if c in self.service_description:
-                    logger.info("%s: My service_description got the caracter %s that is not allowed." % (self.get_name(), c))
+                    logger.info("%s: My service_description got the character %s that is not allowed." % (self.get_name(), c))
                     state = False
         return state
 
@@ -473,7 +488,7 @@ class Service(SchedulingItem):
     # because we will want ERP mails to go on! So call this
     # on the database service with the srv=ERP service
     def add_business_rule_act_dependency(self, srv, status, timeperiod, inherits_parent):
-        # I only register so he know that I WILL be a inpact
+        # I only register so he know that I WILL be a impact
         self.act_depend_of_me.append((srv, status, 'business_dep',
                                       timeperiod, inherits_parent))
 
@@ -532,9 +547,14 @@ class Service(SchedulingItem):
                                 # because in the "explode" phase, we do not have access to this data! :(
                                 safe_key_value = re.sub(r'[' + "`~!$%^&*\"|'<>?,()=" + ']+', '_', key_value[key])
                                 new_s.service_description = self.service_description.replace('$' + key + '$', safe_key_value)
-                        if hasattr(self, 'check_command'):
-                            # here we can replace VALUE, VALUE1, VALUE2,...
-                            new_s.check_command = new_s.check_command.replace('$' + key + '$', key_value[key])
+                        # Here is a list of property where we will expand the $KEY$ by the value
+                        _the_expandables = ['check_command', 'aggregation', 'service_dependencies']
+                        for prop in _the_expandables:
+                            if hasattr(self, prop):
+                                # here we can replace VALUE, VALUE1, VALUE2,...
+                                setattr(new_s, prop, getattr(new_s, prop).replace('$' + key + '$', key_value[key]))
+                        if hasattr(self, 'aggregation'):
+                            new_s.aggregation = new_s.aggregation.replace('$' + key + '$', key_value[key])
                     # And then add in our list this new service
                     duplicates.append(new_s)
             else:
@@ -548,7 +568,7 @@ class Service(SchedulingItem):
                     logger.warning(err)
                     host.configuration_errors.append(err)
                 elif errcode == GET_KEY_VALUE_SEQUENCE_ERROR_NODE:
-                    err = "The custom property '%s 'of the host '%s' has an invalid node range %s" % (self.duplicate_foreach.strip(), host.get_name(), entry)
+                    err = "The custom property '%s' of the host '%s' has an invalid node range %s" % (self.duplicate_foreach.strip(), host.get_name(), entry)
                     logger.warning(err)
                     host.configuration_errors.append(err)
         return duplicates
@@ -578,13 +598,13 @@ class Service(SchedulingItem):
             # a new checks)
             self.state_before_impact = self.state
             self.state_id_before_impact = self.state_id
-            # this flag will know if we overide the impact state
+            # this flag will know if we override the impact state
             self.state_changed_since_impact = False
             self.state = 'UNKNOWN'  # exit code UNDETERMINED
             self.state_id = 3
 
     # Ok, we are no more an impact, if no news checks
-    # overide the impact state, we came back to old
+    # override the impact state, we came back to old
     # states
     # And only if we enable the state change for impacts
     def unset_impact_state(self):
@@ -797,7 +817,7 @@ class Service(SchedulingItem):
     def get_data_for_checks(self):
         return [self.host, self]
 
-    # Give data for evetn handlers's macros
+    # Give data for event handlers's macros
     def get_data_for_event_handler(self):
         return [self.host, self]
 
@@ -926,8 +946,8 @@ class Services(Items):
     inner_class = Service  # use for know what is in items
 
     # Create the reversed list for speedup search by host_name/name
-    # We also tag service already in list: they are twins. It'a a bad things.
-    # Hostgroups service have an ID higer thant host service. So it we tag
+    # We also tag service already in list: they are twins. It's a a bad things.
+    # Hostgroups service have an ID higher than host service. So it we tag
     # an id that already are in the list, this service is already
     # exist, and is a host,
     # or a previous hostgroup, but define before.
@@ -947,7 +967,7 @@ class Services(Items):
         # search, so we del it
         del self.reversed_list
 
-    # TODO: finish serach to use reversed
+    # TODO: finish search to use reversed
     # Search a service id by it's name and host_name
     def find_srv_id_by_name_and_hostname(self, host_name, name):
         # key = (host_name, name)
@@ -956,7 +976,7 @@ class Services(Items):
 
         # if not, maybe in the whole list?
         for s in self:
-            # Runtinme first, available only after linkify
+            # Runtime first, available only after linkify
             if hasattr(s, 'service_description') and hasattr(s, 'host'):
                 if s.service_description == name and s.host == host_name:
                     return s.id
@@ -983,11 +1003,11 @@ class Services(Items):
     # Make link between elements:
     # service -> host
     # service -> command
-    # service -> timepriods
+    # service -> timeperiods
     # service -> contacts
     def linkify(self, hosts, commands, timeperiods, contacts,
                 resultmodulations, businessimpactmodulations, escalations,
-                servicegroups, triggers):
+                servicegroups, triggers, checkmodulations, macromodulations):
         self.linkify_with_timeperiods(timeperiods, 'notification_period')
         self.linkify_with_timeperiods(timeperiods, 'check_period')
         self.linkify_with_timeperiods(timeperiods, 'maintenance_period')
@@ -1003,6 +1023,9 @@ class Services(Items):
         # This last one will be link in escalations linkify.
         self.linkify_with_escalations(escalations)
         self.linkify_with_triggers(triggers)
+        self.linkify_with_checkmodulations(checkmodulations)
+        self.linkify_with_macromodulations(macromodulations)
+        
 
     # We can link services with hosts so
     # We can search in O(hosts) instead
@@ -1069,7 +1092,7 @@ class Services(Items):
 
     # Apply implicit inheritance for special properties:
     # contact_groups, notification_interval , notification_period
-    # So service will take info from host if necessery
+    # So service will take info from host if necessary
     def apply_implicit_inheritance(self, hosts):
         for prop in ('contacts', 'contact_groups', 'notification_interval',
                       'notification_period', 'resultmodulations', 'business_impact_modulations', 'escalations',
@@ -1143,7 +1166,7 @@ class Services(Items):
         for name in for_hosts_to_create:
             _loop(name)
 
-    # We create new service if necessery (host groups and co)
+    # We create new service if necessary (host groups and co)
     def explode(self, hosts, hostgroups, contactgroups,
                 servicegroups, servicedependencies, triggers):
         # The "old" services will be removed. All services with
@@ -1175,13 +1198,12 @@ class Services(Items):
                 srv_to_remove.append(s.id)
 
             # if not s.is_tpl(): # Exploding template is useless
-            # Explode for real service or teplate with a host_name
+            # Explode for real service or template with a host_name
             if hasattr(s, 'host_name'):
                 hnames = s.host_name.split(',')
                 hnames = strip_and_uniq(hnames)
                 # We will duplicate if we have multiple host_name
                 # or if we are a template (so a clean service)
-                # print "WHEre", len(hnames) >= 2 or s.is_tpl()
                 if len(hnames) >= 2 or s.is_tpl() \
                         or (hasattr(s, 'duplicate_foreach') and s.duplicate_foreach != ''):
                     for hname in hnames:
@@ -1189,7 +1211,7 @@ class Services(Items):
 
                         # If the name begin with a !, we put it in
                         # the not list
-                        if len(hname) > 0 and hname[0] == '!':
+                        if hname.startswith('!'):
                             not_hosts.append(hname[1:])
                         else:  # the standard list
                             duplicate_for_hosts.append(hname)
@@ -1209,7 +1231,7 @@ class Services(Items):
 
                     # Multiple host_name -> the original service
                     # must be delete. But template are clean else where
-                    # and only the the servce not got an error in it's conf
+                    # and only the the service not got an error in it's conf
                     if not s.is_tpl() and s.configuration_errors == []:
                         srv_to_remove.append(id)
 
@@ -1241,7 +1263,7 @@ class Services(Items):
                 if hasattr(s, 'service_dependencies'):
                     if s.service_dependencies != '':
                         sdeps = s.service_dependencies.split(',')
-                        # %2=0 are for hosts, !=0 are for service_decription
+                        # %2=0 are for hosts, !=0 are for service_description
                         i = 0
                         hname = ''
                         for elt in sdeps:
@@ -1250,7 +1272,7 @@ class Services(Items):
                             else:  # description
                                 desc = elt.strip()
                                 # we can register it (s) (depend on) -> (hname, desc)
-                                # If we do not have enouth data for s, it's no use
+                                # If we do not have enough data for s, it's no use
                                 if hasattr(s, 'service_description') and hasattr(s, 'host_name'):
                                     if hname == '':
                                         hname = s.host_name

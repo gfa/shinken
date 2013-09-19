@@ -32,6 +32,7 @@ from shinken.log import logger
 from shinken.objects.module import Module
 from shinken.modules import nrpe_poller
 from shinken.modules.nrpe_poller import get_instance
+from shinken.message import Message
 
 modconf = Module()
 modconf.module_name = "NrpePoller"
@@ -46,6 +47,9 @@ class TestNrpePoller(ShinkenTest):
     #    self.setup_with_file('etc/nagios_module_hack_cmd_poller_tag.cfg')
 
     def test_nrpe_poller(self):
+        if os.name == 'nt':
+            return
+        
 
         mod = nrpe_poller.Nrpe_poller(modconf)
 
@@ -63,7 +67,7 @@ class TestNrpePoller(ShinkenTest):
 
         # We prepare a check in the to_queue
         status = 'queue'
-        command = "$USER1$/check_nrpe -H localhost33  -n -u -t 1 -c check_load3 -a 20" # -a arg1 arg2 arg3"
+        command = "$USER1$/check_nrpe -H localhost33  -n -u -t 5 -c check_load3 -a 20" # -a arg1 arg2 arg3"
         ref = None
         t_to_to = time.time()
         c = Check(status, command, ref, t_to_to)

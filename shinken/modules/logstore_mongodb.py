@@ -51,6 +51,7 @@ from pymongo.errors import AutoReconnect
 from shinken.basemodule import BaseModule
 from shinken.objects.module import Module
 from shinken.log import logger
+from shinken.util import to_bool
 
 properties = {
     'daemons': ['livestatus'],
@@ -62,7 +63,7 @@ properties = {
 
 # called by the plugin manager
 def get_instance(plugin):
-    logger.info("Get an LogStore MongoDB module for plugin %s" % plugin.get_name())
+    logger.info("[LogstoreMongoDB] Get an LogStore MongoDB module for plugin %s" % plugin.get_name())
     instance = LiveStatusLogStoreMongoDB(plugin)
     return instance
 
@@ -97,6 +98,7 @@ class LiveStatusLogStoreMongoDB(BaseModule):
         self.database = getattr(modconf, 'database', 'logs')
         self.collection = getattr(modconf, 'collection', 'logs')
         self.use_aggressive_sql = True
+        self.mongodb_fsync = to_bool(getattr(modconf, 'mongodb_fsync', "True"))
         max_logs_age = getattr(modconf, 'max_logs_age', '365')
         maxmatch = re.match(r'^(\d+)([dwmy]*)$', max_logs_age)
         if maxmatch is None:
@@ -134,11 +136,11 @@ class LiveStatusLogStoreMongoDB(BaseModule):
     def open(self):
         try:
             if self.replica_set:
-                self.conn = pymongo.ReplicaSetConnection(self.mongodb_uri, replicaSet=self.replica_set, fsync=True)
+                self.conn = pymongo.ReplicaSetConnection(self.mongodb_uri, replicaSet=self.replica_set, fsync=self.mongodb_fsync)
             else:
                 # Old versions of pymongo do not known about fsync
                 if ReplicaSetConnection:
-                    self.conn = pymongo.Connection(self.mongodb_uri, fsync=True)
+                    self.conn = pymongo.Connection(self.mongodb_uri, fsync=self.mongodb_fsync)
                 else:
                     self.conn = pymongo.Connection(self.mongodb_uri)
             self.db = self.conn[self.database]
@@ -175,7 +177,7 @@ class LiveStatusLogStoreMongoDB(BaseModule):
             today0000 = datetime.datetime(today.year, today.month, today.day, 0, 0, 0)
             today0005 = datetime.datetime(today.year, today.month, today.day, 0, 5, 0)
             oldest = today0000 - datetime.timedelta(days=self.max_logs_age)
-            self.db[self.collection].remove({u'time': {'$lt': time.mktime(oldest.timetuple())}}, safe=True)
+            self.db[self.collection].remove({u'time': {'$lt': time.mktime(oldest.timetuple())}})
 
             if now < time.mktime(today0005.timetuple()):
                 nextrotation = today0005
@@ -185,6 +187,7 @@ class LiveStatusLogStoreMongoDB(BaseModule):
             # See you tomorrow
             self.next_log_db_rotate = time.mktime(nextrotation.timetuple())
             logger.info("[LogStoreMongoDB] Next log rotation at %s " % time.asctime(time.localtime(self.next_log_db_rotate)))
+
 
     def manage_log_brok(self, b):
         data = b.data
@@ -197,7 +200,7 @@ class LiveStatusLogStoreMongoDB(BaseModule):
         values = logline.as_dict()
         if logline.logclass != LOGCLASS_INVALID:
             try:
-                self.db[self.collection].insert(values, safe=True)
+                self.db[self.collection].insert(values)
                 self.is_connected = CONNECTED
                 # If we have a backlog from an outage, we flush these lines
                 # First we make a copy, so we can delete elements from
@@ -205,7 +208,7 @@ class LiveStatusLogStoreMongoDB(BaseModule):
                 backloglines = [bl for bl in self.backlog]
                 for backlogline in backloglines:
                     try:
-                        self.db[self.collection].insert(backlogline, safe=True)
+                        self.db[self.collection].insert(backlogline)
                         self.backlog.remove(backlogline)
                     except AutoReconnect, exp:
                         self.is_connected = SWITCHING
@@ -231,19 +234,24 @@ class LiveStatusLogStoreMongoDB(BaseModule):
         else:
             logger.info("[LogStoreMongoDB] This line is invalid: %s" % line)
 
+
     def add_filter(self, operator, attribute, reference):
         if attribute == 'time':
             self.mongo_time_filter_stack.put_stack(self.make_mongo_filter(operator, attribute, reference))
         self.mongo_filter_stack.put_stack(self.make_mongo_filter(operator, attribute, reference))
 
+
     def add_filter_and(self, andnum):
         self.mongo_filter_stack.and_elements(andnum)
+
 
     def add_filter_or(self, ornum):
         self.mongo_filter_stack.or_elements(ornum)
 
+
     def add_filter_not(self):
         self.mongo_filter_stack.not_elements()
+
 
     def get_live_data_log(self):
         """Like get_live_data, but for log objects"""
@@ -261,15 +269,15 @@ class LiveStatusLogStoreMongoDB(BaseModule):
             # Be conservative, get everything from the database between
             # two dates and apply the Filter:-clauses in python
             mongo_filter_func = self.mongo_time_filter_stack.get_stack()
-        result = []
+        dbresult = []
         mongo_filter = mongo_filter_func()
-        logger.debug("[LogStoreMongoDB] Mongo filter is" % mongo_filter)
+        logger.debug("[Logstore MongoDB] Mongo filter is %s" % str(mongo_filter))
         # We can apply the filterstack here as well. we have columns and filtercolumns.
         # the only additional step is to enrich log lines with host/service-attributes
         # A timerange can be useful for a faster preselection of lines
+
         filter_element = eval('{ ' + mongo_filter + ' }')
-        logger.debug("[LogStoreMongoDB] Mongo filter is" % filter_element)
-        dbresult = []
+        logger.debug("[LogstoreMongoDB] Mongo filter is %s" % str(filter_element))
         columns = ['logobject', 'attempt', 'logclass', 'command_name', 'comment', 'contact_name', 'host_name', 'lineno', 'message', 'plugin_output', 'service_description', 'state', 'state_type', 'time', 'type']
         if not self.is_connected == CONNECTED:
             logger.warning("[LogStoreMongoDB] sorry, not connected")
@@ -277,16 +285,21 @@ class LiveStatusLogStoreMongoDB(BaseModule):
             dbresult = [Logline([(c,) for c in columns], [x[col] for col in columns]) for x in self.db[self.collection].find(filter_element).sort([(u'time', pymongo.ASCENDING), (u'lineno', pymongo.ASCENDING)])]
         return dbresult
 
+
     def make_mongo_filter(self, operator, attribute, reference):
         # The filters are text fragments which are put together to form a sql where-condition finally.
         # Add parameter Class (Host, Service), lookup datatype (default string), convert reference
         # which attributes are suitable for a sql statement
-        good_attributes = ['time', 'attempt', 'class', 'command_name', 'comment', 'contact_name', 'host_name', 'plugin_output', 'service_description', 'state', 'state_type', 'type']
+        good_attributes = ['time', 'attempt', 'logclass', 'command_name', 'comment', 'contact_name', 'host_name', 'plugin_output', 'service_description', 'state', 'state_type', 'type']
         good_operators = ['=', '!=']
         #  put strings in '' for the query
         string_attributes = ['command_name', 'comment', 'contact_name', 'host_name', 'plugin_output', 'service_description', 'state_type', 'type']
         if attribute in string_attributes:
             reference = "'%s'" % reference
+
+        # We should change the "class" query into the internal "logclass" attribute
+        if attribute == 'class':
+            attribute = 'logclass'
 
         def eq_filter():
             if reference == '':
@@ -396,7 +409,7 @@ class LiveStatusMongoStack(LiveStatusStack):
         #negate_filter = lambda: '\'$not\': { %s }' % top_filter()
         # mongodb doesn't have the not-operator like sql, which can negate
         # a complete expression. Mongodb $not can only reverse one operator
-        # at a time. This qould require rewriting of the whole expression.
+        # at a time. This would require rewriting of the whole expression.
         # So instead of deciding whether a record can pass the filter or not,
         # we let it pass in any case. That's no problem, because the result
         # of the database query will have to go through the in-memory-objects
@@ -413,9 +426,9 @@ class LiveStatusMongoStack(LiveStatusStack):
             # Take from the stack:
             # Make a combined anded function
             # Put it on the stack
-            logger.debug("[LogStoreMongoDB] Filter is" % filters)
+            logger.debug("[Logstore MongoDB] Filter is %s" % str(filters))
             and_clause = lambda: '\'$and\' : [%s]' % ', '.join('{ ' + x() + ' }' for x in filters)
-            logger.debug("[LogStoreMongoDB] and_elements" % and_clause)
+            logger.debug("[Logstore MongoDB] and_elements %s" % str(and_clause))
             self.put_stack(and_clause)
 
     def or_elements(self, num):
@@ -425,7 +438,6 @@ class LiveStatusMongoStack(LiveStatusStack):
             for _ in range(num):
                 filters.append(self.get_stack())
             or_clause = lambda: '\'$or\' : [%s]' % ', '.join('{ ' + x() + ' }' for x in filters)
-            logger.debug("[LogStoreMongoDB] or_elements"% or_clause)
             self.put_stack(or_clause)
 
     def get_stack(self):

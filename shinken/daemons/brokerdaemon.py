@@ -69,7 +69,7 @@ class Broker(BaseSatellite):
         # Our arbiters
         self.arbiters = {}
 
-        # Our pollers and reactioners
+        # Our pollers and reactionners
         self.pollers = {}
         self.reactionners = {}
 
@@ -210,9 +210,8 @@ class Broker(BaseSatellite):
                 # it's a scheduler
                 if type == 'scheduler':
                     logger.debug("[%s] I ask for a broks generation to the scheduler %s" % (self.name, links[id]['name']))
-                    links[id]['con'].fill_initial_broks()
-            # else:
-            #     print "I do not ask for brok generation"
+                    links[id]['con'].fill_initial_broks(self.name)
+            # Ok all is done, we can save this new running id
             links[id]['running_id'] = new_run_id
         except Pyro_exp_pack, exp:
             logger.info("Connection problem to the %s %s: %s" % (type, links[id]['name'], str(exp)))
@@ -250,7 +249,7 @@ class Broker(BaseSatellite):
     # Add broks (a tab) to different queues for
     # internal and external modules
     def add_broks_to_queue(self, broks):
-        # Ok now put in queue brocks to be managed by
+        # Ok now put in queue broks to be managed by
         # internal modules
         self.broks.extend(broks)
 
@@ -263,7 +262,7 @@ class Broker(BaseSatellite):
 
     # Get 'objects' from external modules
     # right now on nobody uses it, but it can be useful
-    # for a moduls like livestatus to raise external
+    # for modules like livestatus to raise external
     # commands for example
     def get_objects_from_from_queues(self):
         for f in self.modules_manager.get_external_from_queues():
@@ -289,9 +288,9 @@ class Broker(BaseSatellite):
         for sched_id in links:
             try:
                 con = links[sched_id]['con']
-                if con is not None:  # None = not initilized
+                if con is not None:  # None = not initialized
                     t0 = time.time()
-                    tmp_broks = con.get_broks()
+                    tmp_broks = con.get_broks(self.name)
                     logger.debug("%s Broks get in %s" % (len(tmp_broks), time.time() - t0))
                     for b in tmp_broks.values():
                         b.instance_id = links[sched_id]['instance_id']
@@ -303,7 +302,11 @@ class Broker(BaseSatellite):
                     self.pynag_con_init(sched_id, type=type)
             # Ok, con is not known, so we create it
             except KeyError, exp:
-                logger.debug(str(exp))
+                logger.debug("Key error for get_broks : %s" % str(exp))
+                try:
+                    logger.debug(''.join(Pyro.util.getPyroTraceback(exp)))
+                except:
+                    pass
                 self.pynag_con_init(sched_id, type=type)
             except Pyro.errors.ProtocolError, exp:
                 logger.warning("Connection problem to the %s %s: %s" % (type, links[sched_id]['name'], str(exp)))
@@ -324,13 +327,16 @@ class Broker(BaseSatellite):
                 logger.error(''.join(Pyro.util.getPyroTraceback(x)))
                 sys.exit(1)
 
+
     # Helper function for module, will give our broks
     def get_retention_data(self):
         return self.broks
 
+
     # Get back our broks from a retention module
     def restore_retention_data(self, data):
         self.broks.extend(data)
+
 
     def do_stop(self):
         act = active_children()
@@ -338,6 +344,7 @@ class Broker(BaseSatellite):
             a.terminate()
             a.join(1)
         super(Broker, self).do_stop()
+
 
     def setup_new_conf(self):
         conf = self.new_conf
@@ -555,7 +562,7 @@ class Broker(BaseSatellite):
                 return
             self.setup_new_conf()
 
-        # Now we check if arbiter speek to us in the pyro_daemon.
+        # Now we check if arbiter speak to us in the pyro_daemon.
         # If so, we listen for it
         # When it pushes conf to us, we reinit connections
         self.watch_for_new_conf(0.0)
@@ -563,7 +570,7 @@ class Broker(BaseSatellite):
             self.setup_new_conf()
 
         # Maybe the last loop we raised some broks internally
-        # we should interger them in broks
+        # we should integrate them in broks
         self.interger_internal_broks()
 
         # And from schedulers
@@ -663,7 +670,7 @@ class Broker(BaseSatellite):
 
             self.setup_new_conf()
 
-            # We already init modules durint the new conf thing
+            # We already init modules during the new conf thing
             # Set modules, init them and start external ones
             #self.modules_manager.set_modules(self.modules)
             #self.do_load_modules()

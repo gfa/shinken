@@ -52,6 +52,10 @@ html, body {height: 95.5%;}
 }
 
 .font-yellow {
+  color: #FFEE00;
+}
+
+.font-orange {
   color: #F89406;
 }
 
@@ -62,12 +66,29 @@ html, body {height: 95.5%;}
 .font-grey {
   color: #505050;
 }
+
+.font-lightgrey {
+  color: #EBEBEB;
+}
+
+.font-darkgrey {
+  color: #535456;
+}
+
 .font-blue {
   color: #3A87AD;
 }
-/*  Special Shinken styles
+
+/*  Special Shinken Buttons
     ------------------------------------------------------- */
 
+.btn-spezial {
+  min-height: 15px !important;
+  line-height: 17px;
+}
+
+/*  Special Shinken styles
+    ------------------------------------------------------- */
 .min-height {
   min-height: 600px;
 }
@@ -189,10 +210,18 @@ html, body {height: 95.5%;}
   word-wrap: break-word;
 }
 
+.hero-unit p {
+  color: #FFF;
+}
+
+.hero-unit-small {
+  padding: 30px;
+}
+
 /*  Alert styles => BTN Color
     ------------------------------------------------------- */
 .alert {
-  color: #FFFFFF;
+  /*color: #FFFFFF;*/
   text-align: center;
 }
 
@@ -298,6 +327,21 @@ html, body {height: 95.5%;}
   z-index: 666;
 }
 
+
+.badger-beta {
+  background-color: #999999;
+  border-radius: 3px 3px 3px 3px;
+  color: #FFFFFF;
+  font-size: 9.75px;
+  font-weight: bold;
+  padding: 1px 3px 2px;
+  position: relative;
+  right: -75px;
+  text-transform: uppercase;
+  top: -31px;
+  z-index: 666;
+}
+
 .badger-critical {
   /*background-color: #e10000;*/
   background-color: rgb(255,0,0); opacity: 0.85;
@@ -320,7 +364,7 @@ html, body {height: 95.5%;}
 }
 
 h1 {
-  font-size: 26px;
+  font-size: 24px;
 }
 
 h1, h2, h3, h4 {
@@ -353,4 +397,17 @@ a.disabled-link:hover {
 
 .row-fluid .offset1 {
   margin-left: 3%;
+}
+
+
+
+/* With the SORTER javascript plugin */
+th[data-sort]{
+  cursor:pointer;
+}
+
+
+/* For list where we do not want a style */
+.no_list_style{
+    list-style-type: none;
 }

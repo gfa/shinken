@@ -25,9 +25,30 @@
 
 import time
 import logging
+import sys
 from logging.handlers import TimedRotatingFileHandler
 
 from brok import Brok
+
+def is_tty():
+    # Look if we are in a tty or not
+    if hasattr(sys.stdout, 'isatty'):
+        return sys.stdout.isatty()
+    return False
+
+if is_tty():
+    # Try to load the terminal color. Won't work under python 2.4
+    try:
+        from shinken.misc.termcolor import cprint
+    except (SyntaxError, ImportError), exp:
+        # Outch can't import a cprint, do a simple print
+        def cprint(s, color):
+            print s
+# Ok it's a daemon mode, if so, just print
+else:
+    def cprint(s, color):
+        print s
+
 
 obj = None
 name = None
@@ -136,19 +157,25 @@ class Log:
         else:
             s = format % message
 
-        if print_it and len(s) > 1:
+        if print_it and len(s) > 1:            
+            # Take a color so we can print if it's a TTY
+            if is_tty():
+                color = {Log.WARNING:'yellow', Log.CRITICAL:'magenta', Log.ERROR:'red'}.get(level, None)
+            else:
+                color = None
+            
             # Print to standard output.
             # If the daemon is launched with a non UTF8 shell
             # we can have problems in printing, work around it.
             try:
-                print s[:-1]
+                cprint(s[:-1], color)
             except UnicodeEncodeError:
                 print s.encode('ascii', 'ignore')
 
 
         # We create the brok and load the log message
         # DEBUG level logs are logged by the daemon locally
-        # and must not be forwarded to other satelittes, or risk overloading them.
+        # and must not be forwarded to other satellites, or risk overloading them.
         if level != logging.DEBUG:
             b = Brok('log', {'log': s})
             obj.add(b)
@@ -157,8 +184,9 @@ class Log:
         if local_log is not None:
             logging.log(level, s.strip())
 
+
     def register_local_log(self, path, level=None):
-        """The shiken logging wrapper can write to a local file if needed
+        """The shinken logging wrapper can write to a local file if needed
         and return the file descriptor so we can avoid to
         close it.
         """
@@ -193,7 +221,7 @@ class Log:
         """
         Set the output as human format.
 
-        If the optional parameter `on` is False, the timestamp format
+        If the optional parameter `on` is False, the timestamps format
         will be reset to the default format.
         """
         global human_timestamp_log
@@ -206,7 +234,7 @@ class __ConsoleLogger:
     This wrapper class for logging and printing messages to stdout, too.
 
     :fixme: Implement this using an additional stream-handler, as soon
-    as the logging system is based on the standard Pytthon logging
+    as the logging system is based on the standard Python logging
     module.
     """
     def debug(self, msg, *args, **kwargs):

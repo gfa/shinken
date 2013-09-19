@@ -24,10 +24,14 @@
 # along with Shinken.  If not, see <http://www.gnu.org/licenses/>.
 
 import time
+import traceback
+import cStringIO
+
 from livestatus_counters import LiveStatusCounters
 from livestatus_request import LiveStatusRequest
 from livestatus_response import LiveStatusResponse
 from livestatus_query import LiveStatusQueryError
+from shinken.log import logger
 
 
 class LiveStatus(object):
@@ -57,7 +61,13 @@ class LiveStatus(object):
                 response.responseheader = 'fixed16'
             return response.respond()
         except Exception, exp:
-            print "exception!!!", exp
+            logger.error("[Livestatus] Exception! %s" % exp)
+            # Also show the exception
+            output = cStringIO.StringIO()
+            traceback.print_exc(file=output)
+            logger.error("[Livestatus] Back trace of this exception: %s" % (output.getvalue()))
+            output.close()
+            # Ok now we can return something
             response = LiveStatusResponse()
             response.output = LiveStatusQueryError.messages[452] % data
             response.statuscode = 452
@@ -125,11 +135,10 @@ class LiveStatus(object):
         else:
             # We currently do not handle this kind of composed request
             output = ""
-            print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-            print "We currently do not handle this kind of composed request"
+            logger.error("[Livestatus] We currently do not handle this kind of composed request")
             print sorted([q.my_type for q in request.queries])
 
-        print "DURATION %.4fs" % (time.time() - request.tic)
+        logger.debug("[Livestatus] Request duration %.4fs" % (time.time() - request.tic))
         return output, keepalive
 
     def count_event(self, counter):

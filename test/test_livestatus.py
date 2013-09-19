@@ -58,17 +58,18 @@ class TestConfig(ShinkenTest):
 
     def update_broker(self, dodeepcopy=False):
         # The brok should be manage in the good order
-        ids = self.sched.broks.keys()
+        ids = self.sched.brokers['Default-Broker']['broks'].keys()
         ids.sort()
         for brok_id in ids:
-            brok = self.sched.broks[brok_id]
+            brok = self.sched.brokers['Default-Broker']['broks'][brok_id]
             #print "Managing a brok type", brok.type, "of id", brok_id
             #if brok.type == 'update_service_status':
-            #    print "Problem?", brok.data
+            #    print "Problem?", brok.data['is_problem']
             if dodeepcopy:
                 brok = copy.deepcopy(brok)
+            brok.prepare()
             self.livestatus_broker.manage_brok(brok)
-        self.sched.broks = {}
+        self.sched.brokers['Default-Broker']['broks'] = {}
 
     def lines_equal(self, text1, text2):
         # gets two multiline strings and compares the contents
@@ -280,7 +281,8 @@ class TestConfigSmall(TestConfig):
         self.init_livestatus()
         print "Cleaning old broks?"
         self.sched.conf.skip_initial_broks = False
-        self.sched.fill_initial_broks()
+        self.sched.brokers['Default-Broker'] = {'broks' : {}, 'has_full_broks' : False}
+        self.sched.fill_initial_broks('Default-Broker')
         self.update_broker()
         self.nagios_path = None
         self.livestatus_path = None
@@ -2526,7 +2528,6 @@ Filter: host_name = test_host_0
 Filter: description = test_ok_0
 Columns: description host_name display_name"""
         response, keepalive = self.livestatus_broker.livestatus.handle_request(request)
-        print "hihi", response
         self.assert_(response == 'test_ok_0;test_host_0;test_ok_0\n')
 
 
@@ -2539,7 +2540,9 @@ class TestConfigBig(TestConfig):
         self.init_livestatus()
         print "Cleaning old broks?"
         self.sched.conf.skip_initial_broks = False
-        self.sched.fill_initial_broks()
+        self.sched.brokers['Default-Broker'] = {'broks' : {}, 'has_full_broks' : False}
+        self.sched.fill_initial_broks('Default-Broker')
+
         self.update_broker()
         print "************* Overall Setup:", time.time() - start_setUp
         # add use_aggressive_host_checking so we can mix exit codes 1 and 2
@@ -3685,6 +3688,31 @@ OutputFormat: csv
 0;test_host_099;0
 """)
 
+    def test_display_name(self):
+        self.print_header()
+        now = time.time()
+        objlist = []
+        for host in self.sched.hosts:
+            objlist.append([host, 0, 'UP'])
+        for service in self.sched.services:
+            objlist.append([service, 0, 'OK'])
+        self.scheduler_loop(1, objlist)
+        self.update_broker()
+        request = """GET hosts
+Filter: name = test_router_0
+Columns: name display_name"""
+        response, keepalive = self.livestatus_broker.livestatus.handle_request(request)
+        print response
+        self.assert_(response == 'test_router_0;display_router_0\n')
+        request = """GET services
+Filter: host_name = test_host_000
+Filter: description = test_unknown_00
+Columns: description host_name display_name"""
+        response, keepalive = self.livestatus_broker.livestatus.handle_request(request)
+        print response
+        self.assert_(response == 'test_unknown_00;test_host_000;display_unknown_00\n')
+
+
 
 class TestConfigComplex(TestConfig):
     def setUp(self):
@@ -3693,7 +3721,9 @@ class TestConfigComplex(TestConfig):
         self.init_livestatus()
         print "Cleaning old broks?"
         self.sched.conf.skip_initial_broks = False
-        self.sched.fill_initial_broks()
+        self.sched.brokers['Default-Broker'] = {'broks' : {}, 'has_full_broks' : False}
+        self.sched.fill_initial_broks('Default-Broker')
+
         self.update_broker()
         self.nagios_path = None
         self.livestatus_path = None

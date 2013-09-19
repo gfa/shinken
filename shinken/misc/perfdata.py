@@ -26,7 +26,8 @@
 import re
 from shinken.util import to_best_int_float
 
-metric_patern = re.compile('^([^=]+)=([\d\.\-]+)([\w\/%]*);?([\d\.\-:~@]+)?;?([\d\.\-:~@]+)?;?([\d\.\-]+)?;?([\d\.\-]+)?;?\s*')
+perfdata_split_pattern = re.compile('([^=]+=\S+)')
+metric_pattern = re.compile('^([^=]+)=([\d\.\-]+)([\w\/%]*);?([\d\.\-:~@]+)?;?([\d\.\-:~@]+)?;?([\d\.\-]+)?;?([\d\.\-]+)?;?\s*')
 
 
 # If we can return an int or a float, or None
@@ -43,8 +44,8 @@ class Metric:
     def __init__(self, s):
         self.name = self.value = self.uom = self.warning = self.critical = self.min = self.max = None
         s = s.strip()
-        print "Analysis string", s
-        r = metric_patern.match(s)
+        #print "Analysis string", s
+        r = metric_pattern.match(s)
         if r:
             # Get the name but remove all ' in it
             self.name = r.group(1).replace("'", "")
@@ -57,15 +58,23 @@ class Metric:
             #print 'Name', self.name
             #print "Value", self.value
             #print "Res", r
-            print r.groups()
+            #print r.groups()
             if self.uom == '%':
                 self.min = 0
                 self.max = 100
 
+    def __str__(self):
+        s = "%s=%s%s" % (self.name, self.value, self.uom)
+        if self.warning:
+            s = s + ";%s" % (self.warning)
+        if self.critical:
+            s = s + ";%s" % (self.critical)
+        return s
+
 
 class PerfDatas:
     def __init__(self, s):
-        elts = s.split(' ')
+        elts = perfdata_split_pattern.findall(s)
         elts = [e for e in elts if e != '']
         self.metrics = {}
         for e in elts:
@@ -84,3 +93,4 @@ class PerfDatas:
 
     def __contains__(self, key):
         return key in self.metrics
+

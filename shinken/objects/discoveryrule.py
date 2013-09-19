@@ -88,11 +88,12 @@ class Discoveryrule(MatchingItem):
         # with a !, it's a not rule)
         # -> in self.matches or self.not_matches
         # in writing properties if start with + (means 'add this')
+        # in writing properties if start with - (means 'del this')
         for key in params:
             # Some key are quite special
             if key in cls.properties:
                 setattr(self, key, params[key])
-            elif key in ['use'] or key.startswith('+') or key in tcls.properties or key.startswith('_'):
+            elif key in ['use'] or key.startswith('+') or key.startswith('-') or key in tcls.properties or key.startswith('_'):
                 self.writing_properties[key] = params[key]
             else:
                 if key.startswith('!'):
@@ -114,7 +115,7 @@ class Discoveryrule(MatchingItem):
             else:
                 setattr(self, prop, val)
 
-            # each istance to have his own running prop!
+            # each instance to have his own running prop!
 
 
     # Output name

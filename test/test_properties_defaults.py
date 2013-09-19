@@ -101,7 +101,7 @@ class TestConfig(PropertiesTester, ShinkenTest, unittest.TestCase):
         ('use_local_log', '1'),
         ('log_level', 'WARNING'),
         ('local_log', 'arbiterd.log'),
-        ('resource_file', '/tmp/ressources.txt'),
+        ('resource_file', '/tmp/resources.txt'),
         ('shinken_user', shinken.daemon.get_cur_user()),
         ('shinken_group', shinken.daemon.get_cur_group()),
         ('enable_notifications', '1'),
@@ -518,6 +518,11 @@ class TestHost(PropertiesTester, ShinkenTest, unittest.TestCase):
         ('business_impact', '2'),
         ('trigger', ''),
         ('trigger_name', ''),
+        ('time_to_orphanage', '300'),
+        ('trending_policies', ''),
+        ('checkmodulations', ''),
+        ('macromodulations', ''),
+        ('custom_views', ''),
         ])
 
     def setUp(self):
@@ -599,6 +604,7 @@ class TestRealm(PropertiesTester, ShinkenTest, unittest.TestCase):
         ('realm_members', ''),
         ('higher_realms', ''),
         ('default', '0'),
+        ('broker_complete_links', '0'),
         ])
 
     def setUp(self):
@@ -775,6 +781,13 @@ class TestService(PropertiesTester, ShinkenTest, unittest.TestCase):
         ('business_impact', '2'),
         ('trigger', ''),
         ('trigger_name', ''),
+        ('time_to_orphanage', '300'),
+        ('trending_policies', ''),
+        ('checkmodulations', ''),
+        ('macromodulations', ''),        
+        ('aggregation', ''),
+        ('service_dependencies', ''),
+        ('custom_views', ''),
         ])
 
     def setUp(self):

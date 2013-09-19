@@ -43,7 +43,7 @@ __all__ = ('Action')
 valid_exit_status = (0, 1, 2, 3)
 
 only_copy_prop = ('id', 'status', 'command', 't_to_go', 'timeout',
-                  'env', 'module_type', 'execution_time')
+                  'env', 'module_type', 'execution_time', 'u_time', 's_time')
 
 shellchars = ('!', '$', '^', '&', '*', '(', ')', '~', '[', ']',
                    '|', '{', '}', ';', '<', '>', '?', '`')
@@ -69,6 +69,14 @@ class __Action(object):
     """
     id = 0
 
+    # Ok when we load a previous created element, we should
+    # not start at 0 for new object, so we must raise the Action.id
+    # if need
+    @staticmethod
+    def assume_at_least_id(_id):
+        Action.id = max(Action.id, _id)
+
+
     def set_type_active(self):
         "Dummy function, only useful for checks"
         pass
@@ -80,7 +88,7 @@ class __Action(object):
     def get_local_environnement(self):
         """
 
-        Mix the env and the environnment variables into a new local
+        Mix the env and the environment variables into a new local
         env dict.
 
         Note: We cannot just update the global os.environ because this
@@ -104,7 +112,7 @@ class __Action(object):
         self.check_time = time.time()
         self.wait_time = 0.0001
         self.last_poll = self.check_time
-        # Get a local env variables with our additionnal values
+        # Get a local env variables with our additional values
         self.local_env = self.get_local_environnement()
 
         # Initialize stdout and stderr. we will read them in small parts
@@ -116,7 +124,7 @@ class __Action(object):
 
     def get_outputs(self, out, max_plugins_output_length):
         #print "Get only," , max_plugins_output_length, "bytes"
-        # Squize all output after max_plugins_output_length
+        # Squeeze all output after max_plugins_output_length
         out = out[:max_plugins_output_length]
         # Then cuts by lines
         elts = out.split('\n')
@@ -147,6 +155,7 @@ class __Action(object):
         # long_output is all non output and perfline, join with \n
         self.long_output = '\n'.join(long_output)
 
+
     def check_finished(self, max_plugins_output_length):
         # We must wait, but checks are variable in time
         # so we do not wait the same for an little check
@@ -154,13 +163,14 @@ class __Action(object):
         # but do not wait more than 0.1s.
         self.last_poll = time.time()
 
+        _, _, child_utime, child_stime, _ = os.times()
         if self.process.poll() is None:
             self.wait_time = min(self.wait_time * 2, 0.1)
             #time.sleep(wait_time)
             now = time.time()
 
             # If the fcntl is available (unix) we try to read in a
-            # asyncronous mode, so we won't block the PIPE at 64K buffer
+            # asynchronous mode, so we won't block the PIPE at 64K buffer
             # (deadlock...)
             if fcntl:
                 self.stdoutdata += no_block_read(self.process.stdout)
@@ -176,6 +186,10 @@ class __Action(object):
                 self.exit_status = 3
                 # Do not keep a pointer to the process
                 del self.process
+                # Get the user and system time
+                _, _, n_child_utime, n_child_stime, _ = os.times()
+                self.u_time = n_child_utime - child_utime
+                self.s_time = n_child_stime - child_stime
                 return
             return
 
@@ -195,12 +209,13 @@ class __Action(object):
         # we should not keep the process now
         del self.process
 
-        # if the exit status is anormal, we add stderr to the output
-        # TODO: Anormal should be logged properly no?
+        # if the exit status is abnormal, we add stderr to the output
+        # TODO: Abnormal should be logged properly no?
         if self.exit_status not in valid_exit_status:
             self.stdoutdata = self.stdoutdata + self.stderrdata
         elif ('sh: -c: line 0: unexpected EOF while looking for matching'
               in self.stderrdata
+              or ('sh: -c:' in self.stderrdata and ': Syntax' in self.stderrdata)
               or 'sh: Syntax error: Unterminated quoted string'
               in self.stderrdata):
             # Very, very ugly. But subprocess._handle_exitstatus does
@@ -218,15 +233,21 @@ class __Action(object):
 
         self.status = 'done'
         self.execution_time = time.time() - self.check_time
+        # Also get the system and user times
+        _, _, n_child_utime, n_child_stime, _ = os.times()
+        self.u_time = n_child_utime - child_utime
+        self.s_time = n_child_stime - child_stime
+
 
     def copy_shell__(self, new_i):
         """
-        Coppy all attributes listed in 'only_copy_prop' from `self` to
+        Copy all attributes listed in 'only_copy_prop' from `self` to
         `new_i`.
         """
         for prop in only_copy_prop:
             setattr(new_i, prop, getattr(self, prop))
         return new_i
+
 
     def got_shell_characters(self):
         for c in self.command:
@@ -252,7 +273,7 @@ if os.name != 'nt':
             # in a shell mode. So look at theses parameters
             force_shell |= self.got_shell_characters()
 
-            # 2.7 and higer Python version need a list of args for cmd
+            # 2.7 and higher Python version need a list of args for cmd
             # and if not force shell (if, it's useless, even dangerous)
             # 2.4->2.6 accept just the string command
             if sys.version_info < (2, 7) or force_shell:
@@ -313,7 +334,7 @@ else:
     class Action(__Action):
 
         def execute__(self):
-            # 2.7 and higer Python version need a list of args for cmd
+            # 2.7 and higher Python version need a list of args for cmd
             # 2.4->2.6 accept just the string command
             if sys.version_info < (2, 7):
                 cmd = self.command

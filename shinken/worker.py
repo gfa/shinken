@@ -25,7 +25,7 @@
 
 from Queue import Empty
 
-# In android, we sould use threads, not process
+# In android, we should use threads, not process
 is_android = True
 try:
     import android
@@ -41,6 +41,10 @@ else:
 import time
 import sys
 import signal
+import traceback
+import cStringIO
+
+
 from log import logger
 
 
@@ -67,8 +71,8 @@ class Worker:
         self._mortal = mortal
         self._idletime = 0
         self._timeout = timeout
+        self.s = None
         self.processes_by_worker = processes_by_worker
-        self.input_queue = s
         self._c = Queue()  # Private Control queue for the Worker
         # By default, take our own code
         if target is None:
@@ -99,9 +103,9 @@ class Worker:
         if hasattr(self._c, 'close'):
             self._c.close()
             self._c.join_thread()
-        if hasattr(self.input_queue, 'close'):
-            self.input_queue.close()
-            self.input_queue.join_thread()
+        if hasattr(self.s, 'close'):
+            self.s.close()
+            self.s.join_thread()
 
     def join(self, timeout=None):
         self._process.join(timeout)
@@ -155,7 +159,7 @@ class Worker:
                 self._idletime = 0
                 r = chk.execute()
                 # Maybe we got a true big problem in the
-                # action lanching
+                # action launching
                 if r == 'toomanyopenfiles':
                     # We should die as soon as we return all checks
                     self.i_am_dying = True
@@ -178,7 +182,6 @@ class Worker:
                 #msg = Message(id=self.id, type='Result', data=action)
                 try:
                     self.returns_queue.put(action)
-
                 except IOError, exp:
                     logger.error("[%d] Exiting: %s" % (self.id, exp))
                     sys.exit(2)
@@ -206,12 +209,28 @@ class Worker:
         else:
             return 0
 
+
+    # Wrapper function for work in order to catch the exception
+    # to see the real work, look at do_work
+    def work(self, s, returns_queue, c):
+        try:
+            self.do_work(s, returns_queue, c)
+        # Catch any exception, try to print it and exit anyway
+        except Exception, exp:
+            output = cStringIO.StringIO()
+            traceback.print_exc(file=output)
+            logger.error("Worker '%d' exit with an unmanaged exception : %s" % (self.id, output.getvalue()))
+            output.close()
+            # Ok I die now
+            raise
+
+
     # id = id of the worker
     # s = Global Queue Master->Slave
     # m = Queue Slave->Master
     # return_queue = queue managed by manager
     # c = Control Queue for the worker
-    def work(self, s, returns_queue, c):
+    def do_work(self, s, returns_queue, c):
         ## restore default signal handler for the workers:
         # but on android, we are a thread, so don't do it
         if not is_android:
@@ -253,9 +272,9 @@ class Worker:
                 # The master must be dead and we are lonely, we must die
                 break
 
-            # Look if we are dying, and if we finishe all current checks
+            # Look if we are dying, and if we finish all current checks
             # if so, we really die, our master poller will launch a new
-            # worker because we were too weack to manage our job :(
+            # worker because we were too weak to manage our job :(
             if len(self.checks) == 0 and self.i_am_dying:
                 logger.warning("[%d] I DIE because I cannot do my job as I should (too many open files?)... forgot me please." % self.id)
                 break

@@ -68,7 +68,7 @@ try:
 except ImportError, exp:  # Like in nt system or Android
 
 
-    # temporary workarround:
+    # temporary workaround:
     def get_cur_user():
         return "shinken"
 
@@ -142,7 +142,7 @@ class Daemon(object):
         'ca_cert':       StringProp(default='etc/certs/ca.pem'),
         'server_cert':   StringProp(default='etc/certs/server.pem'),
         'use_local_log': BoolProp(default='1'),
-        'log_level':     LogLevelProp(default='WARNING'),
+        'log_level':     LogLevelProp(default='INFO'), # TODO : fix the scheduler so we can put back WARNiING here
         'hard_ssl_name_check':    BoolProp(default='0'),
         'idontcareaboutsecurity': BoolProp(default='0'),
         'daemon_enabled':BoolProp(default='1'),
@@ -191,7 +191,7 @@ class Daemon(object):
         # when we will be in daemon
         self.debug_output = []
 
-        # We will inialize the Manager() when we load modules
+        # We will initialize the Manager() when we load modules
         # and be really forked()
         self.manager = None
 
@@ -328,7 +328,7 @@ class Daemon(object):
             # Windows do not manage the rw+ mode, so we must open in read mode first, then reopen it write mode...
             if not write and os.path.exists(p):
                 self.fpid = open(p, 'r+')
-            else:  # If it doesnt exist too, we create it as void
+            else:  # If it doesn't exist too, we create it as void
                 self.fpid = open(p, 'w+')
         except Exception, e:
             raise InvalidPidFile(e)
@@ -349,7 +349,7 @@ class Daemon(object):
         try:
             pid = int(self.fpid.read())
         except:
-            logger.warning("Stale pidfile exists (no or invalid or unreadable content). Reusing it.")
+            logger.info("Stale pidfile exists (no or invalid or unreadable content). Reusing it.")
             return
 
         try:
@@ -360,7 +360,7 @@ class Daemon(object):
             return
         except os.error, e:
             if e.errno == errno.ESRCH:
-                logger.warning("Stale pidfile exists (pid=%d not exists). Reusing it." % (pid))
+                logger.info("Stale pidfile exists (pid=%d not exists). Reusing it." % (pid))
                 return
             raise
 
@@ -435,7 +435,7 @@ class Daemon(object):
             raise Exception, "%s [%d]" % (e.strerror, e.errno)
         if pid != 0:
             # In the father: we check if our child exit correctly
-            # it has to write the pid of our futur little child..
+            # it has to write the pid of our future little child..
             def do_exit(sig, frame):
                 logger.error("Timeout waiting child while it should have quickly returned ; something weird happened")
                 os.kill(pid, 9)
@@ -465,7 +465,7 @@ class Daemon(object):
         del self.fpid
         self.pid = os.getpid()
         self.debug_output.append("We are now fully daemonized :) pid=%d" % self.pid)
-        # We can now output some previously silenced debug ouput
+        # We can now output some previously silenced debug output
         logger.warning("Printing stored debug messages prior to our daemonization")
         for s in self.debug_output:
             logger.debug(s)
@@ -519,20 +519,26 @@ class Daemon(object):
             if not hasattr(Pyro.config, 'PYROSSL_CERTDIR'):
                 logger.error('Sorry, this Pyro version do not manage SSL.')
                 sys.exit(2)
-            Pyro.config.PYROSSL_CERTDIR = os.path.abspath(ssl_conf.certs_dir)
+            # Protect against name->IP substritution in Pyro3
+            Pyro.config.PYRO_DNS_URI = 1
+            # Beware #839 Pyro lib need str path, not unicode
+            Pyro.config.PYROSSL_CERTDIR = os.path.abspath(str(ssl_conf.certs_dir))
+            if not os.path.exists(Pyro.config.PYROSSL_CERTDIR):
+                logger.error('Error : the directory %s is missing for SSL certificates (certs_dir). Please fix it in your configuration' % Pyro.config.PYROSSL_CERTDIR)
+                sys.exit(2)
             logger.debug("Using ssl certificate directory: %s" % Pyro.config.PYROSSL_CERTDIR)
-            Pyro.config.PYROSSL_CA_CERT = os.path.abspath(ssl_conf.ca_cert)
+            Pyro.config.PYROSSL_CA_CERT = os.path.abspath(str(ssl_conf.ca_cert))
             logger.debug("Using ssl ca cert file: %s" % Pyro.config.PYROSSL_CA_CERT)
-            Pyro.config.PYROSSL_CERT = os.path.abspath(ssl_conf.server_cert)
+            Pyro.config.PYROSSL_CERT = os.path.abspath(str(ssl_conf.server_cert))
             logger.debug("Using ssl server cert file: %s" % Pyro.config.PYROSSL_CERT)
 
-            if self.hard_ssl_name_check:
+            if ssl_conf.hard_ssl_name_check:
                 Pyro.config.PYROSSL_POSTCONNCHECK = 1
             else:
                 Pyro.config.PYROSSL_POSTCONNCHECK = 0
 
-        # create the server, but Pyro > 4.8 veersion
-        # do not have such objets...
+        # create the server, but Pyro > 4.8 version
+        # do not have such objects...
         try:
             Pyro.config.PYRO_STORAGE = "."
             Pyro.config.PYRO_COMPRESSION = 1
@@ -627,11 +633,11 @@ class Daemon(object):
         # Maybe the os module got the initgroups function. If so, try to call it.
         # Do this when we are still root
         if hasattr(os, 'initgroups'):
-            logger.info('Trying to initialize additonnal groups for the daemon')
+            logger.info('Trying to initialize additional groups for the daemon')
             try:
                 os.initgroups(self.user, gid)
             except OSError, e:
-                logger.warning('Cannot call the additonnal groups setting with initgroups (%s)' % e.strerror)
+                logger.warning('Cannot call the additional groups setting with initgroups (%s)' % e.strerror)
         try:
             # First group, then user :)
             os.setregid(gid, gid)
@@ -651,10 +657,16 @@ class Daemon(object):
             if config._sections == {}:
                 logger.error("Bad or missing config file: %s " % self.config_file)
                 sys.exit(2)
-            for (key, value) in config.items('daemon'):
-                if key in properties:
-                    value = properties[key].pythonize(value)
-                setattr(self, key, value)
+            try:
+                for (key, value) in config.items('daemon'):
+                    if key in properties:
+                        value = properties[key].pythonize(value)
+                    setattr(self, key, value)
+            except ConfigParser.InterpolationMissingOptionError, e:
+                e = str(e)
+                wrong_variable = e.split('\n')[3].split(':')[1].strip()
+                logger.error("Incorrect or missing variable '%s' in config file : %s" % (wrong_variable, self.config_file))
+                sys.exit(2)
         else:
             logger.warning("No config file specified, use defaults parameters")
         # Now fill all defaults where missing parameters
@@ -749,7 +761,7 @@ class Daemon(object):
     # Check for a possible system time change and act correspondingly.
     # If such a change is detected then we return the number of seconds that changed. 0 if no time change was detected.
     # Time change can be positive or negative:
-    # positive when we have been sent in the futur and negative if we have been sent in the past.
+    # positive when we have been sent in the future and negative if we have been sent in the past.
     def check_for_system_time_change(self):
 
         now = time.time()

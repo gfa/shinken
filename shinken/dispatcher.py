@@ -26,7 +26,7 @@
 """
  This is the class of the dispatcher. Its role is to dispatch
  configurations to other elements like schedulers, reactionner,
- pollers, receivers and brokers. It is responsible for hight avaibility part. If an
+ pollers, receivers and brokers. It is responsible for high availability part. If an
  element dies and the element type has a spare, it sends the config of the
  dead one to the spare
 """
@@ -52,7 +52,7 @@ class Dispatcher:
         # Pointer to the whole conf
         self.conf = conf
         self.realms = conf.realms
-        # Direct pointer to importants elements for us
+        # Direct pointer to important elements for us
 
         for sat_type in ('arbiters', 'schedulers', 'reactionners', 'brokers', 'receivers', 'pollers'):
             setattr(self, sat_type, getattr(self.conf, sat_type))
@@ -75,7 +75,7 @@ class Dispatcher:
         for cfg in self.conf.confs.values():
             cfg.is_assigned = False
             cfg.assigned_to = None
-            # We try to remeber each "push", so we
+            # We try to remember each "push", so we
             # can know with configuration ids+flavor
             # if a satellite already got it or not :)
             cfg.push_flavor = 0
@@ -114,12 +114,12 @@ class Dispatcher:
         for rec in self.receivers:
             rec.need_conf = True
 
+
     # checks alive elements
     def check_alive(self):
         for elt in self.elements:
             #print "Updating elements", elt.get_name(), elt.__dict__
             elt.update_infos()
-
 
             # Not alive needs new need_conf
             # and spare too if they do not have already a conf
@@ -143,6 +143,9 @@ class Dispatcher:
             # If not me and I'm a master
             if arb != self.arbiter and self.arbiter and not self.arbiter.spare:
                 if not arb.have_conf(self.conf.magic_hash):
+                    if not hasattr(self.conf, 'whole_conf_pack'):
+                        logger.error('CRITICAL: the arbiter try to send a configureion but it is not a MASTER one?? Look at your configuration.')
+                        continue
                     arb.put_conf(self.conf.whole_conf_pack)
                 else:
                     # Ok, it already has the conf. I remember that
@@ -150,7 +153,7 @@ class Dispatcher:
                     arb.do_not_run()
 
         # We check for confs to be dispatched on alive scheds. If not dispatched, need dispatch :)
-        # and if dipatch on a failed node, remove the association, and need a new disaptch
+        # and if dispatch on a failed node, remove the association, and need a new dispatch
         for r in self.realms:
             for cfg_id in r.confs:
                 push_flavor = r.confs[cfg_id].push_flavor
@@ -182,9 +185,9 @@ class Dispatcher:
                         sched.conf = None
                     # Else: ok the conf is managed by a living scheduler
 
-        # Maybe satelite are alive, but do not have a cfg yet.
+        # Maybe satellites are alive, but do not have a cfg yet.
         # I think so. It is not good. I ask a global redispatch for
-        # the cfg_id I think is not corectly dispatched.
+        # the cfg_id I think is not correctly dispatched.
         for r in self.realms:
             for cfg_id in r.confs:
                 push_flavor = r.confs[cfg_id].push_flavor
@@ -236,6 +239,7 @@ class Dispatcher:
                 if rec.reachable and not rec.got_conf():
                     self.dispatch_ok = False  # so we will redispatch all
                     rec.need_conf = True
+
 
     # Imagine a world where... oh no, wait...
     # Imagine a master got the conf and the network is down
@@ -291,6 +295,7 @@ class Dispatcher:
                             logger.info("I ask to remove configuration N%d from %s" % (id, satellite.get_name()))
                             satellite.remove_from_conf(id)
 
+
     # Make an ORDERED list of schedulers so we can
     # send them conf in this order for a specific realm
     def get_scheduler_ordered_list(self, r):
@@ -317,6 +322,7 @@ class Dispatcher:
         print_sched.reverse()
 
         return scheds
+
 
     # Manage the dispatch
     # REF: doc/shinken-conf-dispatching.png (3)
@@ -375,7 +381,7 @@ class Dispatcher:
 
                         # We tag conf with the instance_name = scheduler_name
                         instance_name = sched.scheduler_name
-                        # We give this configuraton a new 'flavor'
+                        # We give this configuration a new 'flavor'
                         conf.push_flavor = random.randint(1, 1000000)
                         # REF: doc/shinken-conf-dispatching.png (3)
                         # REF: doc/shinken-scheduler-lost.png (2)
@@ -461,7 +467,8 @@ class Dispatcher:
                             # If we got a broker, we make the list to pop a new
                             # item first for each scheduler, so it will smooth the load
                             # But the spare must stay at the end ;)
-                            if kind == "broker":
+                            # WARNING : skip this if we are in a complet broker link realm
+                            if kind == "broker" and not r.broker_complete_links:
                                 nospare = [s for s in satellites if not s.spare]
                                 # Should look over the list, not over
                                 if len(nospare) != 0:
@@ -496,7 +503,7 @@ class Dispatcher:
                                     satellite.cfg['schedulers'][cfg_id] = cfg_for_satellite_part
                                     if satellite.manage_arbiters:
                                         satellite.cfg['arbiters'] = arbiters_cfg
-
+                                    
                                     # Brokers should have poller/reactionners links too
                                     if kind == "broker":
                                         r.fill_broker_with_poller_reactionner_links(satellite)
@@ -515,15 +522,15 @@ class Dispatcher:
                                         logger.info('[%s] Dispatch OK of configuration %s to %s %s' % (r.get_name(), cfg_id, kind, satellite.get_name()))
                                         # We change the satellite configuration, update our data
                                         satellite.known_conf_managed_push(cfg_id, flavor)
-
+                                        
                                         nb_cfg_sent += 1
                                         r.to_satellites_managed_by[kind][cfg_id].append(satellite)
 
                                         # If we got a broker, the conf_id must be sent to only ONE
-                                        # broker, so here it's done, we are happy.
-                                        if kind == "broker":
+                                        # broker in a classic realm.
+                                        if kind == "broker" and not r.broker_complete_links:
                                             break
-
+                                        
                                         #If receiver, we must send the hostnames of this configuration
                                         if kind == 'receiver':
                                             hnames = [h.get_name() for h in cfg.hosts]
@@ -535,14 +542,17 @@ class Dispatcher:
                                 logger.info("[%s] OK, no more %s sent need" % (r.get_name(), kind))
                                 r.to_satellites_need_dispatch[kind][cfg_id] = False
 
-
             # And now we dispatch receivers. It's easier, they need ONE conf
             # in all their life :)
             for r in self.realms:
                 for rec in r.receivers:
                     if rec.need_conf:
                         logger.info('[%s] Trying to send configuration to receiver %s' % (r.get_name(), rec.get_name()))
-                        is_sent = rec.put_conf(rec.cfg)
+                        is_sent = False
+                        if rec.reachable:
+                            is_sent = rec.put_conf(rec.cfg)
+                        else:
+                            logger.info('[%s] Skyping configuration sent to offline receiver %s' % (r.get_name(), rec.get_name()))
                         if is_sent:
                             rec.active = True
                             rec.need_conf = False

@@ -25,7 +25,7 @@
 
 import time
 
-# Import all obejcts we will need
+# Import all objects we will need
 from shinken.objects.host import Host, Hosts
 from shinken.objects.hostgroup import Hostgroup, Hostgroups
 from shinken.objects.service import Service, Services
@@ -45,7 +45,7 @@ from shinken.util import safe_print
 from shinken.message import Message
 
 
-# Class for a Regenerator. It will get broks, and "regenerate" real obejcts
+# Class for a Regenerator. It will get broks, and "regenerate" real objects
 # from them :)
 class Regenerator(object):
     def __init__(self):
@@ -87,9 +87,11 @@ class Regenerator(object):
         # The Queue where to launch message, will be fill from the broker
         self.from_q = None
 
+
     # Load an external queue for sending messages
     def load_external_queue(self, from_q):
         self.from_q = from_q
+
 
     # If we are called from a scheduler it self, we load the data from it
     def load_from_scheduler(self, sched):
@@ -120,6 +122,8 @@ class Regenerator(object):
             self.realms.add(h.realm)
             break
 
+
+
     # If we are in a scheduler mode, some broks are dangerous, so
     # we will skip them
     def want_brok(self, brok):
@@ -136,6 +140,7 @@ class Regenerator(object):
         # Not in don't want? so want! :)
         return True
 
+
     def manage_brok(self, brok):
         """ Look for a manager function for a brok, and call it """
         manage = getattr(self, 'manage_' + brok.type + '_brok', None)
@@ -143,9 +148,11 @@ class Regenerator(object):
         if manage and self.want_brok(brok):
             return manage(brok)
 
+
     def update_element(self, e, data):
         for prop in data:
             setattr(e, prop, data[prop])
+
 
     def create_reversed_list(self):
         self.hosts.create_reversed_list()
@@ -163,6 +170,7 @@ class Regenerator(object):
         #self.discoveryrules.create_reversed_list()
         #self.discoveryruns.create_reversed_list()
         self.commands.create_reversed_list()
+
 
     # Now we get all data about an instance, link all this stuff :)
     def all_done_linking(self, inst_id):
@@ -213,7 +221,7 @@ class Regenerator(object):
                 hg.members.extend(inphg.members)
             else:  # else take the new one
                 self.hostgroups[inphg.id] = inphg
-        # We can delare hostgroups done
+        # We can declare hostgroups done
         self.hostgroups.create_reversed_list()
 
         # Now link HOSTS with hostgroups, and commands
@@ -269,7 +277,7 @@ class Regenerator(object):
                 sg.members.extend(inpsg.members)
             else:  # else take the new one
                 self.servicegroups[inpsg.id] = inpsg
-        # We can delare servicegroups done
+        # We can declare servicegroups done
         self.servicegroups.create_reversed_list()
 
         # Now link SERVICES with hosts, servicesgroups, and commands
@@ -356,7 +364,7 @@ class Regenerator(object):
                 cg.members.extend(inpcg.members)
             else:  # else take the new one
                 self.contactgroups[inpcg.id] = inpcg
-        # We can delare contactgroups done
+        # We can declare contactgroups done
         self.contactgroups.create_reversed_list()
 
         safe_print("ALL LINKING TIME"*10, time.time() - start)
@@ -531,8 +539,9 @@ class Regenerator(object):
         for sg in self.servicegroups:
             sg.members = [s for s in sg.members if s.instance_id != c_id]
 
-        # We now regererate reversed list so the client will find only real objects
+        # We now regenerate reversed list so the client will find only real objects
         self.create_reversed_list()
+
 
     # Get a new host. Add in in in progress tab
     def manage_initial_host_status_brok(self, b):
@@ -557,6 +566,7 @@ class Regenerator(object):
 
         # Ok, put in in the in progress hosts
         inp_hosts[h.id] = h
+
 
     # From now we only create an hostgroup in the in prepare
     # part. We will link at the end.
@@ -584,6 +594,7 @@ class Regenerator(object):
         # so now only save it
         inp_hostgroups[hg.id] = hg
 
+
     def manage_initial_service_status_brok(self, b):
         data = b.data
         hname = data['host_name']
@@ -607,6 +618,7 @@ class Regenerator(object):
 
         # Ok, put in in the in progress hosts
         inp_services[s.id] = s
+
 
     # We create a servicegroup in our in progress part
     # we will link it after
@@ -634,9 +646,10 @@ class Regenerator(object):
         # so now only save it
         inp_servicegroups[sg.id] = sg
 
+
     # For Contacts, it's a global value, so 2 cases:
     # We got it -> we update it
-    # We don't -> we crete it
+    # We don't -> we create it
     # In both cases we need to relink it
     def manage_initial_contact_status_brok(self, b):
         data = b.data
@@ -658,7 +671,7 @@ class Regenerator(object):
         del c.service_notification_period
 
         # Now manage notification ways too
-        # Same than for cotnacts. We create or
+        # Same than for contacts. We create or
         # update
         nws = c.notificationways
         safe_print("Got notif ways", nws)
@@ -692,6 +705,7 @@ class Regenerator(object):
         self.contacts.create_reversed_list()
         self.notificationways.create_reversed_list()
 
+
     # From now we only create an hostgroup with unlink data in the
     # in prepare list. We will link all of them at the end.
     def manage_initial_contactgroup_status_brok(self, b):
@@ -718,17 +732,18 @@ class Regenerator(object):
         # so now only save it
         inp_contactgroups[cg.id] = cg
 
+
     # For Timeperiods we got 2 cases: do we already got the command or not.
     # if got: just update it
-    # if not: create it and delacre it in our main commands
+    # if not: create it and declare it in our main commands
     def manage_initial_timeperiod_status_brok(self, b):
         data = b.data
-        #print "Creatin timeperiod", data
+        #print "Creating timeperiod", data
         tpname = data['timeperiod_name']
 
         tp = self.timeperiods.find_by_name(tpname)
         if tp:
-            # print "Already exisintg timeperiod", tpname
+            # print "Already existing timeperiod", tpname
             self.update_element(tp, data)
         else:
             #print "Creating Timeperiod:", tpname
@@ -738,9 +753,10 @@ class Regenerator(object):
             # We add a timeperiod, we update the reversed list
             self.timeperiods.create_reversed_list()
 
+
     # For command we got 2 cases: do we already got the command or not.
     # if got: just update it
-    # if not: create it and delacre it in our main commands
+    # if not: create it and declare it in our main commands
     def manage_initial_command_status_brok(self, b):
         data = b.data
         cname = data['command_name']
@@ -757,6 +773,7 @@ class Regenerator(object):
             # Ok, we can regenerate the reversed list so
             self.commands.create_reversed_list()
 
+
     def manage_initial_scheduler_status_brok(self, b):
         data = b.data
         scheduler_name = data['scheduler_name']
@@ -770,6 +787,7 @@ class Regenerator(object):
         print "scheduler added"
         #print "MONCUL: Add a new scheduler ", sched
         #self.number_of_objects += 1
+
 
     def manage_initial_poller_status_brok(self, b):
         data = b.data
@@ -785,6 +803,7 @@ class Regenerator(object):
         #print "MONCUL: Add a new scheduler ", sched
         #self.number_of_objects += 1
 
+
     def manage_initial_reactionner_status_brok(self, b):
         data = b.data
         reactionner_name = data['reactionner_name']
@@ -799,6 +818,7 @@ class Regenerator(object):
         #print "MONCUL: Add a new scheduler ", sched
         #self.number_of_objects += 1
 
+
     def manage_initial_broker_status_brok(self, b):
         data = b.data
         broker_name = data['broker_name']
@@ -812,6 +832,7 @@ class Regenerator(object):
         print "broker added"
         #print "MONCUL: Add a new scheduler ", sched
         #self.number_of_objects += 1
+
 
     def manage_initial_receiver_status_brok(self, b):
         data = b.data
@@ -835,8 +856,8 @@ class Regenerator(object):
     def manage_initial_broks_done_brok(self, b):
         inst_id = b.data['instance_id']
         print "Finish the configuration of instance", inst_id
-
         self.all_done_linking(inst_id)
+
 
 ################# Status Update part
 
@@ -847,7 +868,7 @@ class Regenerator(object):
         data = b.data
         c_id = data['instance_id']
 
-        # If we got an update about an unknow isntance, cry and ask for a full
+        # If we got an update about an unknown instance, cry and ask for a full
         # version!
         if not c_id in self.configs.keys():
             # Do not ask data too quickly, very dangerous
@@ -862,6 +883,7 @@ class Regenerator(object):
         # Ok, good conf, we can update it
         c = self.configs[c_id]
         self.update_element(c, data)
+
 
     # In fact, an update of a host is like a check return
     def manage_update_host_status_brok(self, b):
@@ -905,6 +927,7 @@ class Regenerator(object):
             for dtc in h.downtimes + h.comments:
                 dtc.ref = h
 
+
     # In fact, an update of a service is like a check return
     def manage_update_service_status_brok(self, b):
         # There are some properties that should not change and are already linked
@@ -944,6 +967,7 @@ class Regenerator(object):
             for dtc in s.downtimes + s.comments:
                 dtc.ref = s
 
+
     def manage_update_broker_status_brok(self, b):
         data = b.data
         broker_name = data['broker_name']
@@ -952,6 +976,7 @@ class Regenerator(object):
             self.update_element(s, data)
         except Exception:
             pass
+
 
     def manage_update_receiver_status_brok(self, b):
         data = b.data
@@ -962,6 +987,7 @@ class Regenerator(object):
         except Exception:
             pass
 
+
     def manage_update_reactionner_status_brok(self, b):
         data = b.data
         reactionner_name = data['reactionner_name']
@@ -971,6 +997,7 @@ class Regenerator(object):
         except Exception:
             pass
 
+
     def manage_update_poller_status_brok(self, b):
         data = b.data
         poller_name = data['poller_name']
@@ -979,6 +1006,7 @@ class Regenerator(object):
             self.update_element(s, data)
         except Exception:
             pass
+
 
     def manage_update_scheduler_status_brok(self, b):
         data = b.data
@@ -990,6 +1018,7 @@ class Regenerator(object):
         except Exception:
             pass
 
+
 ################# Check result and schedule part
     def manage_host_check_result_brok(self, b):
         data = b.data
@@ -1000,9 +1029,11 @@ class Regenerator(object):
             self.before_after_hook(b, h)
             self.update_element(h, data)
 
+
     # this brok should arrive within a second after the host_check_result_brok
     def manage_host_next_schedule_brok(self, b):
         self.manage_host_check_result_brok(b)
+
 
     # A service check have just arrived, we UPDATE data info with this
     def manage_service_check_result_brok(self, b):
@@ -1013,6 +1044,7 @@ class Regenerator(object):
         if s:
             self.before_after_hook(b, s)
             self.update_element(s, data)
+
 
     # A service check update have just arrived, we UPDATE data info with this
     def manage_service_next_schedule_brok(self, b):

@@ -37,6 +37,7 @@ from string import Template
 from shinken.basemodule import BaseModule
 from datetime import datetime
 from shinken.log import logger
+from shinken.misc.perfdata import PerfDatas
 
 
 properties = {
@@ -47,7 +48,7 @@ properties = {
 
 # called by the plugin manager
 def get_instance(plugin):
-    logger.debug("[Graphite UI]Get an GRAPITE UI module for plugin %s" % plugin.get_name())
+    logger.debug("[Graphite UI]Get an GRAPHITE UI module for plugin %s" % plugin.get_name())
 
     instance = Graphite_Webui(plugin)
     return instance
@@ -56,6 +57,7 @@ def get_instance(plugin):
 class Graphite_Webui(BaseModule):
     def __init__(self, modconf):
         BaseModule.__init__(self, modconf)
+        self.multival = re.compile(r'_(\d+)$')
         self.uri = getattr(modconf, 'uri', None)
         self.templates_path = getattr(modconf, 'templates_path', '/tmp')
 
@@ -91,37 +93,29 @@ class Graphite_Webui(BaseModule):
     # return ('/', '30'), ('/var', '50')
     def get_metric_and_value(self, perf_data):
         res = []
-        s = perf_data.strip()
-        # Get all metrics non void
-        elts = s.split(' ')
-        metrics = [e for e in elts if e != '']
+        metrics = PerfDatas(perf_data)
 
         for e in metrics:
-            logger.debug("[Graphite UI] groking: %s" % e)
-            elts = e.split('=', 1)
-            if len(elts) != 2:
-                continue
-            name = self.illegal_char.sub('_', elts[0])
-            raw = elts[1]
-            # get the first value of ;
-            if ';' in raw:
-                elts = raw.split(';')
-                name_value = {name: elts[0], name + '_warn': elts[1], name + '_crit': elts[2]}
-            else:
-                value = raw
-                name_value = {name: raw}
+            try:
+                logger.debug("[Graphite UI] groking: %s" % str(e))
+            except UnicodeEncodeError:
+                pass
+
+            name = self.illegal_char.sub('_', e.name)
+            name = self.multival.sub(r'.*', name)
+
+            # get metric value and its thresholds values if they exist
+            name_value = {name: (e.value, e.uom)}
+            if e.warning and e.critical:
+                name_value[name + '_warn'] = e.warning
+                name_value[name + '_crit'] = e.critical
             # bailout if need
             if name_value[name] == '':
                 continue
-
-            # Try to get the int/float in it :)
-            for key, value in name_value.items():
-                m = re.search("(\d*\.*\d*)(.*)", value)
-                if m:
-                    name_value[key] = m.groups(0)
-                else:
-                    continue
-            logger.debug("[Graphite UI] Got in the end: %s, %s" % (name, value))
+            try:
+                logger.debug("[Graphite UI] Got in the end: %s, %s" % (name, e.value))
+            except UnicodeEncodeError:
+                pass
             for key, value in name_value.items():
                 res.append((key, value))
         return res
@@ -130,7 +124,7 @@ class Graphite_Webui(BaseModule):
     # or add it if not present.
     def _replaceFontSize ( self, url, newsize ):
 
-    # Do we have fontSize in the url alreadu, or not ?
+    # Do we have fontSize in the url already, or not ?
         if re.search('fontSize=',url) is None:
             url = url + '&fontSize=' + newsize
         else:
@@ -150,6 +144,21 @@ class Graphite_Webui(BaseModule):
 
         t = elt.__class__.my_type
         r = []
+
+        # Hanling Graphite variables
+        data_source=""
+        graphite_pre=""
+        graphite_post=""
+        if self.graphite_data_source:
+            data_source = ".%s" % self.graphite_data_source
+        if t == 'host':
+            if "_GRAPHITE_PRE" in elt.customs:
+                graphite_pre = "%s." % self.illegal_char.sub("_", elt.customs["_GRAPHITE_PRE"])
+        elif t == 'service':
+            if "_GRAPHITE_PRE" in elt.host.customs:
+                graphite_pre = "%s." % self.illegal_char.sub("_", elt.host.customs["_GRAPHITE_PRE"])
+            if "_GRAPHITE_POST" in elt.customs:
+                graphite_post = ".%s" % self.illegal_char.sub("_", elt.customs["_GRAPHITE_POST"])
 
         # Format the start & end time (and not only the date)
         d = datetime.fromtimestamp(graphstart)
@@ -173,14 +182,14 @@ class Graphite_Webui(BaseModule):
             # Read the template file, as template string python object
            
             html = Template(template_html)
-            # Build the dict to instanciate the template string
+            # Build the dict to instantiate the template string
             values = {}
             if t == 'host':
-                values['host'] = self.illegal_char.sub("_", elt.host_name)
+                values['host'] = graphite_pre + self.illegal_char.sub("_", elt.host_name) + data_source
                 values['service'] = '__HOST__'
             if t == 'service':
-                values['host'] = self.illegal_char.sub("_", elt.host.host_name)
-                values['service'] = self.illegal_char.sub("_", elt.service_description)
+                values['host'] = graphite_pre + self.illegal_char.sub("_", elt.host.host_name) + data_source
+                values['service'] = self.illegal_char.sub("_", elt.service_description) + graphite_post
             values['uri'] = self.uri
             # Split, we may have several images.
             for img in html.substitute(values).split('\n'):
@@ -210,10 +219,10 @@ class Graphite_Webui(BaseModule):
                 uri = self.uri + 'render/?width=586&height=308&lineMode=connected&from=' + d + "&until=" + e
                 if re.search(r'_warn|_crit', metric):
                     continue
-                if self.graphite_data_source:
-                    target = "&target=%s.%s.__HOST__.%s" % (host_name, self.graphite_data_source, metric)
-                else:
-                    target = "&target=%s.__HOST__.%s" % (host_name, metric)
+                target = "&target=%s%s%s.__HOST__.%s" % (graphite_pre,
+                                                         host_name,
+                                                         data_source,
+                                                         metric)
                 uri += target + target + "?????"
                 v = {}
                 v['link'] = self.uri
@@ -240,12 +249,12 @@ class Graphite_Webui(BaseModule):
                     continue
                 elif value[1] == '%':
                     uri += "&yMin=0&yMax=100"
-                if self.graphite_data_source:
-                    target = "&target=%s.%s.%s.%s" % (host_name,
-                                                    self.graphite_data_source,
-                                                    desc, metric)
-                else:
-                    target = "&target=%s.%s.%s" % (host_name, desc, metric)
+                target = "&target=%s%s%s.%s.%s%s" % (graphite_pre,
+                                                  host_name,
+                                                  data_source,
+                                                  desc,
+                                                  metric,
+                                                  graphite_post )
                 uri += target + target + "?????"
                 v = {}
                 v['link'] = self.uri
@@ -256,3 +265,4 @@ class Graphite_Webui(BaseModule):
 
         # Oups, bad type?
         return []
+

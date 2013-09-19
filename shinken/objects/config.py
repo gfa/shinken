@@ -56,6 +56,8 @@ from realm import Realm, Realms
 from contact import Contact, Contacts
 from contactgroup import Contactgroup, Contactgroups
 from notificationway import NotificationWay, NotificationWays
+from checkmodulation import CheckModulation, CheckModulations
+from macromodulation import MacroModulation, MacroModulations
 from servicegroup import Servicegroup, Servicegroups
 from servicedependency import Servicedependency, Servicedependencies
 from hostdependency import Hostdependency, Hostdependencies
@@ -90,9 +92,9 @@ class Config(Item):
     # *required: if True, there is not default, and the config must put them
     # *default: if not set, take this value
     # *pythonize: function call to
-    # *class_inherit: (Service, 'blabla'): must set this propertie to the
+    # *class_inherit: (Service, 'blabla'): must set this property to the
     #  Service class with name blabla
-    #  if (Service, None): must set this properti to the Service class with
+    #  if (Service, None): must set this property to the Service class with
     #  same name
     # *unused: just to warn the user that the option he use is no more used
     #  in Shinken
@@ -107,7 +109,7 @@ class Config(Item):
         'log_file':                 UnusedProp(text=no_longer_used_txt),
         'object_cache_file':        UnusedProp(text=no_longer_used_txt),
         'precached_object_file':    UnusedProp(text='Shinken does not use precached_object_files. Skipping.'),
-        'resource_file':            StringProp(default='/tmp/ressources.txt'),
+        'resource_file':            StringProp(default='/tmp/resources.txt'),
         'temp_file':                UnusedProp(text='Temporary files are not used in the shinken architecture. Skipping'),
         'status_file':              UnusedProp(text=no_longer_used_txt),
         'status_update_interval':   UnusedProp(text=no_longer_used_txt),
@@ -122,7 +124,7 @@ class Config(Item):
         'log_rotation_method':      CharProp(default='d'),
         'log_archive_path':         StringProp(default='/usr/local/shinken/var/archives'),
         'check_external_commands':  BoolProp(default='1'),
-        'command_check_interval':   UnusedProp(text='anoter value than look always the file is useless, so we fix it.'),
+        'command_check_interval':   UnusedProp(text='another value than look always the file is useless, so we fix it.'),
         'command_file':             StringProp(default=''),
         'external_command_buffer_slots': UnusedProp(text='We do not limit the external command slot.'),
         'check_for_updates':        UnusedProp(text='network administrators will never allow such communication between server and the external world. Use your distribution packet manager to know if updates are available or go to the http://www.shinken-monitoring.org website instead.'),
@@ -153,7 +155,7 @@ class Config(Item):
         'service_inter_check_delay_method': UnusedProp(text='This option is useless in the Shinken scheduling. The only way is the smart way.'),
         'max_service_check_spread': IntegerProp(default='30', class_inherit=[(Service, 'max_check_spread')]),
         'service_interleave_factor': UnusedProp(text='This option is useless in the Shinken scheduling because it use a random distribution for initial checks.'),
-        'max_concurrent_checks':    UnusedProp(text='Limiting the max concurrent checks is not helful to got a good running monitoring server.'),
+        'max_concurrent_checks':    UnusedProp(text='Limiting the max concurrent checks is not helpful to got a good running monitoring server.'),
         'check_result_reaper_frequency': UnusedProp(text='Shinken do not use reaper process.'),
         'max_check_result_reaper_time': UnusedProp(text='Shinken do not use reaper process.'),
         'check_result_path':        UnusedProp(text='Shinken use in memory returns, not check results on flat file.'),
@@ -257,7 +259,7 @@ class Config(Item):
                                                                 (ReceiverLink, None),  (ArbiterLink, None)]),
         'certs_dir':             StringProp(default='etc/certs'),
         'ca_cert':               StringProp(default='etc/certs/ca.pem'),
-        'server_cert':          StringProp(default='etc/certs/server.pem'),
+        'server_cert':           StringProp(default='etc/certs/server.pem'),
         'hard_ssl_name_check':   BoolProp(default='0'),
 
         # Log format
@@ -312,6 +314,8 @@ class Config(Item):
         'contact':          (Contact, Contacts, 'contacts'),
         'contactgroup':     (Contactgroup, Contactgroups, 'contactgroups'),
         'notificationway':  (NotificationWay, NotificationWays, 'notificationways'),
+        'checkmodulation':  (CheckModulation, CheckModulations, 'checkmodulations'),
+        'macromodulation':  (MacroModulation, MacroModulations, 'macromodulations'),
         'servicedependency': (Servicedependency, Servicedependencies, 'servicedependencies'),
         'hostdependency':   (Hostdependency, Hostdependencies, 'hostdependencies'),
         'arbiter':          (ArbiterLink, ArbiterLinks, 'arbiters'),
@@ -460,7 +464,7 @@ class Config(Item):
                     self.packs_dirs.append(cfg_dir_name)
 
                     # Now walk for it.
-                    # BEWARE : we can follow simlinks only for python 2.6 and higher
+                    # BEWARE : we can follow symlinks only for python 2.6 and higher
                     args = {}
                     if sys.version_info >= (2, 6):
                         args['followlinks'] = True
@@ -502,7 +506,7 @@ class Config(Item):
     def read_config_buf(self, buf):
         params = []
         types = ['void', 'timeperiod', 'command', 'contactgroup', 'hostgroup',
-                 'contact', 'notificationway', 'host', 'service', 'servicegroup',
+                 'contact', 'notificationway', 'checkmodulation', 'macromodulation', 'host', 'service', 'servicegroup',
                  'servicedependency', 'hostdependency', 'arbiter', 'scheduler',
                  'reactionner', 'broker', 'receiver', 'poller', 'realm', 'module',
                  'resultmodulation', 'escalation', 'serviceescalation', 'hostescalation',
@@ -522,7 +526,7 @@ class Config(Item):
             if line.startswith("# IMPORTEDFROM="):
                 filefrom = line.split('=')[1]
                 continue
-            # Protect \; to be considered as commetns
+            # Protect \; to be considered as comments
             line = line.replace('\;', '__ANTI-VIRG__')
             line = line.split(';')[0].strip()
             # Now we removed real comments, replace them with just ;
@@ -698,9 +702,11 @@ class Config(Item):
         #print "Hosts"
         # link hosts with timeperiods and commands
         self.hosts.linkify(self.timeperiods, self.commands, \
-                               self.contacts, self.realms, \
-                               self.resultmodulations, self.businessimpactmodulations, \
-                               self.escalations, self.hostgroups, self.triggers)
+                           self.contacts, self.realms, \
+                           self.resultmodulations, self.businessimpactmodulations, \
+                           self.escalations, self.hostgroups, self.triggers, self.checkmodulations,
+                           self.macromodulations
+                           )
 
         self.hostsextinfo.merge(self.hosts)
 
@@ -712,9 +718,11 @@ class Config(Item):
         #print "Services"
         # link services with other objects
         self.services.linkify(self.hosts, self.commands, \
-                                  self.timeperiods, self.contacts,\
-                                  self.resultmodulations, self.businessimpactmodulations, \
-                                  self.escalations, self.servicegroups, self.triggers)
+                              self.timeperiods, self.contacts,\
+                              self.resultmodulations, self.businessimpactmodulations, \
+                              self.escalations, self.servicegroups, self.triggers, self.checkmodulations,
+                              self.macromodulations
+                              )
 
         self.servicesextinfo.merge(self.services)
 
@@ -724,6 +732,12 @@ class Config(Item):
 
         # link notificationways with timeperiods and commands
         self.notificationways.linkify(self.timeperiods, self.commands)
+
+        # link notificationways with timeperiods and commands
+        self.checkmodulations.linkify(self.timeperiods, self.commands)
+
+        # Link with timeperiods
+        self.macromodulations.linkify(self.timeperiods)
 
         #print "Contactgroups"
         # link contacgroups with contacts
@@ -773,6 +787,7 @@ class Config(Item):
         # satellites
         self.realms.prepare_for_satellites_conf()
 
+
     # In the scheduler we need to relink the commandCall with
     # the real commands
     def late_linkify(self):
@@ -787,9 +802,10 @@ class Config(Item):
         self.services.late_linkify_s_by_commands(self.commands)
         self.contacts.late_linkify_c_by_commands(self.commands)
 
+
     # Some properties are dangerous to be send like that
     # like realms linked in hosts. Realms are too big to send (too linked)
-    # We are also pre-serializing the confs so the sending pahse will
+    # We are also pre-serializing the confs so the sending phase will
     # be quicker.
     def prepare_for_sending(self):
         # Preparing hosts and hostgroups for sending. Some properties
@@ -854,12 +870,12 @@ class Config(Item):
                 unmanaged.append(s)
         if len(unmanaged) != 0:
             mailing_list_uri = "https://lists.sourceforge.net/lists/listinfo/shinken-devel"
-            logger.warning("The following parameter(s) are not curently managed.")
+            logger.warning("The following parameter(s) are not currently managed.")
 
             for s in unmanaged:
                 logger.info(s)
 
-            logger.warning("Unmanaged configuration staement, do you really need it? Ask for it on the developer mailinglist %s or submit a pull request on the Shinken github " % mailing_list_uri)
+            logger.warning("Unmanaged configuration statement, do you really need it? Ask for it on the developer mailinglist %s or submit a pull request on the Shinken github " % mailing_list_uri)
 
     # Use to fill groups values on hosts and create new services
     # (for host group ones)
@@ -876,7 +892,7 @@ class Config(Item):
         self.hostgroups.explode()
 
         #print "Services"
-        #print "Initialy got nb of services: %d" % len(self.services.items)
+        #print "Initially got nb of services: %d" % len(self.services.items)
         self.services.explode(self.hosts, self.hostgroups, self.contactgroups,
                               self.servicegroups, self.servicedependencies,
                               self.triggers)
@@ -911,14 +927,14 @@ class Config(Item):
         #self.timeperiods.remove_twins()
 
 
-    # Dependancies are importants for scheduling
+    # Dependencies are important for scheduling
     # This function create dependencies linked between elements.
     def apply_dependencies(self):
         self.hosts.apply_dependencies()
         self.services.apply_dependencies()
 
     # Use to apply inheritance (template and implicit ones)
-    # So elements wil have their configured properties
+    # So elements will have their configured properties
     def apply_inheritance(self):
         # inheritance properties by template
         #print "Hosts"
@@ -957,6 +973,8 @@ class Config(Item):
         self.contacts.fill_default()
         self.contactgroups.fill_default()
         self.notificationways.fill_default()
+        self.checkmodulations.fill_default()
+        self.macromodulations.fill_default()
         self.services.fill_default()
         self.servicegroups.fill_default()
         self.resultmodulations.fill_default()
@@ -979,9 +997,10 @@ class Config(Item):
         # be created after this point
         self.fill_default_satellites()
         # now we have all elements, we can create a default
-        # realm if need and it will be taged to sat that do
+        # realm if need and it will be tagged to sat that do
         # not have an realm
         self.fill_default_realm()
+        self.realms.fill_default() # also put default inside the realms themselves
         self.reactionners.fill_default()
         self.pollers.fill_default()
         self.brokers.fill_default()
@@ -991,12 +1010,12 @@ class Config(Item):
         # The arbiters are already done.
         # self.arbiters.fill_default()
 
-        # Now fill some fields we can predict (like adress for hosts)
+        # Now fill some fields we can predict (like address for hosts)
         self.fill_predictive_missing_parameters()
 
     # Here is a special functions to fill some special
     # properties that are not filled and should be like
-    # adress for host (if not set, put host_name)
+    # address for host (if not set, put host_name)
     def fill_predictive_missing_parameters(self):
         self.hosts.fill_predictive_missing_parameters()
 
@@ -1006,7 +1025,7 @@ class Config(Item):
     def fill_default_realm(self):
         if len(self.realms) == 0:
             # Create a default realm with default value =1
-            # so all hosts without realm wil be link with it
+            # so all hosts without realm will be link with it
             default = Realm({'realm_name': 'Default', 'default': '1'})
             self.realms = Realms([default])
             logger.warning("No realms defined, I add one at %s" % default.get_name())
@@ -1059,7 +1078,7 @@ class Config(Item):
         return False
 
     # return if one arbiter got a module of type: mod_type
-    # but this tuime it's tricky: the python pass is not done!
+    # but this time it's tricky: the python pass is not done!
     # so look with strings!
     def got_arbiter_module_type_defined(self, mod_type):
         for a in self.arbiters:
@@ -1106,7 +1125,7 @@ class Config(Item):
             # if he forget to put a module for Brokers
             got_status_dat_module = self.got_broker_module_type_defined('status_dat')
 
-            # We need to create the modue on the fly?
+            # We need to create the module on the fly?
             if not got_status_dat_module:
                 data = {'object_cache_file': self.object_cache_file,
                         'status_file': self.status_file,
@@ -1269,6 +1288,8 @@ class Config(Item):
         self.contacts.create_reversed_list()
         self.contactgroups.create_reversed_list()
         self.notificationways.create_reversed_list()
+        self.checkmodulations.create_reversed_list()
+        self.macromodulations.create_reversed_list()
         self.services.create_reversed_list()
         self.servicegroups.create_reversed_list()
         self.timeperiods.create_reversed_list()
@@ -1312,7 +1333,7 @@ class Config(Item):
         logger.info('Running pre-flight check on configuration data...')
         r = self.conf_is_correct
 
-        # Globally unmanged parameters
+        # Globally unmanaged parameters
         if self.read_config_silent == 0:
             logger.info('Checking global parameters...')
         if not self.check_error_on_hard_unmanaged_parameters():
@@ -1321,7 +1342,7 @@ class Config(Item):
 
         for x in ('hosts', 'hostgroups', 'contacts', 'contactgroups', 'notificationways',
                   'escalations', 'services', 'servicegroups', 'timeperiods', 'commands',
-                  'hostsextinfo', 'servicesextinfo'):
+                  'hostsextinfo', 'servicesextinfo', 'checkmodulations', 'macromodulations'):
             if self.read_config_silent == 0:
                 logger.info('Checking %s...' % (x))
             cur = getattr(self, x)
@@ -1364,9 +1385,12 @@ class Config(Item):
         # Check that for each poller_tag of a host, a poller exists with this tag
         # TODO: need to check that poller are in the good realm too
         hosts_tag = set()
+        services_tag = set()
         pollers_tag = set()
         for h in self.hosts:
             hosts_tag.add(h.poller_tag)
+        for s in self.services:
+            services_tag.add(s.poller_tag)
         for p in self.pollers:
             for t in p.poller_tags:
                 pollers_tag.add(t)
@@ -1375,6 +1399,12 @@ class Config(Item):
                 logger.error("Hosts exist with poller_tag %s but no poller got this tag" % tag)
                 self.add_error("Error: hosts exist with poller_tag %s but no poller got this tag" % tag)
                 r = False
+        if not services_tag.issubset(pollers_tag):
+            for tag in services_tag.difference(pollers_tag):        
+                logger.error("Services exist with poller_tag %s but no poller got this tag" % tag)
+                self.add_error("Error: services exist with poller_tag %s but no poller got this tag" % tag)
+                r = False
+    
 
         # Check that all hosts involved in business_rules are from the same realm
         for l in [self.services, self.hosts]:
@@ -1400,6 +1430,8 @@ class Config(Item):
         self.contactgroups.pythonize()
         self.contacts.pythonize()
         self.notificationways.pythonize()
+        self.checkmodulations.pythonize()
+        self.macromodulations.pythonize()
         self.servicegroups.pythonize()
         self.services.pythonize()
         self.servicedependencies.pythonize()
@@ -1444,6 +1476,7 @@ class Config(Item):
         self.hosts.compute_hash()
         self.contacts.pythonize()
         self.notificationways.pythonize()
+        self.checkmodulations.pythonize()
         self.services.pythonize()
         self.resultmodulations.pythonize()
         self.businessimpactmodulations.pythonize()
@@ -1490,7 +1523,7 @@ class Config(Item):
             for (dep, tmp, tmp2, tmp3, tmp4) in h.chk_depend_of:
                 links.add((dep, h))
 
-        # For services: they are link woth their own host but we need
+        # For services: they are link with their own host but we need
         # To have the hosts of service dep in the same pack too
         for s in self.services:
             for (dep, tmp, tmp2, tmp3, tmp4) in s.act_depend_of:
@@ -1498,7 +1531,7 @@ class Config(Item):
                 # of the service...
                 if hasattr(dep, 'host'):
                     links.add((dep.host, s.host))
-            # The othe type of dep
+            # The other type of dep
             for (dep, tmp, tmp2, tmp3, tmp4) in s.chk_depend_of:
                 links.add((dep.host, s.host))
 
@@ -1682,9 +1715,8 @@ class Config(Item):
             # Now in packs we have the number of packs [h1, h2, etc]
             # equal to the number of schedulers.
             r.packs = packs
-        logger.info("Number of hosts in all the realm  %d"
+        logger.info("Total number of hosts : %d"
                             % nb_elements_all_realms)
-        logger.info("Number of hosts %d" % len(self.hosts))
         if len(self.hosts) != nb_elements_all_realms:
             logger.warning("There are %d hosts defined, and %d hosts "
                                 "dispatched in the realms. Some hosts have "
@@ -1697,10 +1729,10 @@ class Config(Item):
 
     # Use the self.conf and make nb_parts new confs.
     # nbparts is equal to the number of schedulerlink
-    # New confs are independent whith checks. The only communication
+    # New confs are independent with checks. The only communication
     # That can be need is macro in commands
     def cut_into_parts(self):
-        #print "Scheduler configurated:", self.schedulers
+        #print "Scheduler configured:", self.schedulers
         # I do not care about alive or not. User must have set a spare if need it
         nb_parts = len([s for s in self.schedulers if not s.spare])
 
@@ -1734,6 +1766,8 @@ class Config(Item):
                 new_hostgroups.append(hg.copy_shell())
             cur_conf.hostgroups = Hostgroups(new_hostgroups)
             cur_conf.notificationways = self.notificationways
+            cur_conf.checkmodulations = self.checkmodulations
+            cur_conf.macromodulations = self.macromodulations
             cur_conf.contactgroups = self.contactgroups
             cur_conf.contacts = self.contacts
             cur_conf.triggers = self.triggers

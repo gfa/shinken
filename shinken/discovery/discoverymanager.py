@@ -32,6 +32,7 @@ import re
 import time
 import copy
 import random
+import string
 # Always initialize random...
 random.seed(time.time())
 try:
@@ -112,22 +113,52 @@ class DiscoveredHost(object):
             d['address'] = self.data['ip']
 
         self.matched_rules.sort(by_order)
-        
+
         for r in self.matched_rules:
             for k,v in r.writing_properties.iteritems():
-                # If it's a + (add) property, add with a ,
+                # If it's a + (add) property, append
                 if k.startswith('+'):
-                    prop = k[1:]
+                    kprop = k[1:]
                     # If the d do not already have this prop,
-                    # just push it
-                    if not prop in d:
-                        d[prop] = v
-                    # oh, must add with a , so
+                    # create list
+                    if not kprop in d:
+                        print 'New prop',kprop
+                        d[kprop]=[]
+                
+                elif not k.startswith('-'):
+                    kprop = k
+                    if not kprop in d:
+                        print 'New prop',kprop
                     else:
-                        print 'Already got', d[prop], 'add', v
-                        d[prop] = d[prop] + ',' + v
-                else:
-                    d[k] = v
+                        print 'Prop',kprop,'reset with new value'
+                    d[kprop]=[]
+
+                for prop in string.split(v,','):
+                    prop=prop.strip()
+                    #checks that prop does not already exist and adds
+                    if not prop in d[kprop]:
+                        if len(d[kprop]) > 0:
+                            print 'Already got', ','.join(d[kprop]), 'add', prop
+                        else:
+                            print 'Add',prop
+                        d[kprop].append(prop)
+
+            # Now look for - (rem) property
+            for k,v in r.writing_properties.iteritems():
+                if k.startswith('-'):
+                    kprop = k[1:]
+                    if kprop in d:
+                        for prop in string.split(v,','):
+                            prop = prop.strip()
+                            if prop in d[kprop]:
+                                print 'Already got', ','.join(d[kprop]), 'rem', prop
+                                d[kprop].remove(prop)
+ 
+        # Change join prop list in string with a ',' separator
+        for (k,v) in d.iteritems():
+            if type(d[k]).__name__=='list':
+                d[k]=','.join(d[k])
+
         self.properties = d
         print 'Update our properties', self.name, d
         
@@ -171,7 +202,7 @@ class DiscoveredHost(object):
     def match_rules(self):
         print 'And our data?', self.data
         for r in self.rules:
-            # If the rule was already sucessfuly for this host, skip it
+            # If the rule was already successfully for this host, skip it
             if r in self.matched_rules:
                 print 'We already apply the rule', r.get_name(), 'for the host', self.name
                 continue
@@ -343,7 +374,7 @@ class DiscoveryManager:
         for mod in self.conf.modules:
             if getattr(mod, 'module_name', '') == self.dbmod:
                 if Connection is None:
-                    print "ERROR : cannot use Mongodb database : please install the pymongo librairy"
+                    print "ERROR : cannot use Mongodb database : please install the pymongo library"
                     break
                 # Now try to connect
                 try:
@@ -444,7 +475,7 @@ class DiscoveryManager:
     def match_rules(self):
         for (name, dh) in self.disco_data.iteritems():
             for r in self.discoveryrules:
-                # If the rule was already sucessfuly for this host, skip it
+                # If the rule was already successfully for this host, skip it
                 if r in dh.matched_rules:
                     print 'We already apply the rule', r.get_name(), 'for the host', name
                     continue
@@ -539,7 +570,7 @@ class DiscoveryManager:
                     # When same host but different properties are detected
                     if dha.name == dhb.name and dha.properties != dhb.properties:
                         for (k,v) in dhb.properties.iteritems():
-                            # Merge host macros is their are differents
+                            # Merge host macros if their properties are different
                             if k.startswith('_') and dha.properties.has_key(k) and dha.properties[k] != dhb.properties[k]:
                                 dha.data[k] = dha.properties[k] + ',' + v
                                 print('Merged host macro:', k, dha.properties[k])

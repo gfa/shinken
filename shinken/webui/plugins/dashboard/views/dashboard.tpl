@@ -1,4 +1,4 @@
-%rebase layout globals(), js=['dashboard/js/widgets.js', 'dashboard/js/jquery.easywidgets.js'], css=['dashboard/css/widget.css', 'dashboard/css/dashboard.css'], title='Dashboard', menu_part='/dashboard'
+%rebase layout globals(), js=['dashboard/js/widgets.js', 'dashboard/js/jquery.easywidgets.js'], css=['dashboard/css/widget.css', 'dashboard/css/dashboard.css'], title='Dashboard', menu_part='/dashboard', refresh=True
 
 %from shinken.bin import VERSION
 %helper = app.helper
@@ -13,7 +13,7 @@
 <div id="warn-pref" class="hero-unit alert-critical">
   <h2>Warning:</h2>
   <p>You didn't define a WebUI module for saving user preferences like the MongoDB one. You won't be able to use this page!</p>
-  <p><a href="http://www.shinken-monitoring.org/wiki/shinken_10min_start" class="btn btn-success btn-large">Learn more »</a></p>
+  <p><a href="http://www.shinken-monitoring.org/wiki/shinken_10min_start" class="btn btn-success btn-large">Learn more <i class="icon-hand-right"></i></a></p>
 </div>
 %end
 

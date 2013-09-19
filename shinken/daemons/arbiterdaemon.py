@@ -31,7 +31,7 @@ from Queue import Empty
 import socket
 import traceback
 import cStringIO
-
+import cPickle
 
 from shinken.objects.config import Config
 from shinken.external_command import ExternalCommandManager
@@ -65,9 +65,9 @@ class IForArbiter(Interface):
 
     # The master arbiter asks me not to run!
     def do_not_run(self):
-        # If i'm the master, ignore the command
+        # If I'm the master, ignore the command
         if self.app.is_master:
-            logger.debug("Received message to not run. I am the Master, ignore and continue running.")
+            logger.debug("Received message to not run. I am the Master, ignore and continue to run.")
         # Else, I'm just a spare, so I listen to my master
         else:
             logger.debug("Received message to not run. I am the spare, stopping.")
@@ -133,7 +133,7 @@ class IForArbiter(Interface):
 # Main Arbiter Class
 class Arbiter(Daemon):
 
-    def __init__(self, config_files, is_daemon, do_replace, verify_only, debug, debug_file, profile=None, analyse=None, migrate=None):
+    def __init__(self, config_files, is_daemon, do_replace, verify_only, debug, debug_file, profile=None, analyse=None, migrate=None, arb_name=''):
 
         super(Arbiter, self).__init__('arbiter', config_files[0], is_daemon, do_replace, debug, debug_file)
 
@@ -141,6 +141,7 @@ class Arbiter(Daemon):
         self.verify_only = verify_only
         self.analyse = analyse
         self.migrate = migrate
+        self.arb_name = arb_name
 
         self.broks = {}
         self.is_master = False
@@ -244,11 +245,14 @@ class Arbiter(Daemon):
 
         # Search which Arbiterlink I am
         for arb in self.conf.arbiters:
-            if arb.is_me():
+            if arb.is_me(self.arb_name):
                 arb.need_conf = False
                 self.me = arb
                 self.is_master = not self.me.spare
-                logger.info("I am the %s Arbiter: %s" % (('master', 'spare')[self.is_master], arb.get_name()))
+                if self.is_master:
+                    logger.info("I am the master Arbiter: %s" % arb.get_name())
+                else:
+                    logger.info("I am a spare Arbiter: %s" % arb.get_name())
 
                 # Set myself as alive ;)
                 self.me.alive = True
@@ -280,7 +284,7 @@ class Arbiter(Daemon):
                 try:
                     r = inst.get_objects()
                 except Exception, exp:
-                    logger.error("Instance %s raised an exception %s. Log and continu running" % (inst.get_name(), str(exp)))
+                    logger.error("Instance %s raised an exception %s. Log and continue to run" % (inst.get_name(), str(exp)))
                     output = cStringIO.StringIO()
                     traceback.print_exc(file=output)
                     logger.error("Back trace of this remove: %s" % (output.getvalue()))
@@ -409,7 +413,7 @@ class Arbiter(Daemon):
 
         logger.info('Things look okay - No serious problems were detected during the pre-flight check')
 
-        # Clean objects of temporary/unecessary attributes for live work:
+        # Clean objects of temporary/unnecessary attributes for live work:
         self.conf.clean()
 
         # Exit if we are just here for config checking
@@ -499,7 +503,7 @@ class Arbiter(Daemon):
         self.do_load_modules()
         print self.modules_manager.instances
         if len(self.modules_manager.instances) == 0:
-            print "Error duringthe initialization of the import module. Bailing out"
+            print "Error during the initialization of the import module. Bailing out"
             sys.exit(2)
         print "Configuration migrating in progress..."
         mod  = self.modules_manager.instances[0]
@@ -570,9 +574,9 @@ class Arbiter(Daemon):
         for arb in self.conf.arbiters:
             if (arb.address, arb.port) == (self.host, self.port):
                 self.me = arb
-                arb.is_me = lambda: True  # we now definitively know who we are, just keep it.
+                arb.is_me = lambda x: True  # we now definitively know who we are, just keep it.
             else:
-                arb.is_me = lambda: False  # and we know who we are not, just keep it.
+                arb.is_me = lambda x: False  # and we know who we are not, just keep it.
 
 
     def do_loop_turn(self):
@@ -639,7 +643,7 @@ class Arbiter(Daemon):
             # Now check if master is dead or not
             now = time.time()
             if now - self.last_master_speack > master_timeout:
-                logger.info("Master is dead!!! I (%s) take the lead" % self.me.get_name())
+                logger.info("Arbiter Master is dead. The arbiter %s take the lead" % self.me.get_name())
                 self.must_run = True
                 break
 
@@ -674,7 +678,7 @@ class Arbiter(Daemon):
         # Before running, I must be sure who am I
         # The arbiters change, so we must re-discover the new self.me
         for arb in self.conf.arbiters:
-            if arb.is_me():
+            if arb.is_me(self.arb_name):
                 self.me = arb
 
         if self.conf.human_timestamp_log:

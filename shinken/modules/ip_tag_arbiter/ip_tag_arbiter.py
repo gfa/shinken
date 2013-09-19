@@ -36,22 +36,32 @@ from shinken.log import logger
 
 # Just print some stuff
 class Ip_Tag_Arbiter(BaseModule):
-    def __init__(self, mod_conf, ip_range, prop, value, method):
+    def __init__(self, mod_conf, ip_range, prop, value, method, ignore_hosts=None):
         BaseModule.__init__(self, mod_conf)
         self.ip_range = IP(ip_range)
         self.property = prop
         self.value = value
         self.method = method
+        if ignore_hosts:
+            self.ignore_hosts = ignore_hosts.split(', ')
+            logger.debug("[IP Tag] Ignoring hosts : %s" % self.ignore_hosts)
+        else:
+            self.ignore_hosts = []
 
     # Called by Arbiter to say 'let's prepare yourself guy'
     def init(self):
-        print "Initilisation of the ip range tagguer module"
+        logger.info("[IP Tag] Initialization of the ip range tagger module")
 
     def hook_early_configuration(self, arb):
         logger.info("[IpTag] in hook late config")
         for h in arb.conf.hosts:
             if not hasattr(h, 'address') and not hasattr(h, 'host_name'):
                 continue
+
+            if h.get_name() in self.ignore_hosts:
+                logger.debug("[IP Tag] Ignoring host %s" % h.get_name())
+                continue
+
             # The address to resolve
             addr = None
 
@@ -61,8 +71,8 @@ class Ip_Tag_Arbiter(BaseModule):
             else:
                 addr = h.address
 
-            print "Looking for h", h.get_name()
-            print addr
+            logger.debug("[IP Tag] Looking for %s" % h.get_name())
+            logger.debug("[IP Tag] Address is %s" % str(addr))
             h_ip = None
             try:
                 IP(addr)
@@ -79,22 +89,35 @@ class Ip_Tag_Arbiter(BaseModule):
                     pass
 
             # Ok, maybe we succeed :)
-            print "Host ip is:", h_ip
+            logger.debug("[IP Tag] Host ip is: %s" % str(h_ip))
             # If we got an ip that match and the object do not already got
             # the property, tag it!
             if h_ip and h_ip in self.ip_range:
-                print "Is in the range"
-                # 2 cases: append or replace.
-                # append will join with the value if exist
+                logger.debug("[IP Tag] Is in the range")
+                # 4 cases: append , replace and set
+                # append will join with the value if exist (on the END)
+                # prepend will join with the value if exist (on the BEGINING)
                 # replace will replace it if NOT existing
+                # set put the value even if the property exists
                 if self.method == 'append':
                     orig_v = getattr(h, self.property, '')
-                    print "Orig_v", orig_v
+                    logger.debug("[IP Tag] Orig_v: %s" % str(orig_v))
                     new_v = ','.join([orig_v, self.value])
-                    print "Newv", new_v
+                    logger.debug("[IP Tag] Newv %s" % new_v)
+                    setattr(h, self.property, new_v)
+
+                # Same but we put before
+                if self.method == 'prepend':
+                    orig_v = getattr(h, self.property, '')
+                    logger.debug("[File Tag] Orig_v: %s" % str(orig_v))
+                    new_v = ','.join([self.value, orig_v])
+                    logger.debug("[File Tag] Newv %s" % new_v)
                     setattr(h, self.property, new_v)
 
                 if self.method == 'replace':
                     if not hasattr(h, self.property):
                         # Ok, set the value!
                         setattr(h, self.property, self.value)
+
+                if self.method == 'set':
+                    setattr(h, self.property, self.value)

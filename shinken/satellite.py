@@ -104,6 +104,7 @@ class IForArbiter(Interface):
         logger.debug("The arbiter asked me what I manage. It's %s" % self.app.what_i_managed())
         return self.app.what_i_managed() # self.app.schedulers.keys()
 
+
     # Call by arbiter if it thinks we are running but we must do not (like
     # if I was a spare that take a conf but the master returns, I must die
     # and wait a new conf)
@@ -164,12 +165,12 @@ class ISchedulers(Interface):
 class IBroks(Interface):
     """Interface for Brokers
     They connect here and get all broks (data for brokers)
-    data must be ORDERED! (initial status BEFORE uodate...)
+    data must be ORDERED! (initial status BEFORE update...)
 
     """
 
     # poller or reactionner ask us actions
-    def get_broks(self):
+    def get_broks(self, bname):
         res = self.app.get_broks()
         return res
 
@@ -189,7 +190,7 @@ class BaseSatellite(Daemon):
         self.interface = IForArbiter(self)
 
     # The arbiter can resent us new conf in the pyro_daemon port.
-    # We do not want to loose time about it, so it's not a bloking
+    # We do not want to loose time about it, so it's not a blocking
     # wait, timeout = 0s
     # If it send us a new conf, we reinit the connections of all schedulers
     def watch_for_new_conf(self, timeout):
@@ -222,8 +223,6 @@ class Satellite(BaseSatellite):
         self.broks = {}
 
         self.workers = {}   # dict of active workers
-
-        self.nb_actions_in_workers = 0
 
         # Init stats like Load for workers
         self.wait_ratio = Load(initial_value=1)
@@ -325,8 +324,6 @@ class Satellite(BaseSatellite):
         except KeyError:
             pass
 
-        # We update stats
-        self.nb_actions_in_workers = -1
 
     # Return the chk to scheduler and clean them
     # REF: doc/shinken-action-queues.png (6)
@@ -396,7 +393,7 @@ class Satellite(BaseSatellite):
     # Create and launch a new worker, and put it into self.workers
     # It can be mortal or not
     def create_and_launch_worker(self, module_name='fork', mortal=True):
-        # ceate the input queue of this worker
+        # create the input queue of this worker
         try:
             if is_android:
                 q = Queue()
@@ -503,7 +500,7 @@ class Satellite(BaseSatellite):
             # good: we can think that we have a worker and it's not True
             # So we del it
             if not w.is_alive():
-                logger.warning("[%s] The worker %s goes down unexpectly!" % (self.name, w.id))
+                logger.warning("[%s] The worker %s goes down unexpectedly!" % (self.name, w.id))
                 # Terminate immediately
                 w.terminate()
                 w.join(timeout=1)
@@ -584,9 +581,6 @@ class Satellite(BaseSatellite):
             a.status = 'queue'
             self.assign_to_a_queue(a)
 
-            # Update stats
-            self.nb_actions_in_workers += 1
-
     # Take an action and put it into one queue
     def assign_to_a_queue(self, a):
         msg = Message(id=0, type='Do', data=a)
@@ -617,8 +611,11 @@ class Satellite(BaseSatellite):
                 continue
 
             try:
-                con = sched['con']
-                if con is not None:  # None = not initilized
+                try:
+                    con = sched['con']
+                except KeyError:
+                    con = None
+                if con is not None:  # None = not initialized
                     pyro.set_timeout(con, 120)
                     # OK, go for it :)
                     tmp = con.get_checks(do_checks=do_checks, do_actions=do_actions, \
@@ -649,7 +646,7 @@ class Satellite(BaseSatellite):
                     logger.debug(''.join(PYRO_VERSION < "4.0" and Pyro.util.getPyroTraceback(exp) or Pyro.util.getPyroTraceback()))
                 except:
                     pass
-            # What the F**k? We do not know what happenned,
+            # What the F**k? We do not know what happened,
             # log the error message if possible.
             except Exception, exp:
                 logger.error("A satellite raised an unknown exception: %s (%s)" % (exp, type(exp)))
@@ -783,7 +780,7 @@ class Satellite(BaseSatellite):
             # REF: doc/shinken-action-queues.png (6)
             self.manage_returns()
 
-        # Get objects from our modules that are not wroker based
+        # Get objects from our modules that are not worker based
         self.get_objects_from_from_queues()
 
         # Say to modules it's a new tick :)
@@ -800,7 +797,7 @@ class Satellite(BaseSatellite):
         self.uri4 = self.pyro_daemon.register(self.scheduler_interface, "Schedulers")
 
         # self.s = Queue() # Global Master -> Slave
-        # We can open the Queeu for fork AFTER
+        # We can open the Queue for fork AFTER
         self.q_by_mod['fork'] = {}
 
         # Under Android, we do not have multiprocessing lib
@@ -888,14 +885,14 @@ class Satellite(BaseSatellite):
                 self.max_workers = cpu_count()
             except NotImplementedError:
                 self.max_workers = 4
-            logger.info("Using max workers: %s" % self.max_workers)
+        logger.info("[%s] Using max workers: %s" % (self.name, self.max_workers))
         self.min_workers = g_conf['min_workers']
         if self.min_workers == 0 and not is_android:
             try:
                 self.min_workers = cpu_count()
             except NotImplementedError:
                 self.min_workers = 4
-            logger.info("Using min workers: %s" % self.min_workers)
+        logger.info("[%s] Using min workers: %s" % (self.name, self.min_workers))
 
         self.processes_by_worker = g_conf['processes_by_worker']
         self.polling_interval = g_conf['polling_interval']

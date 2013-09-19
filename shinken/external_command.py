@@ -401,7 +401,7 @@ class ExternalCommandManager:
             logger.debug("Malformed command '%s'" % command)
             return None
         ts = elts2[0]
-        # Now we will get the timestamp as [123456]
+        # Now we will get the timestamps as [123456]
         if not ts.startswith('[') or not ts.endswith(']'):
             logger.debug("Malformed command '%s'" % command)
             return None
@@ -495,7 +495,7 @@ class ExternalCommandManager:
                         if c is not None:
                             # the find will be redone by
                             # the commandCall creation, but != None
-                            # is usefull so a bad command will be catch
+                            # is useful so a bad command will be caught
                             args.append(val)
 
                     elif type_searched == 'host_group':
@@ -1297,15 +1297,20 @@ class ExternalCommandManager:
                 return
 
             i = host.launch_check(now, force=True)
-            for chk in host.actions:
+            c = None
+            for chk in host.checks_in_progress:
                 if chk.id == i:
                     c = chk
+            # Should not be possible to not find the check, but if so, don't crash
+            if not c:
+                console_logger.error('Passive host check failed. Cannot find the check id %s' % i)
+                return
             # Now we 'transform the check into a result'
             # So exit_status, output and status is eaten by the host
             c.exit_status = status_code
             c.get_outputs(plugin_output, host.max_plugins_output_length)
             c.status = 'waitconsume'
-            c.check_time = self.current_timestamp  # we are using the external command timestamp
+            c.check_time = self.current_timestamp  # we are using the external command timestamps
             # Set the corresponding host's check_type to passive=1
             c.set_type_passive()
             self.sched.nb_check_received += 1
@@ -1330,16 +1335,21 @@ class ExternalCommandManager:
             if self.current_timestamp < service.last_chk:
                 return
 
+            c = None
             i = service.launch_check(now, force=True)
-            for chk in service.actions:
+            for chk in service.checks_in_progress:
                 if chk.id == i:
                     c = chk
+            # Should not be possible to not find the check, but if so, don't crash
+            if not c:
+                console_logger.error('Passive service check failed. Cannot find the check id %s' % i)
+                return                
             # Now we 'transform the check into a result'
             # So exit_status, output and status is eaten by the service
             c.exit_status = return_code
             c.get_outputs(plugin_output, service.max_plugins_output_length)
             c.status = 'waitconsume'
-            c.check_time = self.current_timestamp  # we are using the external command timestamp
+            c.check_time = self.current_timestamp  # we are using the external command timestamps
             # Set the corresponding service's check_type to passive=1
             c.set_type_passive()
             self.sched.nb_check_received += 1
@@ -1449,7 +1459,7 @@ class ExternalCommandManager:
         service.schedule(force=False, force_time=check_time)
         self.sched.get_and_register_status_brok(service)
 
-    # SCHEDULE_SVC_DOWNTIME;<host_name>;<service_desription><start_time>;<end_time>;<fixed>;<trigger_id>;<duration>;<author>;<comment>
+    # SCHEDULE_SVC_DOWNTIME;<host_name>;<service_description><start_time>;<end_time>;<fixed>;<trigger_id>;<duration>;<author>;<comment>
     def SCHEDULE_SVC_DOWNTIME(self, service, start_time, end_time, fixed, trigger_id, duration, author, comment):
         dt = Downtime(service, start_time, end_time, fixed, trigger_id, duration, author, comment)
         service.add_downtime(dt)

@@ -27,7 +27,7 @@ import time
 
 from shinken.action import Action
 from shinken.brok import Brok
-from shinken.property import BoolProp, IntegerProp, StringProp
+from shinken.property import BoolProp, IntegerProp, StringProp, FloatProp
 from shinken.autoslots import AutoSlots
 
 
@@ -59,13 +59,14 @@ class Notification(Action):
         'env':                 StringProp(default={}),
         'exit_status':         IntegerProp(default=3),
         'command_call':        StringProp(default=None),
-        'execution_time':      IntegerProp(default=0),
+        'execution_time':      FloatProp(default=0),
+        'u_time':              FloatProp(default=0.0),
+        's_time':              FloatProp(default=0.0),
         'contact':             StringProp(default=None),
         '_in_timeout':         BoolProp(default=False),
         'notif_nb':            IntegerProp(default=0),
         'status':              StringProp(default='scheduled'),
         't_to_go':             IntegerProp(default=0),
-        'is_a':                StringProp(default=''),
         'command':             StringProp(default=''),
         'sched_id':            IntegerProp(default=0),
         'timeout':             IntegerProp(default=10),
@@ -74,7 +75,7 @@ class Notification(Action):
         'worker':              StringProp(default='none'),
         'reactionner_tag':     StringProp(default='None'),
         'creation_time':       IntegerProp(default=0),
-        # Keep a lsit of currently active escalations
+        # Keep a list of currently active escalations
         'already_start_escalations':  StringProp(default=set()),
 
     }
@@ -82,7 +83,7 @@ class Notification(Action):
     macros = {
         'NOTIFICATIONTYPE':         'type',
         'NOTIFICATIONRECIPIENTS':   'recipients',
-        'NOTIFICATIONISESCALATED':  'escaladed',
+        'NOTIFICATIONISESCALATED':  'escalated',
         'NOTIFICATIONAUTHOR':       'author',
         'NOTIFICATIONAUTHORNAME':   'author_name',
         'NOTIFICATIONAUTHORALIAS':  'author_alias',
@@ -106,7 +107,6 @@ class Notification(Action):
         if id is None:  # id != None is for copy call only
             self.id = Action.id
             Action.id += 1
-
         self._in_timeout = False
         self.timeout = timeout
         self.status = status
@@ -115,6 +115,9 @@ class Notification(Action):
         self.command_call = command_call
         self.output = None
         self.execution_time = 0
+        self.u_time = 0  # user executon time
+        self.s_time = 0  # system execution time
+
         self.ref = ref
 
         # Set host_name and description from the ref
@@ -181,7 +184,7 @@ class Notification(Action):
 
 
     # Fill data with info of item by looking at brok_type
-    # in props of properties or running_propterties
+    # in props of properties or running_properties
     def fill_data_brok_from(self, data, brok_type):
         cls = self.__class__
         # Now config properties
@@ -209,7 +212,7 @@ class Notification(Action):
 
         return res
 
-    # Inverted funtion of getstate
+    # Inverted function of getstate
     def __setstate__(self, state):
         cls = self.__class__
         self.id = state['id']
@@ -230,3 +233,7 @@ class Notification(Action):
             self.already_start_escalations = set()
         if not hasattr(self, 'execution_time'):
             self.execution_time = 0
+        # s_time and u_time are added between 1.2 and 1.4
+        if not hasattr(self, 'u_time'):
+            self.u_time = 0
+            self.s_time = 0

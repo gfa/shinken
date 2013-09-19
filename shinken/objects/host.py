@@ -26,7 +26,7 @@
 """ This is the main class for the Host. In fact it's mainly
 about the configuration part. for the running one, it's better
 to look at the schedulingitem class that manage all
-scheduling/consome check smart things :)
+scheduling/consume check smart things :)
 """
 
 import time
@@ -55,10 +55,10 @@ class Host(SchedulingItem):
     # properties defined by configuration
     # *required: is required in conf
     # *default: default value if no set in conf
-    # *pythonize: function to call when transfort string to python object
+    # *pythonize: function to call when transforming string to python object
     # *fill_brok: if set, send to broker. there are two categories: full_status for initial and update status, check_result for check results
     # *no_slots: do not take this property for __slots__
-    #  Only for the inital call
+    #  Only for the initial call
     # conf_send_preparation: if set, will pass the property to this function. It's used to "flatten"
     #  some dangerous properties like realms that are too 'linked' to be send like that.
     # brok_transformation: if set, will call the function with the value of the property
@@ -124,6 +124,7 @@ class Host(SchedulingItem):
         'business_impact_modulations': StringProp(default=''),
         'escalations':          StringProp(default='', fill_brok=['full_status']),
         'maintenance_period':   StringProp(default='', brok_transformation=to_name_if_possible, fill_brok=['full_status']),
+        'time_to_orphanage': IntegerProp(default='300', fill_brok=['full_status']),
 
         # Business impact value
         'business_impact':      IntegerProp(default='2', fill_brok=['full_status']),
@@ -131,6 +132,16 @@ class Host(SchedulingItem):
         # Load some triggers
         'trigger':         StringProp(default=''),
         'trigger_name':    ListProp(default=''),
+
+        # Trending
+        'trending_policies':    ListProp(default='', fill_brok=['full_status']),
+
+        # Our modulations. By defualt void, but will filled by an inner if need
+        'checkmodulations':       ListProp(default='', fill_brok=['full_status']),
+        'macromodulations':       ListProp(default=''),
+
+        # Custom views
+        'custom_views'     :    ListProp(default='', fill_brok=['full_status']),
 
     })
 
@@ -172,7 +183,7 @@ class Host(SchedulingItem):
         # dependencies for checks raise, so BEFORE checks
         'chk_depend_of':        StringProp(default=[]),
 
-        # elements that depend of me, so the reverse than just uppper
+        # elements that depend of me, so the reverse than just upper
         'act_depend_of_me':     StringProp(default=[]),
 
         # elements that depend of me
@@ -282,11 +293,11 @@ class Host(SchedulingItem):
         # Set if the element just change its father/son topology
         'topology_change': BoolProp(default=False, fill_brok=['full_status']),
 
-        # Keep in mind our pack id afterthe cutting phase
+        # Keep in mind our pack id after the cutting phase
         'pack_id': IntegerProp(default=-1),
 
         # Trigger list
-        'triggers':  StringProp(default=[])
+        'triggers':  StringProp(default=[]),
     })
 
     # Hosts macros and prop that give the information
@@ -337,8 +348,13 @@ class Host(SchedulingItem):
         'TOTALHOSTSERVICESOK': 'get_total_services_ok',
         'TOTALHOSTSERVICESWARNING': 'get_total_services_warning',
         'TOTALHOSTSERVICESUNKNOWN': 'get_total_services_unknown',
-        'TOTALHOSTSERVICESCRITICAL': 'get_total_services_critical'
+        'TOTALHOSTSERVICESCRITICAL': 'get_total_services_critical',
+        'HOSTBUSINESSIMPACT':  'business_impact'
     }
+
+    # Manage ADDRESSX macros by adding them dynamically
+    for _i in range(32):
+        macros['HOSTADDRESS%d'%_i] = 'address%d'% _i
 
     # This tab is used to transform old parameters name into new ones
     # so from Nagios2 format, to Nagios3 ones.
@@ -363,7 +379,7 @@ class Host(SchedulingItem):
 ######
 
 
-    # Fill adresse with host_name if not already set
+    # Fill address with host_name if not already set
     def fill_predictive_missing_parameters(self):
         if hasattr(self, 'host_name') and not hasattr(self, 'address'):
             self.address = self.host_name
@@ -440,7 +456,7 @@ class Host(SchedulingItem):
         if hasattr(self, 'host_name'):
             for c in cls.illegal_object_name_chars:
                 if c in self.host_name:
-                    logger.info("%s: My host_name got the caracter %s that is not allowed." % (self.get_name(), c))
+                    logger.info("%s: My host_name got the character %s that is not allowed." % (self.get_name(), c))
                     state = False
 
         return state
@@ -465,7 +481,7 @@ class Host(SchedulingItem):
             except AttributeError:  # outch, no name for this template
                 return 'UNNAMEDHOSTTEMPLATE'
 
-    # For debugin purpose only
+    # For debugging purpose only
     def get_dbg_name(self):
         return self.host_name
 
@@ -532,7 +548,7 @@ class Host(SchedulingItem):
     # on the database service with the srv=ERP service
     def add_business_rule_act_dependency(self, h, status, timeperiod, inherits_parent):
         # first I add the other the I depend on in MY list
-        # I only register so he know that I WILL be a inpact
+        # I only register so he know that I WILL be a impact
         self.act_depend_of_me.append((h, status, 'business_dep',
                                       timeperiod, inherits_parent))
 
@@ -578,7 +594,7 @@ class Host(SchedulingItem):
         self.last_time_unreachable = int(now)
 
     # We just go an impact, so we go unreachable
-    # But only if we enable this stte change in the conf
+    # But only if we enable this state change in the conf
     def set_impact_state(self):
         cls = self.__class__
         if cls.enable_problem_impacts_states_change:
@@ -586,13 +602,13 @@ class Host(SchedulingItem):
             # a new checks)
             self.state_before_impact = self.state
             self.state_id_before_impact = self.state_id
-            # This flag will know if we overide the impact state
+            # This flag will know if we override the impact state
             self.state_changed_since_impact = False
             self.state = 'UNREACHABLE'  # exit code UNDETERMINED
             self.state_id = 2
 
     # Ok, we are no more an impact, if no news checks
-    # overide the impact state, we came back to old
+    # override the impact state, we came back to old
     # states
     # And only if impact state change is set in configuration
     def unset_impact_state(self):
@@ -954,7 +970,7 @@ class Hosts(Items):
     # hosts -> hosts (parents, etc)
     # hosts -> commands (check_command)
     # hosts -> contacts
-    def linkify(self, timeperiods=None, commands=None, contacts=None, realms=None, resultmodulations=None, businessimpactmodulations=None, escalations=None, hostgroups=None, triggers=None):
+    def linkify(self, timeperiods=None, commands=None, contacts=None, realms=None, resultmodulations=None, businessimpactmodulations=None, escalations=None, hostgroups=None, triggers=None, checkmodulations=None, macromodulations=None):
         self.linkify_with_timeperiods(timeperiods, 'notification_period')
         self.linkify_with_timeperiods(timeperiods, 'check_period')
         self.linkify_with_timeperiods(timeperiods, 'maintenance_period')
@@ -972,8 +988,11 @@ class Hosts(Items):
         # This last one will be link in escalations linkify.
         self.linkify_with_escalations(escalations)
         self.linkify_with_triggers(triggers)
+        self.linkify_with_checkmodulations(checkmodulations)
+        self.linkify_with_macromodulations(macromodulations)
+        
 
-    # Fill adress by host_name if not set
+    # Fill address by host_name if not set
     def fill_predictive_missing_parameters(self):
         for h in self:
             h.fill_predictive_missing_parameters()
@@ -993,8 +1012,9 @@ class Hosts(Items):
                     err = "the parent '%s' on host '%s' is unknown!" % (parent, h.get_name())
                     self.configuration_errors.append(err)
             #print "Me,", h.host_name, "define my parents", new_parents
-            # We find the id, we remplace the names
+            # We find the id, we replace the names
             h.parents = new_parents
+
 
     # Link with realms and set a default realm if none
     def linkify_h_by_realms(self, realms):
@@ -1008,13 +1028,14 @@ class Hosts(Items):
             if h.realm is not None:
                 p = realms.find_by_name(h.realm.strip())
                 if p is None:
-                    err = "the host %s got a invalid realm (%s)!" % (h.get_name(), h.realm)
+                    err = "the host %s got an invalid realm (%s)!" % (h.get_name(), h.realm)
                     h.configuration_errors.append(err)
                 h.realm = p
             else:
                 #print "Notice: applying default realm %s to host %s" % (default_realm.get_name(), h.get_name())
                 h.realm = default_realm
                 h.got_default_realm = True
+
 
     # We look for hostgroups property in hosts and
     # link them
@@ -1035,6 +1056,7 @@ class Hosts(Items):
                             h.configuration_errors.append(err)
                 h.hostgroups = new_hostgroups
 
+
     # We look for hostgroups property in hosts and
     def explode(self, hostgroups, contactgroups, triggers):
 
@@ -1054,6 +1076,7 @@ class Hosts(Items):
         # take all contacts from our contact_groups into our contact property
         self.explode_contact_groups_into_contacts(contactgroups)
 
+
     # In the scheduler we need to relink the commandCall with
     # the real commands
     def late_linkify_h_by_commands(self, commands):
@@ -1063,12 +1086,19 @@ class Hosts(Items):
                 cc = getattr(h, prop, None)
                 if cc:
                     cc.late_linkify_with_command(commands)
+            
+            # Ok also link checkmodulations
+            for cw in h.checkmodulations:
+                cw.late_linkify_cw_by_commands(commands)
+                print cw
 
-    # Create depenancies:
-    # Depencies at the host level: host parent
+
+    # Create dependencies:
+    # Dependencies at the host level: host parent
     def apply_dependencies(self):
         for h in self:
             h.fill_parents_dependency()
+
 
     # Parent graph: use to find quickly relations between all host, and loop
     # return True if there is a loop
