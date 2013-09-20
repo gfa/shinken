@@ -1,2 +1,6 @@
+0001-Fix-init.patch
 0002-nagios-path-setup.patch
-0003-Use-nagios-user.patch2
+0003-Use-nagios-user.patch
+0004-Fix-user-and-group.patch
+0006-Remove-broken-code-from-webui.patch
+0007-Fix-log-directories.patch

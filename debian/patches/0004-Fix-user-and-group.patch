@@ -6,11 +6,9 @@ Subject: Fix user and group
  setup.cfg |    2 ++
  1 file changed, 2 insertions(+)
 
-diff --git a/setup.cfg b/setup.cfg
-index 0109ed6..3ae40e3 100644
 --- a/setup.cfg
 +++ b/setup.cfg
-@@ -5,3 +5,5 @@ var-path=/var/lib/nagios
+@@ -5,3 +5,5 @@
  run-path=/var/run/nagios
  log-path=/var/log/shinken
  plugins-path=/usr/lib/nagios/plugins

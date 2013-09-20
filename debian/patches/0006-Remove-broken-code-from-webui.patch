@@ -7,9 +7,6 @@ Subject: Remove broken code from webui
  1 file changed, 35 deletions(-)
  delete mode 100644 shinken/webui/plugins/eue/test.py
 
-diff --git a/shinken/webui/plugins/eue/test.py b/shinken/webui/plugins/eue/test.py
-deleted file mode 100644
-index 98b3520..0000000
 --- a/shinken/webui/plugins/eue/test.py
 +++ /dev/null
 @@ -1,35 +0,0 @@

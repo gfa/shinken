@@ -2,15 +2,9 @@ From: Arthur Gautier <aga@zenexity.com>
 Date: Tue, 28 Feb 2012 21:56:02 +0100
 Subject: Use nagios user
 
----
- bin/default/shinken.in |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/bin/default/shinken.in b/bin/default/shinken.in
-index f73ec13..6122f4e 100644
 --- a/bin/default/shinken.in
 +++ b/bin/default/shinken.in
-@@ -143,5 +143,5 @@ SKONFDEBUGFILE="$LOG/skonf-debug.log"
+@@ -143,6 +143,6 @@
  NICENESS=5
  
  # user/group for the var/run rights
@@ -18,3 +12,4 @@ index f73ec13..6122f4e 100644
 -SHINKENGROUP=shinken
 +SHINKENUSER=nagios
 +SHINKENGROUP=nagios
+ HOME=`grep ^$SHINKENUSER: /etc/passwd | cut -d: -f 6`

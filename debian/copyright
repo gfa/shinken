@@ -1,480 +1,16 @@
-Format: http://dep.debian.net/deps/dep5
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: shinken
 Source: http://www.shinken-monitoring.org/
 
-Files: *
-Copyright: 2010-2013 Jean Gabes
-           2010-2011 Gerhard Lausser
-           Please see /usr/share/shinken/CONTRIBUTORS for full list of contributors
-License: GNU-AGPL
- Shinken is free software: you can redistribute it and/or modify
- it under the terms of the GNU Affero General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
- .
- Shinken is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU Affero General Public License for more details.
- .
- You should have received a copy of the GNU Affero General Public License
- along with Shinken.  If not, see <http://www.gnu.org/licenses/>.
- .
- Please see the complete text of the GNU Affero General Public License
- along with this program. If not, see "http://www.gnu.org/licenses/agpl.html".
+Files: shinken/modules/tsca/tsca.thrift
+Copyright: Jean Max Leblanc <jmax.leblanc@gmail.com>
+License: 
+UNSUPPORTED
 
 
-Files: shinken/webui/plugins/dashboard/htdocs/js/jquery.jclock.js
-Copyright: 2007-2011 Doug Sparling <http://www.dougsparling.com>
-License: MIT
- Permission is hereby granted, free of charge, to any person obtaining
- a copy of this software and associated documentation files (the
- "Software"), to deal in the Software without restriction, including
- without limitation the rights to use, copy, modify, merge, publish,
- distribute, sublicense, and/or sell copies of the Software, and to
- permit persons to whom the Software is furnished to do so, subject to
- the following conditions:
- .
- The above copyright notice and this permission notice shall be
- included in all copies or substantial portions of the Software.
- .
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-
-Files: shinken/webui/plugins/wall/htdocs/css/snowstack.css
-Copyright: 2009 Charles Ying
-License: Apache-2.0
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
- .
- On Debian systems, the full text of the Apache 2.0 License can be found
- in the file `/usr/share/common-licenses/Apache-2.0'.
-
-
-Files: shinken/webui/plugins/wall/htdocs/js/snowstack.js
-Copyright: 2009 Charles Ying
-License: Apache-2.0
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
- .
- On Debian systems, the full text of the Apache 2.0 License can be found
- in the file `/usr/share/common-licenses/Apache-2.0'.
-
-
-Files: shinken/webui/plugins/timeline/htdocs/js/timeline.js
-Copyright: 2011 Verite
-License: MPL-2.0
- This Source Code Form is subject to the terms of the Mozilla Public
- License, v. 2.0. If a copy of the MPL was not distributed with this
- file, You can obtain one at http://mozilla.org/MPL/2.0/.
-
-
-Files: shinken/webui/plugins/eue/htdocs/css/datepicker.css
-Copyright: 2012 Stefan Petre
-License: Apache-2.0
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
- .
- On Debian systems, the full text of the Apache 2.0 License can be found
- in the file `/usr/share/common-licenses/Apache-2.0'.
-
-
-Files: shinken/webui/plugins/eue/htdocs/css/jquery.lightbox-0.5.css
-Copyright: Leandro Vieira Pinho - http://leandrovieira.com
-License: CCAttribution-ShareAlike http://creativecommons.org/licenses/by-sa/2.5/br/deed.en_US
- This Source Code Form is subject to the terms of the Creative Commons
- License, v. 2.0. If a copy of the CC was not distributed with this
- file, You can obtain one at http://creativecommons.org/licenses/by-sa/2.5/br/deed.en_US
-
-
-Files: shinken/webui/plugins/eue/htdocs/js/raphael.js
-Copyright: 2008-2012 Dmitry Baranovskiy (http://raphaeljs.com)
-           2008-2012 Sencha Labs (http://sencha.com)
-License: MIT
- Permission is hereby granted, free of charge, to any person obtaining
- a copy of this software and associated documentation files (the
- "Software"), to deal in the Software without restriction, including
- without limitation the rights to use, copy, modify, merge, publish,
- distribute, sublicense, and/or sell copies of the Software, and to
- permit persons to whom the Software is furnished to do so, subject to
- the following conditions:
- .
- The above copyright notice and this permission notice shall be
- included in all copies or substantial portions of the Software.
- .
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-
-Files: shinken/webui/plugins/eue/htdocs/js/jquery.lightbox-0.5.js
-Copyright: Leandro Vieira Pinho - http://leandrovieira.com
-License: CCAttribution-ShareAlike http://creativecommons.org/licenses/by-sa/2.5/br/deed.en_US
- This Source Code Form is subject to the terms of the Creative Commons
- License, v. 2.0. If a copy of the CC was not distributed with this
- file, You can obtain one at http://creativecommons.org/licenses/by-sa/2.5/br/deed.en_US
-
-
-Files: shinken/webui/plugins/eue/htdocs/js/bootstrap-modal.js
-Copyright: 2012 Twitter, Inc
-License: Apache-2.0
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
- .
- On Debian systems, the full text of the Apache 2.0 License can be found
- in the file `/usr/share/common-licenses/Apache-2.0'.
-
-
-Files: shinken/webui/plugins/eue/htdocs/js/bootstrap-timepicker.js
-Copyright: 2012 Joris de Wit @joris_dewit
-License: Apache-2.0
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
- .
- On Debian systems, the full text of the Apache 2.0 License can be found
- in the file `/usr/share/common-licenses/Apache-2.0'.
-
-
-Files: shinken/webui/plugins/eue/htdocs/js/videojs/video.js
-Copyright: 2011 Zencoder, Inc.
-License: LGPL-3
- On Debian systems, the full text of the LGPL-3 License can be found
- in the file `/usr/share/common-licenses/LGPL-3'.
-
-
-Files: shinken/webui/plugins/eue/htdocs/js/videojs/video.min.js
-Copyright: 2011 Zencoder, Inc.
-License: LGPL-3
- On Debian systems, the full text of the LGPL-3 License can be found
- in the file `/usr/share/common-licenses/LGPL-3'.
-
-
-Files: shinken/webui/plugins/eue/htdocs/js/jsquery.sparkline.js
-Copyright: (c) Splunk, Inc
-License: BSD-3-clause
- Copyright (c) The Regents of the University of California.
- All rights reserved.
- .
- Redistribution and use in source and binary forms, with or without
- modification, are permitted provided that the following conditions
- are met:
- 1. Redistributions of source code must retain the above copyright
-    notice, this list of conditions and the following disclaimer.
- 2. Redistributions in binary form must reproduce the above copyright
-    notice, this list of conditions and the following disclaimer in the
-    documentation and/or other materials provided with the distribution.
- 3. Neither the name of the University nor the names of its contributors
-    may be used to endorse or promote products derived from this software
-    without specific prior written permission.
- .
- THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS AND
- ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
- FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- SUCH DAMAGE.
-
-
-Files: shinken/webui/plugins/eue/htdocs/js/bootstrap-datepicker.js
-Copyright: 2012 Stefan Petre
-License: Apache-2.0
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
- .
- On Debian systems, the full text of the Apache 2.0 License can be found
- in the file `/usr/share/common-licenses/Apache-2.0'.
-
-
-Files: shinken/webui/plugins/eue/htdocs/js/bootstrap-tabs.js
-Copyright: 2012 Twitter, Inc.
-License: Apache-2.0
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
- .
- On Debian systems, the full text of the Apache 2.0 License can be found
- in the file `/usr/share/common-licenses/Apache-2.0'.
-
-
-Files: shinken/webui/plugins/eue/htdocs/js/jquery.lightbox-0.5.min.js
-Copyright: Leandro Vieira Pinho - http://leandrovieira.com
-License: CCAttribution-ShareAlike http://creativecommons.org/licenses/by-sa/2.5/br/deed.en_US
- This Source Code Form is subject to the terms of the Creative Commons
- License, v. 2.0. If a copy of the CC was not distributed with this
- file, You can obtain one at http://creativecommons.org/licenses/by-sa/2.5/br/deed.en_US
-
-
-Files: shinken/webui/plugins/eue/htdocs/js/bootstrap-collapse.js
-Copyright: 2012 Twitter, Inc.
-License: Apache-2.0
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
- .
- On Debian systems, the full text of the Apache 2.0 License can be found
- in the file `/usr/share/common-licenses/Apache-2.0'.
-
-
-Files: shinken/webui/plugins/eltdetail/htdocs/js/jquery.color.js
-Copyright: 2007 John Resig
-License: MIT
- Permission is hereby granted, free of charge, to any person obtaining
- a copy of this software and associated documentation files (the
- "Software"), to deal in the Software without restriction, including
- without limitation the rights to use, copy, modify, merge, publish,
- distribute, sublicense, and/or sell copies of the Software, and to
- permit persons to whom the Software is furnished to do so, subject to
- the following conditions:
- .
- The above copyright notice and this permission notice shall be
- included in all copies or substantial portions of the Software.
- .
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-
-Files: shinken/webui/plugins/eltdetail/htdocs/js/jquery.Jcrop.js
-Copyright: 2008-2011 Kelly Hallman
-License: MIT
- Permission is hereby granted, free of charge, to any person obtaining
- a copy of this software and associated documentation files (the
- "Software"), to deal in the Software without restriction, including
- without limitation the rights to use, copy, modify, merge, publish,
- distribute, sublicense, and/or sell copies of the Software, and to
- permit persons to whom the Software is furnished to do so, subject to
- the following conditions:
- .
- The above copyright notice and this permission notice shall be
- included in all copies or substantial portions of the Software.
- .
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-
-Files: shinken/webui/plugins/eltdetail/htdocs/js/dollar.js
-Copyright: 2007-2011, Jacob O. Wobbrock, Andrew D. Wilson and Yang Li.
-License: BSD-3-clause
- Copyright (c) The Regents of the University of California.
- All rights reserved.
- .
- Redistribution and use in source and binary forms, with or without
- modification, are permitted provided that the following conditions
- are met:
- 1. Redistributions of source code must retain the above copyright
-    notice, this list of conditions and the following disclaimer.
- 2. Redistributions in binary form must reproduce the above copyright
-    notice, this list of conditions and the following disclaimer in the
-    documentation and/or other materials provided with the distribution.
- 3. Neither the name of the University nor the names of its contributors
-    may be used to endorse or promote products derived from this software
-    without specific prior written permission.
- .
- THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS AND
- ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
- FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- SUCH DAMAGE.
-
-
-Files: shinken/webui/plugins/login/htdocs/js/jQuery.dPassword.js
-Copyright: 2009 DECAF?, Stefan Ullrich (http://decaf.de)
-License: MIT
- Permission is hereby granted, free of charge, to any person obtaining
- a copy of this software and associated documentation files (the
- "Software"), to deal in the Software without restriction, including
- without limitation the rights to use, copy, modify, merge, publish,
- distribute, sublicense, and/or sell copies of the Software, and to
- permit persons to whom the Software is furnished to do so, subject to
- the following conditions:
- .
- The above copyright notice and this permission notice shall be
- included in all copies or substantial portions of the Software.
- .
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-
-Files: shinken/webui/plugins/flow/htdocs/css/zflow.css
-Copyright: 2008, 2009 Charles Ying
-License: BSD-3-clause
- Copyright (c) The Regents of the University of California.
- All rights reserved.
- .
- Redistribution and use in source and binary forms, with or without
- modification, are permitted provided that the following conditions
- are met:
- 1. Redistributions of source code must retain the above copyright
-    notice, this list of conditions and the following disclaimer.
- 2. Redistributions in binary form must reproduce the above copyright
-    notice, this list of conditions and the following disclaimer in the
-    documentation and/or other materials provided with the distribution.
- 3. Neither the name of the University nor the names of its contributors
-    may be used to endorse or promote products derived from this software
-    without specific prior written permission.
- .
- THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS AND
- ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
- FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- SUCH DAMAGE.
-
-
-Files: shinken/webui/plugins/flow/htdocs/js/zflow.js
-Copyright: 2009 Charles Ying
-License: BSD-3-clause
- Copyright (c) The Regents of the University of California.
- All rights reserved.
- .
- Redistribution and use in source and binary forms, with or without
- modification, are permitted provided that the following conditions
- are met:
- 1. Redistributions of source code must retain the above copyright
-    notice, this list of conditions and the following disclaimer.
- 2. Redistributions in binary form must reproduce the above copyright
-    notice, this list of conditions and the following disclaimer in the
-    documentation and/or other materials provided with the distribution.
- 3. Neither the name of the University nor the names of its contributors
-    may be used to endorse or promote products derived from this software
-    without specific prior written permission.
- .
- THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS AND
- ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
- FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- SUCH DAMAGE.
-
-
-Files: shinken/webui/plugins/depgraph/htdocs/css/eltdeps.css
-Copyright: ZURB
-License: MIT
- Permission is hereby granted, free of charge, to any person obtaining
- a copy of this software and associated documentation files (the
- "Software"), to deal in the Software without restriction, including
- without limitation the rights to use, copy, modify, merge, publish,
- distribute, sublicense, and/or sell copies of the Software, and to
- permit persons to whom the Software is furnished to do so, subject to
- the following conditions:
- .
- The above copyright notice and this permission notice shall be
- included in all copies or substantial portions of the Software.
- .
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-
-Files: shinken/webui/plugins/depgraph/htdocs/js/jit-yc.js
-Copyright: 2011 Sencha Inc.
-License: MIT
- Permission is hereby granted, free of charge, to any person obtaining
- a copy of this software and associated documentation files (the
- "Software"), to deal in the Software without restriction, including
- without limitation the rights to use, copy, modify, merge, publish,
- distribute, sublicense, and/or sell copies of the Software, and to
- permit persons to whom the Software is furnished to do so, subject to
- the following conditions:
- .
- The above copyright notice and this permission notice shall be
- included in all copies or substantial portions of the Software.
- .
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-
-Files: shinken/webui/plugins/depgraph/htdocs/js/excanvas.js
-Copyright: 2006 Google Inc.
-License: Apache-2.0
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
- .
- On Debian systems, the full text of the Apache 2.0 License can be found
- in the file `/usr/share/common-licenses/Apache-2.0'.
-
-
-Files: shinken/webui/plugins_skonf/newhosts/htdocs/js/jquery.tokeninput.js
-Copyright: 2009 James Smith (http://loopj.com)
+Files: shinken/webui/plugins_skonf/login/htdocs/js/pass_shark.js
+Copyright: Luis Merino
 License: MIT
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -519,8 +55,8 @@ License: MIT
  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-Files: shinken/webui/plugins_skonf/login/htdocs/js/pass_shark.js
-Copyright: Luis Merino
+Files: shinken/webui/plugins_skonf/elements/htdocs/js/jquery.tokeninput.js
+Copyright: 2009 James Smith 
 License: MIT
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -542,30 +78,7 @@ License: MIT
  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-Files: shinken/webui/plugins_skonf/elements/htdocs/css/jquery-ui.css
-Copyright: 2012, AUTHORS.txt (http://jqueryui.com/about)
-License: MIT
- Permission is hereby granted, free of charge, to any person obtaining
- a copy of this software and associated documentation files (the
- "Software"), to deal in the Software without restriction, including
- without limitation the rights to use, copy, modify, merge, publish,
- distribute, sublicense, and/or sell copies of the Software, and to
- permit persons to whom the Software is furnished to do so, subject to
- the following conditions:
- .
- The above copyright notice and this permission notice shall be
- included in all copies or substantial portions of the Software.
- .
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-
-Files: shinken/webui/plugins_skonf/elements/htdocs/js/jquery.bsmselect.compatibility.js
+Files: shinken/webui/plugins_skonf/elements/htdocs/js/jquery.bsmselect.sortable.js
 Copyright: 2010 Victor Berchet - http://www.github.com/vicb
 License: MIT
  Permission is hereby granted, free of charge, to any person obtaining
@@ -612,7 +125,7 @@ License: MIT
  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-Files: shinken/webui/plugins_skonf/elements/htdocs/js/jquery.bsmselect.sortable.js
+Files: shinken/webui/plugins_skonf/elements/htdocs/js/jquery.bsmselect.compatibility.js
 Copyright: 2010 Victor Berchet - http://www.github.com/vicb
 License: MIT
  Permission is hereby granted, free of charge, to any person obtaining
@@ -635,8 +148,8 @@ License: MIT
  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-Files: shinken/webui/plugins_skonf/elements/htdocs/js/jquery.tokeninput.js
-Copyright: 2009 James Smith 
+Files: shinken/webui/plugins_skonf/elements/htdocs/css/jquery-ui.css
+Copyright: 2012, AUTHORS.txt (http://jqueryui.com/about)
 License: MIT
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -658,8 +171,8 @@ License: MIT
  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-Files: shinken/webui/plugins_hostd/login/htdocs/js/jQuery.dPassword.js
-Copyright: 2009 DECAF?, Stefan Ullrich (http://decaf.de)
+Files: shinken/webui/plugins_skonf/newhosts/htdocs/js/jquery.tokeninput.js
+Copyright: 2009 James Smith (http://loopj.com)
 License: MIT
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -704,77 +217,8 @@ License: MIT
  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-Files: shinken/webui/plugins_hostd/push/htdocs/js/jquery.filedrop.js
-Copyright: 2010 Resopollution
-License: MIT
- Permission is hereby granted, free of charge, to any person obtaining
- a copy of this software and associated documentation files (the
- "Software"), to deal in the Software without restriction, including
- without limitation the rights to use, copy, modify, merge, publish,
- distribute, sublicense, and/or sell copies of the Software, and to
- permit persons to whom the Software is furnished to do so, subject to
- the following conditions:
- .
- The above copyright notice and this permission notice shall be
- included in all copies or substantial portions of the Software.
- .
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-
-Files: shinken/webui/plugins_hostd/elements/htdocs/css/jquery-ui.css
-Copyright: 2012, AUTHORS.txt (http://jqueryui.com/about)
-License: MIT
- Permission is hereby granted, free of charge, to any person obtaining
- a copy of this software and associated documentation files (the
- "Software"), to deal in the Software without restriction, including
- without limitation the rights to use, copy, modify, merge, publish,
- distribute, sublicense, and/or sell copies of the Software, and to
- permit persons to whom the Software is furnished to do so, subject to
- the following conditions:
- .
- The above copyright notice and this permission notice shall be
- included in all copies or substantial portions of the Software.
- .
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-
-Files: shinken/webui/plugins_hostd/elements/htdocs/js/jquery.bsmselect.compatibility.js
-Copyright: 2010 Victor Berchet - http://www.github.com/vicb
-License: MIT
- Permission is hereby granted, free of charge, to any person obtaining
- a copy of this software and associated documentation files (the
- "Software"), to deal in the Software without restriction, including
- without limitation the rights to use, copy, modify, merge, publish,
- distribute, sublicense, and/or sell copies of the Software, and to
- permit persons to whom the Software is furnished to do so, subject to
- the following conditions:
- .
- The above copyright notice and this permission notice shall be
- included in all copies or substantial portions of the Software.
- .
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-
-Files: shinken/webui/plugins_hostd/elements/htdocs/js/jquery.bsmselect.sortable.js
-Copyright: 2010 Victor Berchet - http://www.github.com/vicb
+Files: shinken/webui/plugins_hostd/login/htdocs/js/jQuery.dPassword.js
+Copyright: 2009 DECAF?, Stefan Ullrich (http://decaf.de)
 License: MIT
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -819,21 +263,8 @@ License: MIT
  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-Files: shinken/webui/htdocs/css/bootstrap.css
-Copyright: 2012 Twitter, Inc
-License: Apache-2.0
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
- .
- On Debian systems, the full text of the Apache 2.0 License can be found
- in the file `/usr/share/common-licenses/Apache-2.0'.
-
-
-Files: shinken/webui/htdocs/css/shinken-mobile.min.css
-Copyright: 2011 (c) jQuery Project
+Files: shinken/webui/plugins_hostd/elements/htdocs/js/jquery.bsmselect.sortable.js
+Copyright: 2010 Victor Berchet - http://www.github.com/vicb
 License: MIT
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -855,73 +286,126 @@ License: MIT
  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-Files: shinken/webui/htdocs/css/bootstrap-responsive.css
-Copyright: 2012 Twitter, Inc
-License: Apache-2.0
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
+Files: shinken/webui/plugins_hostd/elements/htdocs/js/jquery.bsmselect.compatibility.js
+Copyright: 2010 Victor Berchet - http://www.github.com/vicb
+License: MIT
+ Permission is hereby granted, free of charge, to any person obtaining
+ a copy of this software and associated documentation files (the
+ "Software"), to deal in the Software without restriction, including
+ without limitation the rights to use, copy, modify, merge, publish,
+ distribute, sublicense, and/or sell copies of the Software, and to
+ permit persons to whom the Software is furnished to do so, subject to
+ the following conditions:
  .
- On Debian systems, the full text of the Apache 2.0 License can be found
- in the file `/usr/share/common-licenses/Apache-2.0'.
-
-
-Files: shinken/webui/htdocs/css/bootstrap-responsive.min.css
-Copyright: 2012 Twitter, Inc
-License: Apache-2.0
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
+ The above copyright notice and this permission notice shall be
+ included in all copies or substantial portions of the Software.
  .
- On Debian systems, the full text of the Apache 2.0 License can be found
- in the file `/usr/share/common-licenses/Apache-2.0'.
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-Files: shinken/webui/htdocs/css/bootstrap.min.css
-Copyright: 2012 Twitter, Inc
-License: Apache-2.0
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
+Files: shinken/webui/plugins_hostd/elements/htdocs/css/jquery-ui.css
+Copyright: 2012, AUTHORS.txt (http://jqueryui.com/about)
+License: MIT
+ Permission is hereby granted, free of charge, to any person obtaining
+ a copy of this software and associated documentation files (the
+ "Software"), to deal in the Software without restriction, including
+ without limitation the rights to use, copy, modify, merge, publish,
+ distribute, sublicense, and/or sell copies of the Software, and to
+ permit persons to whom the Software is furnished to do so, subject to
+ the following conditions:
  .
- On Debian systems, the full text of the Apache 2.0 License can be found
- in the file `/usr/share/common-licenses/Apache-2.0'.
-
-
-Files: shinken/webui/htdocs/js/bootstrap.js
-Copyright: 2012 Twitter, Inc.
-License: Apache-2.0
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
+ The above copyright notice and this permission notice shall be
+ included in all copies or substantial portions of the Software.
  .
- On Debian systems, the full text of the Apache 2.0 License can be found
- in the file `/usr/share/common-licenses/Apache-2.0'.
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-Files: shinken/webui/htdocs/js/bootstrap.min.js
-Copyright: 2012 Twitter, Inc.
-License: Apache-2.0
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
+Files: shinken/webui/plugins_hostd/push/htdocs/js/jquery.filedrop.js
+Copyright: 2010 Resopollution
+License: MIT
+ Permission is hereby granted, free of charge, to any person obtaining
+ a copy of this software and associated documentation files (the
+ "Software"), to deal in the Software without restriction, including
+ without limitation the rights to use, copy, modify, merge, publish,
+ distribute, sublicense, and/or sell copies of the Software, and to
+ permit persons to whom the Software is furnished to do so, subject to
+ the following conditions:
  .
- On Debian systems, the full text of the Apache 2.0 License can be found
- in the file `/usr/share/common-licenses/Apache-2.0'.
+ The above copyright notice and this permission notice shall be
+ included in all copies or substantial portions of the Software.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 Files: shinken/webui/htdocs/js/jquery-ui-1.8.17.custom.min.js
 Copyright: AUTHORS.txt (http://jqueryui.com/about)
+License: MIT
+ Permission is hereby granted, free of charge, to any person obtaining
+ a copy of this software and associated documentation files (the
+ "Software"), to deal in the Software without restriction, including
+ without limitation the rights to use, copy, modify, merge, publish,
+ distribute, sublicense, and/or sell copies of the Software, and to
+ permit persons to whom the Software is furnished to do so, subject to
+ the following conditions:
+ .
+ The above copyright notice and this permission notice shall be
+ included in all copies or substantial portions of the Software.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+Files: shinken/webui/htdocs/js/bootstrap-alert.js
+Copyright: 2012 Twitter, Inc.
+License: Apache-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ .
+ On Debian systems, the full text of the Apache 2.0 License can be found
+ in the file `/usr/share/common-licenses/Apache-2.0'.
+
+
+Files: shinken/webui/htdocs/js/bootstrap-datepicker.js
+Copyright: 2012 Twitter, Inc.
+License: Apache-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ .
+ On Debian systems, the full text of the Apache 2.0 License can be found
+ in the file `/usr/share/common-licenses/Apache-2.0'.
+
+
+Files: shinken/webui/htdocs/js/jquery.hotkeys.js
+Copyright: 2010, John Resig
 License: MIT
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -979,30 +463,46 @@ License: Apache-2.0
  in the file `/usr/share/common-licenses/Apache-2.0'.
 
 
-Files: shinken/webui/htdocs/js/jquery.hotkeys.js
-Copyright: 2010, John Resig
-License: MIT
- Permission is hereby granted, free of charge, to any person obtaining
- a copy of this software and associated documentation files (the
- "Software"), to deal in the Software without restriction, including
- without limitation the rights to use, copy, modify, merge, publish,
- distribute, sublicense, and/or sell copies of the Software, and to
- permit persons to whom the Software is furnished to do so, subject to
- the following conditions:
+Files: shinken/webui/htdocs/js/bootstrap-scrollspy.js
+Copyright: 2012 Twitter, Inc.
+License: Apache-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
  .
- The above copyright notice and this permission notice shall be
- included in all copies or substantial portions of the Software.
- .
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ On Debian systems, the full text of the Apache 2.0 License can be found
+ in the file `/usr/share/common-licenses/Apache-2.0'.
 
 
-Files: shinken/webui/htdocs/js/bootstrap-alert.js
+Files: shinken/webui/htdocs/js/bootstrap.js
+Copyright: 2012 Twitter, Inc.
+License: Apache-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ .
+ On Debian systems, the full text of the Apache 2.0 License can be found
+ in the file `/usr/share/common-licenses/Apache-2.0'.
+
+
+Files: shinken/webui/htdocs/js/bootstrap.min.js
+Copyright: 2012 Twitter, Inc.
+License: Apache-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ .
+ On Debian systems, the full text of the Apache 2.0 License can be found
+ in the file `/usr/share/common-licenses/Apache-2.0'.
+
+
+Files: shinken/webui/htdocs/js/bootstrap-carousel.js
 Copyright: 2012 Twitter, Inc.
 License: Apache-2.0
  Unless required by applicable law or agreed to in writing, software
@@ -1038,32 +538,6 @@ License: MIT
  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-Files: shinken/webui/htdocs/js/bootstrap-carousel.js
-Copyright: 2012 Twitter, Inc.
-License: Apache-2.0
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
- .
- On Debian systems, the full text of the Apache 2.0 License can be found
- in the file `/usr/share/common-licenses/Apache-2.0'.
-
-
-Files: shinken/webui/htdocs/js/bootstrap-datepicker.js
-Copyright: 2012 Twitter, Inc.
-License: Apache-2.0
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
- .
- On Debian systems, the full text of the Apache 2.0 License can be found
- in the file `/usr/share/common-licenses/Apache-2.0'.
-
-
 Files: shinken/webui/htdocs/js/jquery.pageslide.js
 Copyright: 2011 Scott Robbin (srobbin.com)
 License: MIT
@@ -1087,7 +561,424 @@ License: MIT
  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-Files: shinken/webui/htdocs/js/bootstrap-scrollspy.js
+Files: shinken/webui/htdocs/css/shinken-mobile.min.css
+Copyright: 2011 (c) jQuery Project
+License: MIT
+ Permission is hereby granted, free of charge, to any person obtaining
+ a copy of this software and associated documentation files (the
+ "Software"), to deal in the Software without restriction, including
+ without limitation the rights to use, copy, modify, merge, publish,
+ distribute, sublicense, and/or sell copies of the Software, and to
+ permit persons to whom the Software is furnished to do so, subject to
+ the following conditions:
+ .
+ The above copyright notice and this permission notice shall be
+ included in all copies or substantial portions of the Software.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+Files: shinken/webui/htdocs/css/bootstrap-responsive.min.css
+Copyright: 2012 Twitter, Inc
+License: Apache-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ .
+ On Debian systems, the full text of the Apache 2.0 License can be found
+ in the file `/usr/share/common-licenses/Apache-2.0'.
+
+
+Files: shinken/webui/htdocs/css/bootstrap.css
+Copyright: 2012 Twitter, Inc
+License: Apache-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ .
+ On Debian systems, the full text of the Apache 2.0 License can be found
+ in the file `/usr/share/common-licenses/Apache-2.0'.
+
+
+Files: shinken/webui/htdocs/css/bootstrap.min.css
+Copyright: 2012 Twitter, Inc
+License: Apache-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ .
+ On Debian systems, the full text of the Apache 2.0 License can be found
+ in the file `/usr/share/common-licenses/Apache-2.0'.
+
+
+Files: shinken/webui/htdocs/css/bootstrap-responsive.css
+Copyright: 2012 Twitter, Inc
+License: Apache-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ .
+ On Debian systems, the full text of the Apache 2.0 License can be found
+ in the file `/usr/share/common-licenses/Apache-2.0'.
+
+
+Files: shinken/webui/plugins/dashboard/htdocs/js/jquery.jclock.js
+Copyright: 2007-2011 Doug Sparling <http://www.dougsparling.com>
+License: MIT
+ Permission is hereby granted, free of charge, to any person obtaining
+ a copy of this software and associated documentation files (the
+ "Software"), to deal in the Software without restriction, including
+ without limitation the rights to use, copy, modify, merge, publish,
+ distribute, sublicense, and/or sell copies of the Software, and to
+ permit persons to whom the Software is furnished to do so, subject to
+ the following conditions:
+ .
+ The above copyright notice and this permission notice shall be
+ included in all copies or substantial portions of the Software.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+Files: shinken/webui/plugins/flow/htdocs/js/zflow.js
+Copyright: 2009 Charles Ying
+License: BSD-3-clause
+ Copyright (c) The Regents of the University of California.
+ All rights reserved.
+ .
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions
+ are met:
+ 1. Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+ 2. Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions and the following disclaimer in the
+    documentation and/or other materials provided with the distribution.
+ 3. Neither the name of the University nor the names of its contributors
+    may be used to endorse or promote products derived from this software
+    without specific prior written permission.
+ .
+ THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS AND
+ ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ SUCH DAMAGE.
+
+
+Files: shinken/webui/plugins/flow/htdocs/css/zflow.css
+Copyright: 2008, 2009 Charles Ying
+License: BSD-3-clause
+ Copyright (c) The Regents of the University of California.
+ All rights reserved.
+ .
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions
+ are met:
+ 1. Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+ 2. Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions and the following disclaimer in the
+    documentation and/or other materials provided with the distribution.
+ 3. Neither the name of the University nor the names of its contributors
+    may be used to endorse or promote products derived from this software
+    without specific prior written permission.
+ .
+ THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS AND
+ ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ SUCH DAMAGE.
+
+
+Files: shinken/webui/plugins/wall/htdocs/js/snowstack.js
+Copyright: 2009 Charles Ying
+License: Apache-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ .
+ On Debian systems, the full text of the Apache 2.0 License can be found
+ in the file `/usr/share/common-licenses/Apache-2.0'.
+
+
+Files: shinken/webui/plugins/wall/htdocs/css/snowstack.css
+Copyright: 2009 Charles Ying
+License: Apache-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ .
+ On Debian systems, the full text of the Apache 2.0 License can be found
+ in the file `/usr/share/common-licenses/Apache-2.0'.
+
+
+Files: shinken/webui/plugins/login/htdocs/js/jQuery.dPassword.js
+Copyright: 2009 DECAF?, Stefan Ullrich (http://decaf.de)
+License: MIT
+ Permission is hereby granted, free of charge, to any person obtaining
+ a copy of this software and associated documentation files (the
+ "Software"), to deal in the Software without restriction, including
+ without limitation the rights to use, copy, modify, merge, publish,
+ distribute, sublicense, and/or sell copies of the Software, and to
+ permit persons to whom the Software is furnished to do so, subject to
+ the following conditions:
+ .
+ The above copyright notice and this permission notice shall be
+ included in all copies or substantial portions of the Software.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+Files: shinken/webui/plugins/eltdetail/htdocs/js/dollar.js
+Copyright: 2007-2011, Jacob O. Wobbrock, Andrew D. Wilson and Yang Li.
+License: BSD-3-clause
+ Copyright (c) The Regents of the University of California.
+ All rights reserved.
+ .
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions
+ are met:
+ 1. Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+ 2. Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions and the following disclaimer in the
+    documentation and/or other materials provided with the distribution.
+ 3. Neither the name of the University nor the names of its contributors
+    may be used to endorse or promote products derived from this software
+    without specific prior written permission.
+ .
+ THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS AND
+ ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ SUCH DAMAGE.
+
+
+Files: shinken/webui/plugins/eltdetail/htdocs/js/jquery.color.js
+Copyright: 2007 John Resig
+License: MIT
+ Permission is hereby granted, free of charge, to any person obtaining
+ a copy of this software and associated documentation files (the
+ "Software"), to deal in the Software without restriction, including
+ without limitation the rights to use, copy, modify, merge, publish,
+ distribute, sublicense, and/or sell copies of the Software, and to
+ permit persons to whom the Software is furnished to do so, subject to
+ the following conditions:
+ .
+ The above copyright notice and this permission notice shall be
+ included in all copies or substantial portions of the Software.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+Files: shinken/webui/plugins/eltdetail/htdocs/js/jquery.Jcrop.js
+Copyright: 2008-2011 Kelly Hallman
+License: MIT
+ Permission is hereby granted, free of charge, to any person obtaining
+ a copy of this software and associated documentation files (the
+ "Software"), to deal in the Software without restriction, including
+ without limitation the rights to use, copy, modify, merge, publish,
+ distribute, sublicense, and/or sell copies of the Software, and to
+ permit persons to whom the Software is furnished to do so, subject to
+ the following conditions:
+ .
+ The above copyright notice and this permission notice shall be
+ included in all copies or substantial portions of the Software.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+Files: shinken/webui/plugins/timeline/htdocs/js/timeline.js
+Copyright: 2011 Verite
+License: MPL-2.0
+ This Source Code Form is subject to the terms of the Mozilla Public
+ License, v. 2.0. If a copy of the MPL was not distributed with this
+ file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+
+Files: shinken/webui/plugins/depgraph/htdocs/js/excanvas.js
+Copyright: 2006 Google Inc.
+License: Apache-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ .
+ On Debian systems, the full text of the Apache 2.0 License can be found
+ in the file `/usr/share/common-licenses/Apache-2.0'.
+
+
+Files: shinken/webui/plugins/depgraph/htdocs/js/jit-yc.js
+Copyright: 2011 Sencha Inc.
+License: MIT
+ Permission is hereby granted, free of charge, to any person obtaining
+ a copy of this software and associated documentation files (the
+ "Software"), to deal in the Software without restriction, including
+ without limitation the rights to use, copy, modify, merge, publish,
+ distribute, sublicense, and/or sell copies of the Software, and to
+ permit persons to whom the Software is furnished to do so, subject to
+ the following conditions:
+ .
+ The above copyright notice and this permission notice shall be
+ included in all copies or substantial portions of the Software.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+Files: shinken/webui/plugins/depgraph/htdocs/css/eltdeps.css
+Copyright: ZURB
+License: MIT
+ Permission is hereby granted, free of charge, to any person obtaining
+ a copy of this software and associated documentation files (the
+ "Software"), to deal in the Software without restriction, including
+ without limitation the rights to use, copy, modify, merge, publish,
+ distribute, sublicense, and/or sell copies of the Software, and to
+ permit persons to whom the Software is furnished to do so, subject to
+ the following conditions:
+ .
+ The above copyright notice and this permission notice shall be
+ included in all copies or substantial portions of the Software.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+Files: shinken/webui/plugins/eue/htdocs/js/videojs/video.js
+Copyright: 2011 Zencoder, Inc.
+License: LGPL-3
+ On Debian systems, the full text of the LGPL-3 License can be found
+ in the file `/usr/share/common-licenses/LGPL-3'.
+
+
+Files: shinken/webui/plugins/eue/htdocs/js/videojs/video.min.js
+Copyright: 2011 Zencoder, Inc.
+License: LGPL-3
+ On Debian systems, the full text of the LGPL-3 License can be found
+ in the file `/usr/share/common-licenses/LGPL-3'.
+
+
+Files: shinken/webui/plugins/eue/htdocs/js/raphael.js
+Copyright: 2008-2012 Dmitry Baranovskiy (http://raphaeljs.com)
+           2008-2012 Sencha Labs (http://sencha.com)
+License: MIT
+ Permission is hereby granted, free of charge, to any person obtaining
+ a copy of this software and associated documentation files (the
+ "Software"), to deal in the Software without restriction, including
+ without limitation the rights to use, copy, modify, merge, publish,
+ distribute, sublicense, and/or sell copies of the Software, and to
+ permit persons to whom the Software is furnished to do so, subject to
+ the following conditions:
+ .
+ The above copyright notice and this permission notice shall be
+ included in all copies or substantial portions of the Software.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+Files: shinken/webui/plugins/eue/htdocs/js/bootstrap-datepicker.js
+Copyright: 2012 Stefan Petre
+License: Apache-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ .
+ On Debian systems, the full text of the Apache 2.0 License can be found
+ in the file `/usr/share/common-licenses/Apache-2.0'.
+
+
+Files: shinken/webui/plugins/eue/htdocs/js/bootstrap-modal.js
+Copyright: 2012 Twitter, Inc
+License: Apache-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ .
+ On Debian systems, the full text of the Apache 2.0 License can be found
+ in the file `/usr/share/common-licenses/Apache-2.0'.
+
+
+Files: shinken/webui/plugins/eue/htdocs/js/bootstrap-tabs.js
 Copyright: 2012 Twitter, Inc.
 License: Apache-2.0
  Unless required by applicable law or agreed to in writing, software
@@ -1098,6 +989,108 @@ License: Apache-2.0
  .
  On Debian systems, the full text of the Apache 2.0 License can be found
  in the file `/usr/share/common-licenses/Apache-2.0'.
+
+
+Files: shinken/webui/plugins/eue/htdocs/js/jquery.lightbox-0.5.min.js
+Copyright: Leandro Vieira Pinho - http://leandrovieira.com
+License: CCAttribution-ShareAlike http://creativecommons.org/licenses/by-sa/2.5/br/deed.en_US
+ This Source Code Form is subject to the terms of the Creative Commons
+ License, v. 2.0. If a copy of the CC was not distributed with this
+ file, You can obtain one at http://creativecommons.org/licenses/by-sa/2.5/br/deed.en_US
+
+
+Files: shinken/webui/plugins/eue/htdocs/js/jquery.lightbox-0.5.js
+Copyright: Leandro Vieira Pinho - http://leandrovieira.com
+License: CCAttribution-ShareAlike http://creativecommons.org/licenses/by-sa/2.5/br/deed.en_US
+ This Source Code Form is subject to the terms of the Creative Commons
+ License, v. 2.0. If a copy of the CC was not distributed with this
+ file, You can obtain one at http://creativecommons.org/licenses/by-sa/2.5/br/deed.en_US
+
+
+Files: shinken/webui/plugins/eue/htdocs/js/bootstrap-timepicker.js
+Copyright: 2012 Joris de Wit @joris_dewit
+License: Apache-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ .
+ On Debian systems, the full text of the Apache 2.0 License can be found
+ in the file `/usr/share/common-licenses/Apache-2.0'.
+
+
+Files: shinken/webui/plugins/eue/htdocs/js/bootstrap-collapse.js
+Copyright: 2012 Twitter, Inc.
+License: Apache-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ .
+ On Debian systems, the full text of the Apache 2.0 License can be found
+ in the file `/usr/share/common-licenses/Apache-2.0'.
+
+
+Files: shinken/webui/plugins/eue/htdocs/js/jsquery.sparkline.js
+Copyright: (c) Splunk, Inc
+License: BSD-3-clause
+ Copyright (c) The Regents of the University of California.
+ All rights reserved.
+ .
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions
+ are met:
+ 1. Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+ 2. Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions and the following disclaimer in the
+    documentation and/or other materials provided with the distribution.
+ 3. Neither the name of the University nor the names of its contributors
+    may be used to endorse or promote products derived from this software
+    without specific prior written permission.
+ .
+ THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS AND
+ ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ SUCH DAMAGE.
+
+
+Files: shinken/webui/plugins/eue/htdocs/css/jquery.lightbox-0.5.css
+Copyright: Leandro Vieira Pinho - http://leandrovieira.com
+License: CCAttribution-ShareAlike http://creativecommons.org/licenses/by-sa/2.5/br/deed.en_US
+ This Source Code Form is subject to the terms of the Creative Commons
+ License, v. 2.0. If a copy of the CC was not distributed with this
+ file, You can obtain one at http://creativecommons.org/licenses/by-sa/2.5/br/deed.en_US
+
+
+Files: shinken/webui/plugins/eue/htdocs/css/datepicker.css
+Copyright: 2012 Stefan Petre
+License: Apache-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ .
+ On Debian systems, the full text of the Apache 2.0 License can be found
+ in the file `/usr/share/common-licenses/Apache-2.0'.
+
+
+Files: shinken/misc/termcolor.py
+Copyright: Copyright (c) 2008-2011 Volvox Development Team
+           Author: Konstantin Lepa <konstantin.lepa@gmail.com>
+License: MIT/X11 (BSD like)
+UNSUPPORTED
+MIT/X11 (BSD like)
 
 
 Files: shinken/sorteddict.py
@@ -1123,8 +1116,29 @@ License: MIT
  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
+Files: shinken/property.py
+Copyright: 2010-2011 by Hartmut Goebel <h.goebel@goebel-consult.de>
+License: GNU-AGPL
+ Shinken is free software: you can redistribute it and/or modify
+ it under the terms of the GNU Affero General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+ .
+ Shinken is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU Affero General Public License for more details.
+ .
+ You should have received a copy of the GNU Affero General Public License
+ along with Shinken.  If not, see <http://www.gnu.org/licenses/>.
+ .
+ Please see the complete text of the GNU Affero General Public License
+ along with this program. If not, see "http://www.gnu.org/licenses/agpl.html".
+
+
 Files: debian/*
-Copyright: 2011-2013 Arthur Gautier <superbaloo+debian@superbaloo.net>
+Copyright: 2013 gustavo panizzo <gfa@zumbi.com.ar>
+           2011-2013 Arthur Gautier <superbaloo+debian@superbaloo.net>
            2011 Bruno Clermont <bruno@sologroup.gs>
 License: BSD-3-clause
  Copyright (c) The Regents of the University of California.
@@ -1153,5 +1167,27 @@ License: BSD-3-clause
  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  SUCH DAMAGE.
+
+
+Files: *
+Copyright: 2010-2013 Jean Gabes
+           2010-2011 Gerhard Lausser
+           Please see /usr/share/shinken/CONTRIBUTORS for full list of contributors
+License: GNU-AGPL
+ Shinken is free software: you can redistribute it and/or modify
+ it under the terms of the GNU Affero General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+ .
+ Shinken is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU Affero General Public License for more details.
+ .
+ You should have received a copy of the GNU Affero General Public License
+ along with Shinken.  If not, see <http://www.gnu.org/licenses/>.
+ .
+ Please see the complete text of the GNU Affero General Public License
+ along with this program. If not, see "http://www.gnu.org/licenses/agpl.html".
 
 

@@ -10,37 +10,9 @@ Subject: Fix log directories
  etc/schedulerd.ini   |    2 +-
  5 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/etc/brokerd.ini b/etc/brokerd.ini
-index aa84ccb..7d49f81 100644
---- a/etc/brokerd.ini
-+++ b/etc/brokerd.ini
-@@ -31,7 +31,7 @@ hard_ssl_name_check=0
- #-- Local log management --
- # Enabled by default to ease troubleshooting
- use_local_log=1
--local_log=brokerd.log
-+local_log=/var/log/shinken/brokerd.log
- 
- # accepted log level values= DEBUG,INFO,WARNING,ERROR,CRITICAL
- log_level=WARNING
-diff --git a/etc/pollerd.ini b/etc/pollerd.ini
-index 8d521cd..7f6ecd2 100644
---- a/etc/pollerd.ini
-+++ b/etc/pollerd.ini
-@@ -32,7 +32,7 @@ daemon_enabled=1
- #-- Local log management --
- # Enabled by default to ease troubleshooting
- use_local_log=1
--local_log=pollerd.log
-+local_log=/var/log/shinken/pollerd.log
- 
- # accepted log level values= DEBUG,INFO,WARNING,ERROR,CRITICAL
- log_level=WARNING
-diff --git a/etc/reactionnerd.ini b/etc/reactionnerd.ini
-index fd72627..2c70b89 100644
 --- a/etc/reactionnerd.ini
 +++ b/etc/reactionnerd.ini
-@@ -23,7 +23,7 @@ hard_ssl_name_check=0
+@@ -23,7 +23,7 @@
  #-- Local log management --
  # Enabled by default to ease troubleshooting
  use_local_log=1
@@ -49,11 +21,9 @@ index fd72627..2c70b89 100644
  
  # accepted log level values= DEBUG,INFO,WARNING,ERROR,CRITICAL
  log_level=WARNING
-diff --git a/etc/receiverd.ini b/etc/receiverd.ini
-index 1f1c4e3..9a16f18 100644
 --- a/etc/receiverd.ini
 +++ b/etc/receiverd.ini
-@@ -23,7 +23,7 @@ hard_ssl_name_check=0
+@@ -23,7 +23,7 @@
  #-- Local log management --
  # Enabled by default to ease troubleshooting
  use_local_log=1
@@ -62,11 +32,9 @@ index 1f1c4e3..9a16f18 100644
  
  # accepted log level values= DEBUG,INFO,WARNING,ERROR,CRITICAL
  log_level=WARNING
-diff --git a/etc/schedulerd.ini b/etc/schedulerd.ini
-index 2ddc13e..a272996 100644
 --- a/etc/schedulerd.ini
 +++ b/etc/schedulerd.ini
-@@ -21,7 +21,7 @@ hard_ssl_name_check=0
+@@ -22,7 +22,7 @@
  #-- Local log management --
  # Enabled by default to ease troubleshooting
  use_local_log=1
