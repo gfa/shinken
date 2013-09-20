@@ -7,3 +7,5 @@ debian/tmp/usr/lib/python2.7/dist-packages/shinken/modules/hack_poller_tag_by_ma
 debian/tmp/usr/bin/shinken-poller                                                              /usr/bin
 
 debian/tmp/etc/init.d/shinken-poller                                                           /etc/init.d/
+
+debian/check_netint.pl  /usr/lib/nagios/plugins/

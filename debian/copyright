@@ -1165,6 +1165,10 @@ License: GNU-AGPL
  along with this program. If not, see "http://www.gnu.org/licenses/agpl.html".
 
 
+Files: debian/check_netint.pl
+Copyright: 2006-2012  William Leibzon <william@leibzon.org>
+License: GPL
+
 Files: debian/*
 Copyright: 2013 gustavo panizzo <gfa@zumbi.com.ar>
            2011-2013 Arthur Gautier <superbaloo+debian@superbaloo.net>

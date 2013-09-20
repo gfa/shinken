@@ -1,9 +1,19 @@
 shinken for Debian
 ------------------
 
-<this file describes information about the source package, see Debian policy
-manual section 4.14. You WILL either need to modify or delete this file>
+source package is repackaged. this directories are removed
 
+- contrib
+- for_fedora
+- for_packages
+- windows
+- skonf related files
+  check commits a97d891ca1c and ea6b9e44f1a for the list of files. check http://comments.gmane.org/gmane.network.shinken.devel/1802 for the reasoning.
 
+addons
 
+- check_netint.pl 
+  it is used on default config, is lightweight and only has one dependency libnet-snmp-perl.
+  is downloaded from http://exchange.nagios.org/components/com_mtree/attachment.php?link_id=1475&cf_id=35
 
+ -- gustavo panizzo <gfa@zumbi.com.ar>  Fri, 20 Sep 2013 18:07:02 -0300
