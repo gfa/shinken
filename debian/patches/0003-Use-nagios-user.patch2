@@ -23,16 +23,14 @@ Forwarded: <no|not-needed|url proving that it has been forwarded>
 Reviewed-By: <name and email of someone who approved the patch>
 Last-Update: <YYYY-MM-DD>
 
---- shinken-1.4.orig/bin/default/shinken.in
-+++ shinken-1.4/bin/default/shinken.in
-@@ -143,6 +143,7 @@ SKONFDEBUGFILE="$LOG/skonf-debug.log"
+--- a/bin/default/shinken.in
++++ b/bin/default/shinken.in
+@@ -143,6 +143,6 @@
  NICENESS=5
  
  # user/group for the var/run rights
 -SHINKENUSER=shinken
 -SHINKENGROUP=shinken
--HOME=`grep ^$SHINKENUSER: /etc/passwd | cut -d: -f 6`
 +SHINKENUSER=nagios
 +SHINKENGROUP=nagios
-+#HOME=`grep ^$SHINKENUSER: /etc/passwd | cut -d: -f 6`
-+HOME="/var/lib/shinken"
+ HOME=`grep ^$SHINKENUSER: /etc/passwd | cut -d: -f 6`
