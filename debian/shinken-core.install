@@ -12,7 +12,6 @@ debian/tmp/usr/lib/python2.7/dist-packages/shinken/core/*.py                    
 
 debian/tmp/usr/lib/python2.7/dist-packages/shinken/daemons/__init__.py                         /usr/lib/python2.7/dist-packages/shinken/daemons/
 debian/tmp/usr/lib/python2.7/dist-packages/shinken/daemons/hostddaemon.py                      /usr/lib/python2.7/dist-packages/shinken/daemons/
-debian/tmp/usr/lib/python2.7/dist-packages/shinken/daemons/skonfdaemon.py                      /usr/lib/python2.7/dist-packages/shinken/daemons/
 
 debian/tmp/usr/lib/python2.7/dist-packages/shinken/modules/__init__.py                         /usr/lib/python2.7/dist-packages/shinken/modules/
 debian/tmp/usr/lib/python2.7/dist-packages/shinken/modules/named_pipe.py                       /usr/lib/python2.7/dist-packages/shinken/modules/
@@ -40,9 +39,7 @@ debian/tmp/etc/shinken                                                          
 etc/objects                                                                                    /etc/shinken
 
 debian/tmp/etc/init.d/shinken                                                                  /etc/init.d
-debian/tmp/etc/init.d/shinken-skonf                                                            /etc/init.d
 
-debian/tmp/usr/bin/shinken-skonf                                                               /usr/bin
 debian/tmp/usr/bin/shinken-admin                                                               /usr/bin
 
 libexec/*.py    /usr/lib/shinken/plugins

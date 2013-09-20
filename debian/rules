@@ -11,7 +11,7 @@ export DH_OPTIONS
 	dh $@ --with python2
 
 copyright:
-	@echo "Format: http://dep.debian.net/deps/dep5\nUpstream-Name: shinken\nSource: http://www.shinken-monitoring.org/\n"
+	@echo "Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/\nUpstream-Name: shinken\nSource: http://www.shinken-monitoring.org/\n"
 	
 	@(cd debian/copyright.d; find -L -type f -name authors -printf '%h\n' | sed 's#^./##' | while read path; do \
 		echo "Files: $$path"; \
@@ -230,7 +230,6 @@ binary:
 	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/plugins/system/views/system_widget.tpl \
 	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/plugins_hostd/login/htdocs/css/login.css \
 	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/plugins_hostd/login/htdocs/js/jQuery.dPassword.js \
-	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/plugins_skonf/login/htdocs/css/login.css \
 	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/views/footer_element.tpl \
 	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/views/header_element.tpl \
 	  debian/tmp/usr/lib/python2.7/dist-packages/shinken/webui/views/layout.tpl \
@@ -256,8 +255,7 @@ binary:
 	  debian/tmp/etc/init.d/shinken-poller \
 	  debian/tmp/etc/init.d/shinken-receiver \
 	  debian/tmp/etc/init.d/shinken-reactionner \
-	  debian/tmp/etc/init.d/shinken-scheduler \
-	  debian/tmp/etc/init.d/shinken-skonf
+	  debian/tmp/etc/init.d/shinken-scheduler 
 	
 	# Fix init.d-script-does-not-implement-required-option
 	sed -i -r 's/^(.*)\|restart\|(.*)\)([:blank:]*)/\1|restart|force-reload|\2)\3/' \
@@ -269,8 +267,7 @@ binary:
 	     debian/tmp/etc/init.d/shinken-poller \
 	     debian/tmp/etc/init.d/shinken-receiver \
 	     debian/tmp/etc/init.d/shinken-reactionner \
-	     debian/tmp/etc/init.d/shinken-scheduler \
-	     debian/tmp/etc/init.d/shinken-skonf
+	     debian/tmp/etc/init.d/shinken-scheduler 
 	
 	# Split in subpackages
 	dh_install

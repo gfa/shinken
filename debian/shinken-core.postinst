@@ -27,7 +27,6 @@ case "$1" in
 
     ## Ensure /var/lib/nagios is ready
     mkdir -p /var/lib/nagios
-    mkdir -p /var/lib/nagios/skonf
 
     ## Adds nagios user
     chown nagios $TMP 2>/dev/null ||
@@ -60,14 +59,10 @@ case "$1" in
     dpkg-statoverride --update --add nagios nagios 02750 /var/log/nagios/ >/dev/null 2>&1 || true
     dpkg-statoverride --remove /var/lib/nagios/ >/dev/null 2>&1 || true
     dpkg-statoverride --update --add nagios nagios 02750 /var/lib/nagios/ >/dev/null 2>&1 || true
-    dpkg-statoverride --remove /var/lib/nagios/skonf >/dev/null 2>&1 || true
-    dpkg-statoverride --update --add nagios nagios 02750 /var/lib/nagios/skonf >/dev/null 2>&1 || true
 
     ## Need init.d autostart 
     update-rc.d shinken defaults >/dev/null
-    update-rc.d shinken-skonf defaults >/dev/null
     # no start for shinken itself, it's a dummy starter
-    invoke-rc.d shinken-skonf start || echo "skonf failed to stard, maybe disabled"
 
 ;;
   abort-upgrade)
