@@ -115,7 +115,8 @@ copyright:
 	done)
 
 clean:
-	dh clean --with python2,quilt
+	dh clean --with python2
+	#dh clean --with python2,quilt
 	# dh_clean does not support removing dirs
 	rm -rf build Shinken.egg-info
 	# Remove manpage build
