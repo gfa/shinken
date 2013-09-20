@@ -75,7 +75,7 @@ Description: Flexible monitoring - Discovery module
 Package: shinken-poller
 Architecture: all
 Depends: python (>= 2.6.6-3~), shinken-core (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}
-Recommends: nagios-plugins-basic
+Recommends: nagios-plugins-basic, nagios-snmp-plugins
 Description: Flexible monitoring - Poller module
  Poller module for shinken monitoring. This module actually do checks and
  request your infrastructure components.
