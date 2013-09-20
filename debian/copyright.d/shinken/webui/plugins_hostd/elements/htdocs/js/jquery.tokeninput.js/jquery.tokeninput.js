@@ -1,1 +1,0 @@
-../../../../plugins_skonf/elements/htdocs/js/jquery.tokeninput.js
