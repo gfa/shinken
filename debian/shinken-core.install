@@ -1,50 +1,38 @@
-debian/tmp/usr/lib/python2.7/dist-packages/shinken/*.py                                        /usr/lib/python2.7/dist-packages/shinken/
-
-
-debian/tmp/usr/lib/python2.7/dist-packages/shinken/plugins/*.py                                /usr/lib/python2.7/dist-packages/shinken/plugins/
-
-debian/tmp/usr/lib/python2.7/dist-packages/shinken/clients/*.py                                /usr/lib/python2.7/dist-packages/shinken/clients/
-shinken/clients/*.queries                                                                      /usr/lib/python2.7/dist-packages/shinken/clients/
-
-debian/tmp/usr/lib/python2.7/dist-packages/shinken/objects/*.py                                /usr/lib/python2.7/dist-packages/shinken/objects/
-
-debian/tmp/usr/lib/python2.7/dist-packages/shinken/core/*.py                                   /usr/lib/python2.7/dist-packages/shinken/core/
-
-debian/tmp/usr/lib/python2.7/dist-packages/shinken/daemons/__init__.py                         /usr/lib/python2.7/dist-packages/shinken/daemons/
-debian/tmp/usr/lib/python2.7/dist-packages/shinken/daemons/hostddaemon.py                      /usr/lib/python2.7/dist-packages/shinken/daemons/
-
-debian/tmp/usr/lib/python2.7/dist-packages/shinken/modules/__init__.py                         /usr/lib/python2.7/dist-packages/shinken/modules/
-debian/tmp/usr/lib/python2.7/dist-packages/shinken/modules/named_pipe.py                       /usr/lib/python2.7/dist-packages/shinken/modules/
-debian/tmp/usr/lib/python2.7/dist-packages/shinken/modules/nsca.py                             /usr/lib/python2.7/dist-packages/shinken/modules/
-debian/tmp/usr/lib/python2.7/dist-packages/shinken/modules/pickle_retention_file_generic.py    /usr/lib/python2.7/dist-packages/shinken/modules/
-debian/tmp/usr/lib/python2.7/dist-packages/shinken/modules/cfg_password_ui_.py                 /usr/lib/python2.7/dist-packages/shinken/modules/
-debian/tmp/usr/lib/python2.7/dist-packages/shinken/modules/logstore_null.py                    /usr/lib/python2.7/dist-packages/shinken/modules/
-debian/tmp/usr/lib/python2.7/dist-packages/shinken/modules/tsca                                /usr/lib/python2.7/dist-packages/shinken/modules/
-shinken/modules/tsca/tsca.thrift                                                               /usr/lib/python2.7/dist-packages/shinken/modules/tsca/
-
-debian/tmp/usr/lib/python2.7/dist-packages/shinken/modules/logstore_mongodb.py                 /usr/lib/python2.7/dist-packages/shinken/modules/
-debian/tmp/usr/lib/python2.7/dist-packages/shinken/modules/logstore_sqlite.py                  /usr/lib/python2.7/dist-packages/shinken/modules/
-
-debian/tmp/usr/lib/python2.7/dist-packages/shinken/modules/mongodb_generic.py                  /usr/lib/python2.7/dist-packages/shinken/modules/
-
-debian/tmp/usr/lib/python2.7/dist-packages/shinken/misc                                        /usr/lib/python2.7/dist-packages/shinken
-
+debian/tmp/usr/lib/python2.7/dist-packages/shinken/*.py /usr/lib/python2.7/dist-packages/shinken/
+debian/tmp/usr/lib/python2.7/dist-packages/shinken/plugins/*.py /usr/lib/python2.7/dist-packages/shinken/plugins/
+debian/tmp/usr/lib/python2.7/dist-packages/shinken/clients/*.py /usr/lib/python2.7/dist-packages/shinken/clients/
+shinken/clients/*.queries /usr/lib/python2.7/dist-packages/shinken/clients/
+debian/tmp/usr/lib/python2.7/dist-packages/shinken/objects/*.py /usr/lib/python2.7/dist-packages/shinken/objects/
+debian/tmp/usr/lib/python2.7/dist-packages/shinken/core/*.py /usr/lib/python2.7/dist-packages/shinken/core/
+debian/tmp/usr/lib/python2.7/dist-packages/shinken/daemons/__init__.py /usr/lib/python2.7/dist-packages/shinken/daemons/
+debian/tmp/usr/lib/python2.7/dist-packages/shinken/daemons/hostddaemon.py /usr/lib/python2.7/dist-packages/shinken/daemons/
+debian/tmp/usr/lib/python2.7/dist-packages/shinken/modules/__init__.py /usr/lib/python2.7/dist-packages/shinken/modules/
+debian/tmp/usr/lib/python2.7/dist-packages/shinken/modules/named_pipe.py /usr/lib/python2.7/dist-packages/shinken/modules/
+debian/tmp/usr/lib/python2.7/dist-packages/shinken/modules/nsca.py /usr/lib/python2.7/dist-packages/shinken/modules/
+debian/tmp/usr/lib/python2.7/dist-packages/shinken/modules/pickle_retention_file_generic.py /usr/lib/python2.7/dist-packages/shinken/modules/
+debian/tmp/usr/lib/python2.7/dist-packages/shinken/modules/cfg_password_ui_.py /usr/lib/python2.7/dist-packages/shinken/modules/
+debian/tmp/usr/lib/python2.7/dist-packages/shinken/modules/logstore_null.py /usr/lib/python2.7/dist-packages/shinken/modules/
+debian/tmp/usr/lib/python2.7/dist-packages/shinken/modules/tsca /usr/lib/python2.7/dist-packages/shinken/modules/
+shinken/modules/tsca/tsca.thrift /usr/lib/python2.7/dist-packages/shinken/modules/tsca/
+debian/tmp/usr/lib/python2.7/dist-packages/shinken/modules/logstore_mongodb.py /usr/lib/python2.7/dist-packages/shinken/modules/
+debian/tmp/usr/lib/python2.7/dist-packages/shinken/modules/logstore_sqlite.py /usr/lib/python2.7/dist-packages/shinken/modules/
+debian/tmp/usr/lib/python2.7/dist-packages/shinken/modules/mongodb_generic.py /usr/lib/python2.7/dist-packages/shinken/modules/
+debian/tmp/usr/lib/python2.7/dist-packages/shinken/misc /usr/lib/python2.7/dist-packages/shinken
 debian/tmp/usr/lib/python2.7/dist-packages/Shinken-1.4.egg-info /usr/lib/python2.7/dist-packages/
-
-#debian/tmp/usr/lib/shinken                                                                     /usr/lib/
-
-debian/tmp/etc/default                                                                         /etc/
-
-debian/tmp/etc/shinken                                                                         /etc
-etc/objects                                                                                    /etc/shinken
-
-debian/tmp/etc/init.d/shinken                                                                  /etc/init.d
-
-debian/tmp/usr/bin/shinken-admin                                                               /usr/bin
-
+#debian/tmp/usr/lib/shinken /usr/lib/
+debian/tmp/etc/default /etc/
+debian/tmp/etc/shinken /etc
+etc/objects /etc/shinken
+debian/tmp/etc/init.d/shinken /etc/init.d
+debian/tmp/usr/bin/shinken-admin /usr/bin
 libexec/*.py    /usr/lib/shinken/plugins
 libexec/hostd  /usr/lib/shinken/plugins
 libexec/eue /usr/lib/shinken/plugins
 libexec/trending /usr/lib/shinken/plugins
 libexec/discovery   /usr/lib/shinken/plugins
-
+external_commands/CHANGE_HOST_CHECK_COMMAND.sh /usr/share/doc/shinken-core/examples/
+external_commands/ACKNOWLEDGE_HOST_PROBLEM.sh /usr/share/doc/shinken-core/examples/
+external_commands/ADD_POLLER.sh  /usr/share/doc/shinken-core/examples/
+external_commands/CHANGE_CONTACT_HOST_NOTIFICATION_TIMEPERIOD.sh /usr/share/doc/shinken-core/examples/
+external_commands/CHANGE_HOST_CHECK_COMMAND.sh /usr/share/doc/shinken-core/examples/
+external_commands/PROCESS_HOST_CHECK_RESULT.sh /usr/share/doc/shinken-core/examples/
