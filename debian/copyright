@@ -22,6 +22,14 @@ License: GNU-AGPL
  along with this program. If not, see "http://www.gnu.org/licenses/agpl.html".
 
 
+Files: shinken/libexec/link_libvirt_host_vm.py
+Copyright: 2012 Thibault Cohen, <thibault.cohen@savoirfairelinux.com>
+License: GNU-AGPL
+
+Files: shinken/libexec/notify_by_xmpp.py
+Copyright: skvidal@fedoraproject.org, modified by David Laval
+License: GPL
+
 Files: shinken/webui/plugins_skonf/login/htdocs/js/pass_shark.js
 Copyright: Luis Merino
 License: MIT
