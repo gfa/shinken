@@ -23,7 +23,6 @@ debian/tmp/usr/lib/python2.7/dist-packages/Shinken-1.4.egg-info /usr/lib/python2
 debian/tmp/etc/default /etc/
 debian/tmp/etc/shinken /etc
 etc/objects /etc/shinken
-debian/tmp/etc/init.d/shinken /etc/init.d
 debian/tmp/usr/bin/shinken-admin /usr/bin
 libexec/*.py    /usr/lib/shinken/plugins
 libexec/hostd  /usr/lib/shinken/plugins
